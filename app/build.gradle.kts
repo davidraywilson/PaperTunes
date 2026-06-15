@@ -237,6 +237,14 @@ dependencies {
     implementation(libs.lifecycle.runtime.compose)
 
     implementation(libs.material3)
+
+    // Mudita Mindful Design (MMD) design system for the e-ink UI.
+    // Vendored locally: the upstream Mudita Artifactory repo no longer serves valid
+    // Gradle/Maven metadata (returns an HTML landing page), so we ship the AAR directly.
+    // MMD's own deps (material3, compose-ui, activity-compose, coroutines, kotlin-stdlib)
+    // are already provided by the app module above.
+    implementation(files("libs/mmd-core-release.aar"))
+
     implementation(libs.palette)
     implementation(libs.androidsvg)
     implementation(libs.markwon.core)
