@@ -202,6 +202,7 @@ fun EinkApp() {
                             onPlaylistAddSongsDoneClick = { navController.popBackStack() },
                             onNowPlayingClick = { navController.navigate(EinkScreen.NowPlaying.route) },
                         )
+                        com.mudita.mmd.components.divider.HorizontalDividerMMD(thickness = 2.dp)
                     }
                 },
                 bottomBar = {

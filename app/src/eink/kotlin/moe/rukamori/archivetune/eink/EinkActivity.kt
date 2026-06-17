@@ -108,7 +108,23 @@ class EinkActivity : ComponentActivity() {
                         background = androidx.compose.ui.graphics.Color.White,
                         onSurface = androidx.compose.ui.graphics.Color.Black,
                         onBackground = androidx.compose.ui.graphics.Color.Black,
-                        surfaceTint = androidx.compose.ui.graphics.Color.White
+                        surfaceTint = androidx.compose.ui.graphics.Color.White,
+                        primary = androidx.compose.ui.graphics.Color.Black,
+                        onPrimary = androidx.compose.ui.graphics.Color.White,
+                        primaryContainer = androidx.compose.ui.graphics.Color.Black,
+                        onPrimaryContainer = androidx.compose.ui.graphics.Color.White,
+                        secondary = androidx.compose.ui.graphics.Color.Black,
+                        onSecondary = androidx.compose.ui.graphics.Color.White,
+                        secondaryContainer = androidx.compose.ui.graphics.Color.Black,
+                        onSecondaryContainer = androidx.compose.ui.graphics.Color.White,
+                        tertiary = androidx.compose.ui.graphics.Color.Black,
+                        onTertiary = androidx.compose.ui.graphics.Color.White,
+                        tertiaryContainer = androidx.compose.ui.graphics.Color.Black,
+                        onTertiaryContainer = androidx.compose.ui.graphics.Color.White,
+                        surfaceVariant = androidx.compose.ui.graphics.Color.White,
+                        onSurfaceVariant = androidx.compose.ui.graphics.Color.Black,
+                        outline = androidx.compose.ui.graphics.Color.Black,
+                        outlineVariant = androidx.compose.ui.graphics.Color.Black
                     )
                 ) {
                     CompositionLocalProvider(

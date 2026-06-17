@@ -96,28 +96,6 @@ fun EinkNowPlayingScreen(navController: NavController) {
         verticalArrangement = Arrangement.SpaceBetween,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // In-content top bar with back affordance (no Scaffold top app bar here)
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { navController.navigateUp() },
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "Back",
-            )
-
-            Spacer(modifier = Modifier.width(12.dp))
-
-            Text(
-                text = "Now Playing",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-            )
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
 
         Column(
             modifier = Modifier
