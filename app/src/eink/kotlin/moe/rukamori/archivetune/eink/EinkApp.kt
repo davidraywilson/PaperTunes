@@ -58,6 +58,9 @@ import moe.rukamori.archivetune.eink.screens.EinkSongsScreen
 import moe.rukamori.archivetune.eink.components.EinkBottomSheetMenu
 import moe.rukamori.archivetune.eink.components.EinkBottomSheetPage
 import moe.rukamori.archivetune.eink.components.EinkBottomSheetPageState
+import moe.rukamori.archivetune.ui.screens.LOGIN_ROUTE
+import moe.rukamori.archivetune.ui.screens.LOGIN_URL_ARGUMENT
+import moe.rukamori.archivetune.ui.screens.LoginScreen
 import moe.rukamori.archivetune.eink.components.LocalEinkBottomSheetPageState
 import moe.rukamori.archivetune.eink.components.LocalEinkMenuState
 import moe.rukamori.archivetune.eink.components.EinkMenuState
@@ -214,6 +217,22 @@ private fun EinkNavHost(navController: androidx.navigation.NavHostController) {
         composable(EinkScreen.Settings.route) { EinkSettingsScreen(navController) }
         composable(EinkScreen.Search.route) { EinkSearchScreen(navController) }
         composable(EinkScreen.NowPlaying.route) { EinkNowPlayingScreen(navController) }
+
+        composable(
+            route = "$LOGIN_ROUTE?$LOGIN_URL_ARGUMENT={$LOGIN_URL_ARGUMENT}",
+            arguments = listOf(
+                navArgument(LOGIN_URL_ARGUMENT) {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                }
+            )
+        ) { backStackEntry ->
+            LoginScreen(
+                navController = navController,
+                startUrl = backStackEntry.arguments?.getString(LOGIN_URL_ARGUMENT),
+            )
+        }
 
         composable(
             route = detailRoute(EinkScreen.AlbumDetails.route, "albumId"),
