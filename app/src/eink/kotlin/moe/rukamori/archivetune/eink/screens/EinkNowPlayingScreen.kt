@@ -1,12 +1,8 @@
-/*
- * ArchiveTune (2026)
- * © Rukamori — github.com/rukamori
- * GPL-3.0 License | Contributors: see git history
- * Do not remove or alter this notice. - Per GPL-3.0 Section 4 & Section 5
- */
-
 package moe.rukamori.archivetune.eink.screens
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,17 +13,25 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Repeat
-import androidx.compose.material.icons.filled.RepeatOne
-import androidx.compose.material.icons.filled.Shuffle
-import androidx.compose.material.icons.filled.SkipNext
-import androidx.compose.material.icons.filled.SkipPrevious
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.outlined.LibraryAdd
+import androidx.compose.material.icons.outlined.LibraryAddCheck
+import androidx.compose.material.icons.outlined.Pause
+import androidx.compose.material.icons.outlined.PlayArrow
+import androidx.compose.material.icons.outlined.PlaylistAdd
+import androidx.compose.material.icons.outlined.Repeat
+import androidx.compose.material.icons.outlined.RepeatOne
+import androidx.compose.material.icons.outlined.Shuffle
+import androidx.compose.material.icons.outlined.SkipNext
+import androidx.compose.material.icons.outlined.SkipPrevious
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.Slider
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -39,15 +43,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.media3.common.Player
 import androidx.navigation.NavController
-import com.mudita.mmd.components.text.TextMMD
+import com.mudita.mmd.components.buttons.ButtonMMD
+import com.mudita.mmd.components.slider.SliderMMD
+import com.mudita.mmd.components.progress_indicator.CircularProgressIndicatorMMD
 import kotlinx.coroutines.delay
 import moe.rukamori.archivetune.LocalPlayerConnection
 import moe.rukamori.archivetune.extensions.togglePlayPause
@@ -80,122 +84,241 @@ fun EinkNowPlayingScreen(navController: NavController) {
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.surface)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null
+            ) {}
+            .padding(16.dp),
+        verticalArrangement = Arrangement.SpaceBetween,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        // In-content top bar with back affordance (no Scaffold top app bar here)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { navController.navigateUp() },
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = "Back",
+            )
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Text(
+                text = "Now Playing",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+            )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 24.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally,
+                .fillMaxWidth()
+                .weight(1f)
+                .padding(horizontal = 4.dp),
+            verticalArrangement = Arrangement.Bottom,
         ) {
-            TextMMD(
+            Text(
                 text = mediaMetadata?.title.orEmpty(),
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
+                fontSize = 42.sp,
+                fontWeight = FontWeight.Black,
                 maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                textAlign = TextAlign.Center,
+                overflow = TextOverflow.Ellipsis
             )
+
             Spacer(modifier = Modifier.height(8.dp))
-            TextMMD(
+
+            Text(
                 text = mediaMetadata?.artists?.joinToString(", ") { it.name }.orEmpty(),
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Normal,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.SemiBold,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                textAlign = TextAlign.Center,
             )
 
-            Spacer(modifier = Modifier.height(48.dp))
+            val albumName = mediaMetadata?.album?.title
+            if (!albumName.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(4.dp))
 
-            Slider(
+                Text(
+                    text = albumName,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            SliderMMD(
+                modifier = Modifier.fillMaxWidth(),
                 value = sliderPosition.coerceIn(0f, 1f),
-                onValueChange = {
+                onValueChange = { value ->
                     isSeeking = true
-                    sliderPosition = it
-                },
-                onValueChangeFinished = {
-                    if (duration > 0L) player.seekTo((sliderPosition * duration).toLong())
+                    sliderPosition = value
+                    if (duration > 0) {
+                        val newPosition = (value * duration).toLong().coerceIn(0L, duration)
+                        player.seekTo(newPosition)
+                    }
                     isSeeking = false
                 },
-                modifier = Modifier.fillMaxWidth(),
             )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                TextMMD(text = makeTimeString(position), fontSize = 14.sp)
-                TextMMD(text = makeTimeString(duration), fontSize = 14.sp)
+                Text(
+                    text = makeTimeString(position),
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    text = makeTimeString(duration),
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 32.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            ButtonMMD(
+                onClick = { playerConnection.seekToPrevious() },
+                modifier = Modifier.size(72.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.secondary
+                )
+
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.SkipPrevious,
+                    modifier = Modifier.size(46.dp),
+                    contentDescription = "Previous Song",
+                    tint = MaterialTheme.colorScheme.onSecondary
+                )
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                verticalAlignment = Alignment.CenterVertically,
+            IconButton(
+                onClick = { player.togglePlayPause() },
+                modifier = Modifier.size(72.dp)
             ) {
-                IconButton(onClick = { playerConnection.seekToPrevious() }) {
+                Icon(
+                    imageVector = if (isPlaying) Icons.Outlined.Pause else Icons.Outlined.PlayArrow,
+                    contentDescription = if (isPlaying) "Pause" else "Play",
+                    modifier = Modifier.size(46.dp),
+                )
+            }
+
+            ButtonMMD(
+                onClick = { playerConnection.seekToNext() },
+                modifier = Modifier.size(72.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.secondary
+                )
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.SkipNext,
+                    modifier = Modifier.size(46.dp),
+                    contentDescription = "Next Song",
+                    tint = MaterialTheme.colorScheme.onSecondary
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Bottom row for secondary actions (e.g. shuffle, repeat, add to playlist / library)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = { /* Add to library not implemented in Eink mode right now, just match visual */ }) {
+                Icon(
+                    imageVector = Icons.Outlined.LibraryAdd,
+                    contentDescription = "Add to library",
+                )
+            }
+
+            IconButton(onClick = { /* Add to playlist */ }) {
+                Icon(
+                    imageVector = Icons.Outlined.PlaylistAdd,
+                    contentDescription = "Add to playlist",
+                )
+            }
+
+            IconButton(onClick = { player.shuffleModeEnabled = !player.shuffleModeEnabled }) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Icon(
-                        imageVector = Icons.Filled.SkipPrevious,
-                        contentDescription = "Previous",
-                        modifier = Modifier.size(40.dp),
+                        imageVector = Icons.Outlined.Shuffle,
+                        contentDescription = "Shuffle queue",
                     )
-                }
-                IconButton(onClick = { player.togglePlayPause() }) {
-                    Icon(
-                        imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                        contentDescription = if (isPlaying) "Pause" else "Play",
-                        modifier = Modifier.size(56.dp),
-                    )
-                }
-                IconButton(onClick = { playerConnection.seekToNext() }) {
-                    Icon(
-                        imageVector = Icons.Filled.SkipNext,
-                        contentDescription = "Next",
-                        modifier = Modifier.size(40.dp),
-                    )
+                    if (shuffleEnabled) {
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Box(
+                            modifier = Modifier
+                                .size(4.dp)
+                                .background(
+                                    color = MaterialTheme.colorScheme.primary,
+                                    shape = CircleShape,
+                                ),
+                        )
+                    }
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                IconButton(
-                    onClick = { player.shuffleModeEnabled = !player.shuffleModeEnabled },
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.Shuffle,
-                        contentDescription = "Shuffle",
-                        modifier = Modifier
-                            .size(24.dp)
-                            .alpha(if (shuffleEnabled) 1f else 0.35f),
-                    )
+            IconButton(onClick = {
+                player.repeatMode = when (player.repeatMode) {
+                    Player.REPEAT_MODE_OFF -> Player.REPEAT_MODE_ALL
+                    Player.REPEAT_MODE_ALL -> Player.REPEAT_MODE_ONE
+                    else -> Player.REPEAT_MODE_OFF
                 }
-                IconButton(
-                    onClick = {
-                        player.repeatMode = when (player.repeatMode) {
-                            Player.REPEAT_MODE_OFF -> Player.REPEAT_MODE_ALL
-                            Player.REPEAT_MODE_ALL -> Player.REPEAT_MODE_ONE
-                            else -> Player.REPEAT_MODE_OFF
-                        }
-                    },
-                ) {
+            }) {
+                val (icon, description, isActive) = when (repeatMode) {
+                    Player.REPEAT_MODE_OFF -> Triple(Icons.Outlined.Repeat, "Repeat off", false)
+                    Player.REPEAT_MODE_ALL -> Triple(Icons.Outlined.Repeat, "Repeat queue", true)
+                    else -> Triple(Icons.Outlined.RepeatOne, "Repeat current song", true)
+                }
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Icon(
-                        imageVector = if (repeatMode == Player.REPEAT_MODE_ONE) {
-                            Icons.Filled.RepeatOne
-                        } else {
-                            Icons.Filled.Repeat
-                        },
-                        contentDescription = "Repeat",
-                        modifier = Modifier
-                            .size(24.dp)
-                            .alpha(if (repeatMode == Player.REPEAT_MODE_OFF) 0.35f else 1f),
+                        imageVector = icon,
+                        contentDescription = description,
                     )
+                    if (isActive) {
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Box(
+                            modifier = Modifier
+                                .size(4.dp)
+                                .background(
+                                    color = MaterialTheme.colorScheme.primary,
+                                    shape = CircleShape,
+                                ),
+                        )
+                    }
                 }
             }
         }

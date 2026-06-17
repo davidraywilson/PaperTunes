@@ -111,6 +111,7 @@ class SyncUtils @Inject constructor(
                 }
             }
         } catch (e: Exception) {
+            if (e is kotlinx.coroutines.CancellationException) throw e
             Timber.e(e, "Error during full sync")
         } finally {
             syncMutex.unlock()

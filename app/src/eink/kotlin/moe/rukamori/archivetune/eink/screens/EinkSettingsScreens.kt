@@ -95,9 +95,10 @@ fun EinkSettingsScreen(navController: NavController) {
                                 isSyncing = true
                                 android.widget.Toast.makeText(context, "Sync started", android.widget.Toast.LENGTH_SHORT).show()
                                 try {
-                                    syncUtils.performFullSync(authoritative = true)
+                                    syncUtils.performFullSync()
                                     android.widget.Toast.makeText(context, "Sync complete", android.widget.Toast.LENGTH_SHORT).show()
                                 } catch (e: Exception) {
+                                    if (e is kotlinx.coroutines.CancellationException) throw e
                                     android.widget.Toast.makeText(context, "Sync failed: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
                                 } finally {
                                     isSyncing = false

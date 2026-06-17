@@ -44,8 +44,8 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -61,13 +61,13 @@ import moe.rukamori.archivetune.eink.components.EinkEmptyState
 import moe.rukamori.archivetune.eink.components.EinkTwoLineRow
 import moe.rukamori.archivetune.extensions.toMediaItem
 import moe.rukamori.archivetune.extensions.togglePlayPause
-import moe.rukamori.archivetune.innertube.YouTube
 import moe.rukamori.archivetune.innertube.models.AlbumItem
 import moe.rukamori.archivetune.innertube.models.SongItem
 import moe.rukamori.archivetune.playback.queues.ListQueue
 import moe.rukamori.archivetune.eink.components.LocalEinkMenuState
 import moe.rukamori.archivetune.eink.menus.EinkYouTubeSongMenu
 import moe.rukamori.archivetune.utils.makeTimeString
+import moe.rukamori.archivetune.eink.viewmodels.EinkSearchViewModel
 
 /**
  * Online YouTube Music search for the e-ink UI. A search field sits at the top; results
@@ -77,71 +77,26 @@ import moe.rukamori.archivetune.utils.makeTimeString
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun EinkSearchScreen(navController: NavController) {
+fun EinkSearchScreen(
+    navController: NavController,
+    searchViewModel: EinkSearchViewModel,
+) {
     val menuState = LocalEinkMenuState.current
     val haptic = LocalHapticFeedback.current
-    val keyboardController = LocalSoftwareKeyboardController.current
     val playerConnection = LocalPlayerConnection.current ?: return
-    val scope = rememberCoroutineScope()
 
     val mediaMetadata by playerConnection.mediaMetadata.collectAsState()
 
-    var query by remember { mutableStateOf("") }
-    var submittedQuery by remember { mutableStateOf("") }
-    var songs by remember { mutableStateOf<List<SongItem>>(emptyList()) }
-    var albums by remember { mutableStateOf<List<AlbumItem>>(emptyList()) }
-    var isSearching by remember { mutableStateOf(false) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
-    var hasSearched by remember { mutableStateOf(false) }
-    var selectedTab by remember { mutableStateOf(0) }
-
-    fun runSearch() {
-        val trimmed = query.trim()
-        if (trimmed.isEmpty()) return
-        keyboardController?.hide()
-        submittedQuery = trimmed
-        isSearching = true
-        errorMessage = null
-        hasSearched = true
-        scope.launch {
-            val songResult = YouTube.search(trimmed, YouTube.SearchFilter.FILTER_SONG)
-            val albumResult = YouTube.search(trimmed, YouTube.SearchFilter.FILTER_ALBUM)
-            val failure = songResult.exceptionOrNull() ?: albumResult.exceptionOrNull()
-            songs = songResult.getOrNull()?.items?.filterIsInstance<SongItem>().orEmpty()
-            albums = albumResult.getOrNull()?.items?.filterIsInstance<AlbumItem>().orEmpty()
-            errorMessage = if (songs.isEmpty() && albums.isEmpty()) failure?.localizedMessage else null
-            isSearching = false
-        }
-    }
+    val query = searchViewModel.query
+    val submittedQuery = searchViewModel.submittedQuery
+    val songs = searchViewModel.songs
+    val albums = searchViewModel.albums
+    val isSearching = searchViewModel.isSearching
+    val errorMessage = searchViewModel.errorMessage
+    val hasSearched = searchViewModel.hasSearched
+    var selectedTab by searchViewModel::selectedTab
 
     Column(modifier = Modifier.fillMaxSize()) {
-        OutlinedTextField(
-            value = query,
-            onValueChange = { query = it },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            singleLine = true,
-            placeholder = { Text(text = "Search YouTube Music") },
-            leadingIcon = {
-                Icon(
-                    imageVector = Icons.Outlined.Search,
-                    contentDescription = "Search",
-                )
-            },
-            trailingIcon = {
-                if (query.isNotEmpty()) {
-                    IconButton(onClick = { query = "" }) {
-                        Icon(
-                            imageVector = Icons.Outlined.Close,
-                            contentDescription = "Clear",
-                        )
-                    }
-                }
-            },
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-            keyboardActions = KeyboardActions(onSearch = { runSearch() }),
-        )
 
         if (hasSearched) {
             PrimaryTabRowMMD(selectedTabIndex = selectedTab) {
