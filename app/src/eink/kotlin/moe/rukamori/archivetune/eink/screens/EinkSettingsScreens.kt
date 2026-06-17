@@ -46,6 +46,12 @@ fun EinkMoreScreen(navController: NavController) {
     ) {
         item {
             EinkTwoLineRow(
+                title = "Downloads",
+                subtitle = "Manage queued and active downloads",
+                onClick = { navController.navigate(EinkScreen.Downloads.route) },
+                showDivider = true
+            )
+            EinkTwoLineRow(
                 title = "Settings",
                 subtitle = "App preferences and options",
                 onClick = { navController.navigate(EinkScreen.Settings.route) },

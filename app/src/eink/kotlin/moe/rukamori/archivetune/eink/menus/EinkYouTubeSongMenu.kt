@@ -27,6 +27,13 @@ import moe.rukamori.archivetune.innertube.models.SongItem
 import moe.rukamori.archivetune.models.toMediaMetadata
 import moe.rukamori.archivetune.playback.queues.YouTubeQueue
 
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.net.toUri
+import androidx.media3.exoplayer.offline.DownloadRequest
+import androidx.media3.exoplayer.offline.DownloadService
+import moe.rukamori.archivetune.LocalDatabase
+import moe.rukamori.archivetune.playback.ExoDownloadService
+
 @Composable
 fun EinkYouTubeSongMenu(
     song: SongItem,
@@ -34,6 +41,8 @@ fun EinkYouTubeSongMenu(
     onDismiss: () -> Unit,
 ) {
     val playerConnection = LocalPlayerConnection.current ?: return
+    val context = LocalContext.current
+    val database = LocalDatabase.current
 
     Column(modifier = Modifier.fillMaxWidth()) {
         TextMMD(
@@ -83,6 +92,24 @@ fun EinkYouTubeSongMenu(
                 onDismiss()
                 navController.navigate("album/${album.id}")
             }
+        }
+
+        EinkMenuRow(text = "Download") {
+            onDismiss()
+            database.transaction {
+                insert(song.toMediaMetadata())
+            }
+            val downloadRequest = DownloadRequest
+                .Builder(song.id, song.id.toUri())
+                .setCustomCacheKey(song.id)
+                .setData(song.title.toByteArray())
+                .build()
+            DownloadService.sendAddDownload(
+                context,
+                ExoDownloadService::class.java,
+                downloadRequest,
+                false,
+            )
         }
     }
 }

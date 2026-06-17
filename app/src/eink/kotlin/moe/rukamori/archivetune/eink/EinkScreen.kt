@@ -36,6 +36,7 @@ sealed class EinkScreen(val route: String, val label: String, val icon: ImageVec
     data object Search : EinkScreen("search", "Search", Icons.AutoMirrored.Outlined.QueueMusic)
     data object Settings : EinkScreen("settings", "Settings", Icons.Outlined.MoreHoriz)
     data object NowPlaying : EinkScreen("nowPlaying", "Now Playing", Icons.AutoMirrored.Outlined.QueueMusic)
+    data object Downloads : EinkScreen("downloads", "Downloads", Icons.Outlined.LibraryMusic)
 }
 
 /** Bottom navigation items, in CalmTunes order. */
@@ -63,5 +64,6 @@ fun einkAppBarTitle(destination: NavDestination?): String =
         EinkScreen.PlaylistAddSongs.route -> "Add Songs"
         EinkScreen.PlaylistDetails.route -> "Playlist"
         EinkScreen.NowPlaying.route -> "Now Playing"
+        EinkScreen.Downloads.route -> "Downloads"
         else -> ""
     }

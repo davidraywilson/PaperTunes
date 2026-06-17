@@ -57,15 +57,27 @@ import moe.rukamori.archivetune.LocalPlayerConnection
 import moe.rukamori.archivetune.extensions.togglePlayPause
 import moe.rukamori.archivetune.utils.makeTimeString
 
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.net.toUri
+import androidx.media3.exoplayer.offline.Download
+import androidx.media3.exoplayer.offline.DownloadRequest
+import androidx.media3.exoplayer.offline.DownloadService
+import moe.rukamori.archivetune.LocalDatabase
+import moe.rukamori.archivetune.LocalDownloadUtil
+import moe.rukamori.archivetune.playback.ExoDownloadService
+
 @Composable
 fun EinkNowPlayingScreen(navController: NavController) {
     val playerConnection = LocalPlayerConnection.current ?: return
     val player = playerConnection.player
+    val context = LocalContext.current
+    val database = LocalDatabase.current
 
     val mediaMetadata by playerConnection.mediaMetadata.collectAsState()
     val isPlaying by playerConnection.isPlaying.collectAsState()
     val shuffleEnabled by playerConnection.shuffleModeEnabled.collectAsState()
     val repeatMode by playerConnection.repeatMode.collectAsState()
+    val download by LocalDownloadUtil.current.getDownload(mediaMetadata?.id ?: "").collectAsState(initial = null)
 
     var position by remember { mutableLongStateOf(0L) }
     var duration by remember { mutableLongStateOf(0L) }
@@ -247,6 +259,68 @@ fun EinkNowPlayingScreen(navController: NavController) {
                     imageVector = Icons.Outlined.PlaylistAdd,
                     contentDescription = "Add to playlist",
                 )
+            }
+
+            when (download?.state) {
+                Download.STATE_COMPLETED -> {
+                    IconButton(onClick = {
+                        mediaMetadata?.let { metadata ->
+                            DownloadService.sendRemoveDownload(
+                                context,
+                                ExoDownloadService::class.java,
+                                metadata.id,
+                                false,
+                            )
+                        }
+                    }) {
+                        Icon(
+                            painter = androidx.compose.ui.res.painterResource(id = moe.rukamori.archivetune.R.drawable.offline),
+                            contentDescription = "Downloaded",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+                Download.STATE_QUEUED, Download.STATE_DOWNLOADING -> {
+                    IconButton(onClick = {
+                        mediaMetadata?.let { metadata ->
+                            DownloadService.sendRemoveDownload(
+                                context,
+                                ExoDownloadService::class.java,
+                                metadata.id,
+                                false,
+                            )
+                        }
+                    }) {
+                        CircularProgressIndicatorMMD(
+                            modifier = Modifier.size(24.dp),
+                        )
+                    }
+                }
+                else -> {
+                    IconButton(onClick = {
+                        mediaMetadata?.let { metadata ->
+                            database.transaction {
+                                insert(metadata)
+                            }
+                            val downloadRequest = DownloadRequest
+                                .Builder(metadata.id, metadata.id.toUri())
+                                .setCustomCacheKey(metadata.id)
+                                .setData((metadata.title ?: "").toByteArray())
+                                .build()
+                            DownloadService.sendAddDownload(
+                                context,
+                                ExoDownloadService::class.java,
+                                downloadRequest,
+                                false,
+                            )
+                        }
+                    }) {
+                        Icon(
+                            painter = androidx.compose.ui.res.painterResource(id = moe.rukamori.archivetune.R.drawable.download),
+                            contentDescription = "Download song",
+                        )
+                    }
+                }
             }
 
             IconButton(onClick = { player.shuffleModeEnabled = !player.shuffleModeEnabled }) {

@@ -254,6 +254,7 @@ fun EinkApp() {
                         composable(EinkScreen.Settings.route) { EinkSettingsScreen(navController) }
                         composable(EinkScreen.Search.route) { EinkSearchScreen(navController, searchViewModel) }
                         composable(EinkScreen.NowPlaying.route) { EinkNowPlayingScreen(navController) }
+                        composable(EinkScreen.Downloads.route) { moe.rukamori.archivetune.eink.screens.EinkDownloadsScreen(navController) }
 
                         composable(
                             route = "$LOGIN_ROUTE?$LOGIN_URL_ARGUMENT={$LOGIN_URL_ARGUMENT}",
