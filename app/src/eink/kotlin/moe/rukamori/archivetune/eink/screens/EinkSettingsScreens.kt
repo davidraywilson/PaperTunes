@@ -12,11 +12,17 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.mudita.mmd.components.lazy.LazyColumnMMD
+import kotlinx.coroutines.launch
 import moe.rukamori.archivetune.App.Companion.forgetAccount
+import moe.rukamori.archivetune.LocalSyncUtils
 import moe.rukamori.archivetune.constants.InnerTubeCookieKey
 import moe.rukamori.archivetune.eink.EinkScreen
 import moe.rukamori.archivetune.innertube.utils.hasYouTubeLoginCookie
@@ -54,6 +60,9 @@ fun EinkSettingsScreen(navController: NavController) {
     val context = LocalContext.current
     val (innerTubeCookie, onInnerTubeCookieChange) = rememberPreference(InnerTubeCookieKey, "")
     val isLoggedIn = hasYouTubeLoginCookie(innerTubeCookie)
+    val syncUtils = LocalSyncUtils.current
+    val coroutineScope = rememberCoroutineScope()
+    var isSyncing by remember { mutableStateOf(false) }
 
     LazyColumnMMD(
         contentPadding = PaddingValues(16.dp),
@@ -71,8 +80,34 @@ fun EinkSettingsScreen(navController: NavController) {
                         navController.navigate(buildLoginRoute())
                     }
                 },
-                showDivider = false
+                showDivider = isLoggedIn
             )
+        }
+
+        if (isLoggedIn) {
+            item {
+                EinkTwoLineRow(
+                    title = "Sync Library",
+                    subtitle = if (isSyncing) "Syncing..." else "Fetch playlists and songs from YouTube",
+                    onClick = {
+                        if (!isSyncing) {
+                            coroutineScope.launch {
+                                isSyncing = true
+                                android.widget.Toast.makeText(context, "Sync started", android.widget.Toast.LENGTH_SHORT).show()
+                                try {
+                                    syncUtils.performFullSync(authoritative = true)
+                                    android.widget.Toast.makeText(context, "Sync complete", android.widget.Toast.LENGTH_SHORT).show()
+                                } catch (e: Exception) {
+                                    android.widget.Toast.makeText(context, "Sync failed: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
+                                } finally {
+                                    isSyncing = false
+                                }
+                            }
+                        }
+                    },
+                    showDivider = false
+                )
+            }
         }
     }
 }
