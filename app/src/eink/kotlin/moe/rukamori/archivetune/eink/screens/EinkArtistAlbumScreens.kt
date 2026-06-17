@@ -52,8 +52,8 @@ import moe.rukamori.archivetune.eink.einkArtistDetailsRoute
 import moe.rukamori.archivetune.extensions.toMediaItem
 import moe.rukamori.archivetune.extensions.togglePlayPause
 import moe.rukamori.archivetune.playback.queues.ListQueue
-import moe.rukamori.archivetune.ui.component.LocalMenuState
-import moe.rukamori.archivetune.ui.menu.SongMenu
+import moe.rukamori.archivetune.eink.components.LocalEinkMenuState
+import moe.rukamori.archivetune.eink.menus.EinkSongMenu
 import moe.rukamori.archivetune.viewmodels.AlbumViewModel
 import moe.rukamori.archivetune.viewmodels.ArtistAlbumsViewModel
 import moe.rukamori.archivetune.viewmodels.ArtistSongsViewModel
@@ -131,7 +131,7 @@ fun EinkArtistDetailsScreen(
     songsViewModel: ArtistSongsViewModel = hiltViewModel(),
     albumsViewModel: ArtistAlbumsViewModel = hiltViewModel(),
 ) {
-    val menuState = LocalMenuState.current
+    val menuState = LocalEinkMenuState.current
     val haptic = LocalHapticFeedback.current
     val playerConnection = LocalPlayerConnection.current ?: return
 
@@ -207,7 +207,7 @@ fun EinkArtistDetailsScreen(
                                 onLongClick = {
                                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                     menuState.show {
-                                        SongMenu(
+                                        EinkSongMenu(
                                             originalSong = song,
                                             navController = navController,
                                             onDismiss = menuState::dismiss,
@@ -273,7 +273,7 @@ fun EinkAlbumDetailsScreen(
     albumId: String,
     viewModel: AlbumViewModel = hiltViewModel(),
 ) {
-    val menuState = LocalMenuState.current
+    val menuState = LocalEinkMenuState.current
     val haptic = LocalHapticFeedback.current
     val playerConnection = LocalPlayerConnection.current ?: return
 
@@ -346,7 +346,7 @@ fun EinkAlbumDetailsScreen(
                         onLongClick = {
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             menuState.show {
-                                SongMenu(
+                                EinkSongMenu(
                                     originalSong = song,
                                     navController = navController,
                                     onDismiss = menuState::dismiss,

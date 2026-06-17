@@ -34,8 +34,8 @@ import moe.rukamori.archivetune.eink.components.EinkSongRow
 import moe.rukamori.archivetune.extensions.toMediaItem
 import moe.rukamori.archivetune.extensions.togglePlayPause
 import moe.rukamori.archivetune.playback.queues.ListQueue
-import moe.rukamori.archivetune.ui.component.LocalMenuState
-import moe.rukamori.archivetune.ui.menu.SongMenu
+import moe.rukamori.archivetune.eink.components.LocalEinkMenuState
+import moe.rukamori.archivetune.eink.menus.EinkSongMenu
 import moe.rukamori.archivetune.viewmodels.LibrarySongsViewModel
 
 @Composable
@@ -44,7 +44,7 @@ fun EinkSongsScreen(
     viewModel: LibrarySongsViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
-    val menuState = LocalMenuState.current
+    val menuState = LocalEinkMenuState.current
     val haptic = LocalHapticFeedback.current
     val playerConnection = LocalPlayerConnection.current ?: return
 
@@ -83,7 +83,7 @@ fun EinkSongsScreen(
                         onLongClick = {
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             menuState.show {
-                                SongMenu(
+                                EinkSongMenu(
                                     originalSong = song,
                                     navController = navController,
                                     onDismiss = menuState::dismiss,

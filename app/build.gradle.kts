@@ -72,8 +72,15 @@ android {
         buildConfigField("boolean", "UPDATER_AVAILABLE", "true")
     }
 
-    flavorDimensions += listOf("distribution", "device", "abi")
+    flavorDimensions += listOf("ui", "distribution", "device", "abi")
     productFlavors {
+        create("standard") {
+            dimension = "ui"
+            isDefault = true
+        }
+        create("eink") {
+            dimension = "ui"
+        }
         create("gms") {
             dimension = "distribution"
             isDefault = true

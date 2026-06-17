@@ -100,14 +100,26 @@ class EinkActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             ThemeMMD {
-                CompositionLocalProvider(
-                    LocalDatabase provides database,
-                    LocalDownloadUtil provides downloadUtil,
-                    LocalSyncUtils provides syncUtils,
-                    LocalPlayerConnection provides playerConnection,
-                    LocalPlayerAwareWindowInsets provides WindowInsets.systemBars,
+                // Fix for Android 16 API 36 Color.Unspecified crash:
+                // ThemeMMD might leave surface color unspecified, crashing Material 3 TopAppBar.
+                androidx.compose.material3.MaterialTheme(
+                    colorScheme = androidx.compose.material3.lightColorScheme(
+                        surface = androidx.compose.ui.graphics.Color.White,
+                        background = androidx.compose.ui.graphics.Color.White,
+                        onSurface = androidx.compose.ui.graphics.Color.Black,
+                        onBackground = androidx.compose.ui.graphics.Color.Black,
+                        surfaceTint = androidx.compose.ui.graphics.Color.White
+                    )
                 ) {
-                    EinkApp()
+                    CompositionLocalProvider(
+                        LocalDatabase provides database,
+                        LocalDownloadUtil provides downloadUtil,
+                        LocalSyncUtils provides syncUtils,
+                        LocalPlayerConnection provides playerConnection,
+                        LocalPlayerAwareWindowInsets provides WindowInsets.systemBars,
+                    ) {
+                        EinkApp()
+                    }
                 }
             }
         }

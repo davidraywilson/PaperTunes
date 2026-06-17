@@ -55,12 +55,12 @@ import moe.rukamori.archivetune.eink.screens.EinkPlaylistsScreen
 import moe.rukamori.archivetune.eink.screens.EinkSearchScreen
 import moe.rukamori.archivetune.eink.screens.EinkSettingsScreen
 import moe.rukamori.archivetune.eink.screens.EinkSongsScreen
-import moe.rukamori.archivetune.ui.component.BottomSheetMenu
-import moe.rukamori.archivetune.ui.component.BottomSheetPage
-import moe.rukamori.archivetune.ui.component.BottomSheetPageState
-import moe.rukamori.archivetune.ui.component.LocalBottomSheetPageState
-import moe.rukamori.archivetune.ui.component.LocalMenuState
-import moe.rukamori.archivetune.ui.component.MenuState
+import moe.rukamori.archivetune.eink.components.EinkBottomSheetMenu
+import moe.rukamori.archivetune.eink.components.EinkBottomSheetPage
+import moe.rukamori.archivetune.eink.components.EinkBottomSheetPageState
+import moe.rukamori.archivetune.eink.components.LocalEinkBottomSheetPageState
+import moe.rukamori.archivetune.eink.components.LocalEinkMenuState
+import moe.rukamori.archivetune.eink.components.EinkMenuState
 import androidx.compose.runtime.CompositionLocalProvider
 
 /** Route helpers for destinations that take an id argument. */
@@ -75,8 +75,8 @@ fun einkPlaylistAddSongsRoute(playlistId: String) = "${EinkScreen.PlaylistAddSon
 @Composable
 fun EinkApp() {
     val navController = rememberNavController()
-    val menuState = remember { MenuState() }
-    val bottomSheetPageState = remember { BottomSheetPageState() }
+    val menuState = remember { EinkMenuState() }
+    val bottomSheetPageState = remember { EinkBottomSheetPageState() }
 
     val playerConnection = LocalPlayerConnection.current
     val mediaMetadata by remember(playerConnection) {
@@ -84,8 +84,8 @@ fun EinkApp() {
     }.collectAsState()
 
     CompositionLocalProvider(
-        LocalMenuState provides menuState,
-        LocalBottomSheetPageState provides bottomSheetPageState,
+        LocalEinkMenuState provides menuState,
+        LocalEinkBottomSheetPageState provides bottomSheetPageState,
     ) {
         val navBackStackEntry by navController.currentBackStackEntryAsState()
         val currentDestination = navBackStackEntry?.destination
@@ -188,12 +188,12 @@ fun EinkApp() {
                 }
             }
 
-            BottomSheetMenu(
-                state = LocalMenuState.current,
+            EinkBottomSheetMenu(
+                state = LocalEinkMenuState.current,
                 modifier = Modifier.align(Alignment.BottomCenter),
             )
-            BottomSheetPage(
-                state = LocalBottomSheetPageState.current,
+            EinkBottomSheetPage(
+                state = LocalEinkBottomSheetPageState.current,
                 modifier = Modifier.align(Alignment.BottomCenter),
             )
         }

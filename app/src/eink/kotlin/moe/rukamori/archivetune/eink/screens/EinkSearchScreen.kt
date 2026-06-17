@@ -65,8 +65,8 @@ import moe.rukamori.archivetune.innertube.YouTube
 import moe.rukamori.archivetune.innertube.models.AlbumItem
 import moe.rukamori.archivetune.innertube.models.SongItem
 import moe.rukamori.archivetune.playback.queues.ListQueue
-import moe.rukamori.archivetune.ui.component.LocalMenuState
-import moe.rukamori.archivetune.ui.menu.YouTubeSongMenu
+import moe.rukamori.archivetune.eink.components.LocalEinkMenuState
+import moe.rukamori.archivetune.eink.menus.EinkYouTubeSongMenu
 import moe.rukamori.archivetune.utils.makeTimeString
 
 /**
@@ -78,7 +78,7 @@ import moe.rukamori.archivetune.utils.makeTimeString
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun EinkSearchScreen(navController: NavController) {
-    val menuState = LocalMenuState.current
+    val menuState = LocalEinkMenuState.current
     val haptic = LocalHapticFeedback.current
     val keyboardController = LocalSoftwareKeyboardController.current
     val playerConnection = LocalPlayerConnection.current ?: return
@@ -211,7 +211,7 @@ fun EinkSearchScreen(navController: NavController) {
                     onLongClick = { song ->
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         menuState.show {
-                            YouTubeSongMenu(
+                            EinkYouTubeSongMenu(
                                 song = song,
                                 navController = navController,
                                 onDismiss = menuState::dismiss,

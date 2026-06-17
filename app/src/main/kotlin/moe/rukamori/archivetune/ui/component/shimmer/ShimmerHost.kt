@@ -64,8 +64,8 @@ val ShimmerTheme =
         ),
         shaderColors =
         listOf(
-            Color.Unspecified.copy(alpha = 0.25f),
-            Color.Unspecified.copy(alpha = 0.50f),
-            Color.Unspecified.copy(alpha = 0.25f),
+            Color.LightGray.copy(alpha = 0.25f),
+            Color.LightGray.copy(alpha = 0.50f),
+            Color.LightGray.copy(alpha = 0.25f),
         ),
     )

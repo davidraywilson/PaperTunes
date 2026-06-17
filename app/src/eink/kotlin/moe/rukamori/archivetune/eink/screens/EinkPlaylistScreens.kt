@@ -78,10 +78,10 @@ import moe.rukamori.archivetune.extensions.toMediaItem
 import moe.rukamori.archivetune.extensions.togglePlayPause
 import moe.rukamori.archivetune.innertube.YouTube
 import moe.rukamori.archivetune.playback.queues.ListQueue
-import moe.rukamori.archivetune.ui.component.CreatePlaylistDialog
-import moe.rukamori.archivetune.ui.component.EditPlaylistDialog
-import moe.rukamori.archivetune.ui.component.LocalMenuState
-import moe.rukamori.archivetune.ui.menu.SongMenu
+import moe.rukamori.archivetune.eink.components.EinkCreatePlaylistDialog
+import moe.rukamori.archivetune.eink.components.EinkEditPlaylistDialog
+import moe.rukamori.archivetune.eink.components.LocalEinkMenuState
+import moe.rukamori.archivetune.eink.menus.EinkSongMenu
 import moe.rukamori.archivetune.viewmodels.LibraryPlaylistsViewModel
 import moe.rukamori.archivetune.viewmodels.LibrarySongsViewModel
 import moe.rukamori.archivetune.viewmodels.LocalPlaylistViewModel
@@ -117,7 +117,7 @@ fun EinkPlaylistsScreen(
     }
 
     if (showCreateDialog) {
-        CreatePlaylistDialog(onDismiss = { showCreateDialog = false })
+        EinkCreatePlaylistDialog(onDismiss = { showCreateDialog = false })
     }
 
     if (showDeleteSheet) {
@@ -272,7 +272,7 @@ fun EinkPlaylistDetailsScreen(
     viewModel: LocalPlaylistViewModel = hiltViewModel(),
 ) {
     val database = LocalDatabase.current
-    val menuState = LocalMenuState.current
+    val menuState = LocalEinkMenuState.current
     val haptic = LocalHapticFeedback.current
     val playerConnection = LocalPlayerConnection.current ?: return
     val coroutineScope = rememberCoroutineScope()
@@ -289,7 +289,7 @@ fun EinkPlaylistDetailsScreen(
 
     if (showRenameDialog) {
         playlist?.let { current ->
-            EditPlaylistDialog(
+            EinkEditPlaylistDialog(
                 initialName = current.playlist.name,
                 onDismiss = { showRenameDialog = false },
                 onSave = { name ->
@@ -433,7 +433,7 @@ fun EinkPlaylistDetailsScreen(
                             onLongClick = {
                                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                 menuState.show {
-                                    SongMenu(
+                                    EinkSongMenu(
                                         originalSong = song,
                                         playlistSong = playlistSong,
                                         playlistBrowseId = playlist?.playlist?.browseId,
