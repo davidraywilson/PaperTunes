@@ -11,23 +11,33 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.outlined.Clear
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -36,12 +46,22 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.mudita.mmd.components.buttons.ButtonMMD
+import com.mudita.mmd.components.buttons.OutlinedButtonMMD
+import com.mudita.mmd.components.menus.DropdownMenuItemMMD
+import com.mudita.mmd.components.menus.DropdownMenuMMD
 import com.mudita.mmd.components.nav_bar.NavigationBarItemMMD
 import com.mudita.mmd.components.nav_bar.NavigationBarMMD
 import com.mudita.mmd.components.text.TextMMD
 import com.mudita.mmd.components.top_app_bar.TopAppBarMMD
 import kotlinx.coroutines.flow.MutableStateFlow
 import moe.rukamori.archivetune.LocalPlayerConnection
+import moe.rukamori.archivetune.eink.components.DashedDivider
+import moe.rukamori.archivetune.eink.components.EinkBottomSheetMenu
+import moe.rukamori.archivetune.eink.components.EinkBottomSheetPage
+import moe.rukamori.archivetune.eink.components.EinkBottomSheetPageState
+import moe.rukamori.archivetune.eink.components.EinkMenuState
+import moe.rukamori.archivetune.eink.components.LocalEinkBottomSheetPageState
+import moe.rukamori.archivetune.eink.components.LocalEinkMenuState
 import moe.rukamori.archivetune.eink.screens.EinkAlbumDetailsScreen
 import moe.rukamori.archivetune.eink.screens.EinkAlbumsScreen
 import moe.rukamori.archivetune.eink.screens.EinkArtistDetailsScreen
@@ -55,16 +75,10 @@ import moe.rukamori.archivetune.eink.screens.EinkPlaylistsScreen
 import moe.rukamori.archivetune.eink.screens.EinkSearchScreen
 import moe.rukamori.archivetune.eink.screens.EinkSettingsScreen
 import moe.rukamori.archivetune.eink.screens.EinkSongsScreen
-import moe.rukamori.archivetune.eink.components.EinkBottomSheetMenu
-import moe.rukamori.archivetune.eink.components.EinkBottomSheetPage
-import moe.rukamori.archivetune.eink.components.EinkBottomSheetPageState
 import moe.rukamori.archivetune.ui.screens.LOGIN_ROUTE
 import moe.rukamori.archivetune.ui.screens.LOGIN_URL_ARGUMENT
 import moe.rukamori.archivetune.ui.screens.LoginScreen
-import moe.rukamori.archivetune.eink.components.LocalEinkBottomSheetPageState
-import moe.rukamori.archivetune.eink.components.LocalEinkMenuState
-import moe.rukamori.archivetune.eink.components.EinkMenuState
-import androidx.compose.runtime.CompositionLocalProvider
+import moe.rukamori.archivetune.viewmodels.LibraryPlaylistsViewModel
 
 /** Route helpers for destinations that take an id argument. */
 private fun detailRoute(base: String, argName: String) = "$base/{$argName}"
@@ -86,6 +100,23 @@ fun EinkApp() {
         playerConnection?.mediaMetadata ?: MutableStateFlow(null)
     }.collectAsState()
 
+    val playlistsViewModel: LibraryPlaylistsViewModel = hiltViewModel()
+    val libraryPlaylists by playlistsViewModel.allPlaylists.collectAsState()
+    val hasLibraryPlaylists = libraryPlaylists.isNotEmpty()
+
+    var isPlaylistsEditMode by remember { mutableStateOf(false) }
+    var playlistEditSelectionCount by remember { mutableIntStateOf(0) }
+    val playlistEditSelectionIds = remember { mutableSetOf<String>() }
+    var showDeletePlaylistsConfirmation by remember { mutableStateOf(false) }
+
+    var isPlaylistDetailsEditMode by remember { mutableStateOf(false) }
+    var playlistDetailsSelectionCount by remember { mutableIntStateOf(0) }
+    val playlistDetailsSelectionIds = remember { mutableSetOf<String>() }
+    var showDeletePlaylistSongsConfirmation by remember { mutableStateOf(false) }
+    var isPlaylistDetailsMenuExpanded by remember { mutableStateOf(false) }
+    
+    var showRenamePlaylistDialog by remember { mutableStateOf(false) }
+
     CompositionLocalProvider(
         LocalEinkMenuState provides menuState,
         LocalEinkBottomSheetPageState provides bottomSheetPageState,
@@ -97,6 +128,9 @@ fun EinkApp() {
         val isTopLevel = currentRoute in topLevelRoutes
         val hasNowPlaying = mediaMetadata != null
 
+        val isOnPlaylistDetails = currentRoute == EinkScreen.PlaylistDetails.route ||
+            currentRoute?.startsWith("${EinkScreen.PlaylistDetails.route}/") == true
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -105,12 +139,40 @@ fun EinkApp() {
             Column(modifier = Modifier.fillMaxSize()) {
                 TopAppBarMMD(
                     navigationIcon = {
-                        if (!isTopLevel) {
-                            IconButton(onClick = { navController.navigateUp() }) {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                    contentDescription = "Back",
-                                )
+                        when {
+                            isOnPlaylistDetails && isPlaylistDetailsEditMode -> {
+                                IconButton(onClick = { 
+                                    isPlaylistDetailsEditMode = false 
+                                    playlistDetailsSelectionIds.clear()
+                                    playlistDetailsSelectionCount = 0
+                                }) {
+                                    Icon(
+                                        imageVector = Icons.Outlined.Clear,
+                                        contentDescription = "Cancel playlist edits",
+                                    )
+                                }
+                            }
+
+                            currentRoute == EinkScreen.Playlists.route && isPlaylistsEditMode -> {
+                                IconButton(onClick = { 
+                                    isPlaylistsEditMode = false 
+                                    playlistEditSelectionIds.clear()
+                                    playlistEditSelectionCount = 0
+                                }) {
+                                    Icon(
+                                        imageVector = Icons.Outlined.Clear,
+                                        contentDescription = "Cancel playlist edit",
+                                    )
+                                }
+                            }
+
+                            !isTopLevel -> {
+                                IconButton(onClick = { navController.navigateUp() }) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                        contentDescription = "Back",
+                                    )
+                                }
                             }
                         }
                     },
@@ -123,7 +185,15 @@ fun EinkApp() {
                         )
                     },
                     actions = {
-                        if (isTopLevel && currentRoute != EinkScreen.More.route) {
+                        if (isTopLevel && currentRoute != EinkScreen.More.route && currentRoute != EinkScreen.Search.route) {
+                            if (currentRoute == EinkScreen.Playlists.route && hasLibraryPlaylists && !isPlaylistsEditMode) {
+                                IconButton(onClick = { isPlaylistsEditMode = true }) {
+                                    Icon(
+                                        imageVector = Icons.Outlined.Edit,
+                                        contentDescription = "Edit playlists",
+                                    )
+                                }
+                            }
                             IconButton(onClick = { navController.navigate(EinkScreen.Search.route) }) {
                                 Icon(
                                     imageVector = Icons.Outlined.Search,
@@ -131,10 +201,113 @@ fun EinkApp() {
                                 )
                             }
                         }
+
+                        if (isOnPlaylistDetails && !isPlaylistDetailsEditMode) {
+                            Box {
+                                IconButton(onClick = { isPlaylistDetailsMenuExpanded = true }) {
+                                    Icon(
+                                        imageVector = Icons.Outlined.MoreVert,
+                                        contentDescription = "Playlist options",
+                                    )
+                                }
+
+                                DropdownMenuMMD(
+                                    expanded = isPlaylistDetailsMenuExpanded,
+                                    onDismissRequest = { isPlaylistDetailsMenuExpanded = false },
+                                ) {
+                                    DropdownMenuItemMMD(
+                                        text = { TextMMD("Edit") },
+                                        onClick = { 
+                                            isPlaylistDetailsMenuExpanded = false
+                                            val playlistId = navBackStackEntry?.arguments?.getString("playlistId")
+                                            if (playlistId != null) {
+                                                navController.navigate(einkPlaylistEditRoute(playlistId))
+                                            }
+                                        },
+                                    )
+                                    DashedDivider(thickness = 1.dp)
+                                    DropdownMenuItemMMD(
+                                        text = { TextMMD("Add songs") },
+                                        onClick = { 
+                                            isPlaylistDetailsMenuExpanded = false
+                                            val playlistId = navBackStackEntry?.arguments?.getString("playlistId")
+                                            if (playlistId != null) {
+                                                navController.navigate(einkPlaylistAddSongsRoute(playlistId))
+                                            }
+                                        },
+                                    )
+                                    DashedDivider(thickness = 1.dp)
+                                    DropdownMenuItemMMD(
+                                        text = { TextMMD("Rename") },
+                                        onClick = { 
+                                            isPlaylistDetailsMenuExpanded = false
+                                            showRenamePlaylistDialog = true
+                                        },
+                                    )
+                                    DashedDivider(thickness = 1.dp)
+                                    DropdownMenuItemMMD(
+                                        text = { TextMMD("Delete") },
+                                        onClick = { 
+                                            isPlaylistDetailsMenuExpanded = false
+                                            showDeletePlaylistSongsConfirmation = true // Wait, delete playlist itself
+                                        },
+                                    )
+                                }
+                            }
+                        }
+
+                        if (currentRoute == EinkScreen.Playlists.route && isPlaylistsEditMode && playlistEditSelectionCount > 0) {
+                            OutlinedButtonMMD(
+                                contentPadding = PaddingValues(8.dp),
+                                modifier = Modifier.padding(horizontal = 8.dp),
+                                onClick = { showDeletePlaylistsConfirmation = true },
+                            ) {
+                                TextMMD(
+                                    text = "Delete $playlistEditSelectionCount",
+                                    textAlign = TextAlign.Center,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                )
+                            }
+                        }
+
+                        if (isOnPlaylistDetails && isPlaylistDetailsEditMode && playlistDetailsSelectionCount > 0) {
+                            OutlinedButtonMMD(
+                                contentPadding = PaddingValues(8.dp),
+                                modifier = Modifier.padding(horizontal = 8.dp),
+                                onClick = { showDeletePlaylistSongsConfirmation = true }, // Here it deletes songs from playlist
+                            ) {
+                                TextMMD(
+                                    text = "Remove $playlistDetailsSelectionCount",
+                                    textAlign = TextAlign.Center,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                )
+                            }
+                        }
+
+                        if (currentRoute?.startsWith(EinkScreen.PlaylistAddSongs.route) == true) {
+                            ButtonMMD(
+                                contentPadding = PaddingValues(8.dp),
+                                modifier = Modifier.padding(horizontal = 8.dp),
+                                onClick = { navController.popBackStack() }, // We will let the screen handle its own done logic via state if needed, or simply pop. Let's let the screen handle it in EinkPlaylistScreens.
+                            ) {
+                                TextMMD(
+                                    text = "Done",
+                                    textAlign = TextAlign.Center,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                )
+                            }
+                        }
+
                         if (
                             hasNowPlaying &&
                             currentRoute != EinkScreen.NowPlaying.route &&
-                            currentRoute != EinkScreen.Search.route
+                            currentRoute != EinkScreen.Search.route &&
+                            !(currentRoute == EinkScreen.Playlists.route && isPlaylistsEditMode) &&
+                            !(isOnPlaylistDetails && isPlaylistDetailsEditMode) &&
+                            currentRoute?.startsWith(EinkScreen.PlaylistAddSongs.route) != true
                         ) {
                             ButtonMMD(
                                 onClick = { navController.navigate(EinkScreen.NowPlaying.route) },
@@ -153,7 +326,99 @@ fun EinkApp() {
                 )
 
                 Box(modifier = Modifier.weight(1f)) {
-                    EinkNavHost(navController)
+                    NavHost(
+                        navController = navController,
+                        startDestination = EinkScreen.Songs.route,
+                    ) {
+                        composable(EinkScreen.Songs.route) { EinkSongsScreen(navController) }
+                        composable(EinkScreen.Playlists.route) { 
+                            EinkPlaylistsScreen(
+                                navController = navController,
+                                isInEditMode = isPlaylistsEditMode,
+                                onSelectionChanged = { 
+                                    playlistEditSelectionIds.clear()
+                                    playlistEditSelectionIds.addAll(it)
+                                    playlistEditSelectionCount = it.size 
+                                },
+                                showDeleteConfirmation = showDeletePlaylistsConfirmation,
+                                onDeleteConfirmed = { 
+                                    showDeletePlaylistsConfirmation = false
+                                    isPlaylistsEditMode = false
+                                    playlistEditSelectionIds.clear()
+                                    playlistEditSelectionCount = 0
+                                },
+                                onCancelDelete = { showDeletePlaylistsConfirmation = false },
+                                selectedIds = playlistEditSelectionIds
+                            ) 
+                        }
+                        composable(EinkScreen.Artists.route) { EinkArtistsScreen(navController) }
+                        composable(EinkScreen.Albums.route) { EinkAlbumsScreen(navController) }
+                        composable(EinkScreen.More.route) { EinkMoreScreen(navController) }
+                        composable(EinkScreen.Settings.route) { EinkSettingsScreen(navController) }
+                        composable(EinkScreen.Search.route) { EinkSearchScreen(navController) }
+                        composable(EinkScreen.NowPlaying.route) { EinkNowPlayingScreen(navController) }
+
+                        composable(
+                            route = "$LOGIN_ROUTE?$LOGIN_URL_ARGUMENT={$LOGIN_URL_ARGUMENT}",
+                            arguments = listOf(
+                                navArgument(LOGIN_URL_ARGUMENT) {
+                                    type = NavType.StringType
+                                    nullable = true
+                                    defaultValue = null
+                                }
+                            )
+                        ) { backStackEntry ->
+                            LoginScreen(
+                                navController = navController,
+                                startUrl = backStackEntry.arguments?.getString(LOGIN_URL_ARGUMENT),
+                            )
+                        }
+
+                        composable(
+                            route = detailRoute(EinkScreen.AlbumDetails.route, "albumId"),
+                            arguments = listOf(navArgument("albumId") { type = NavType.StringType }),
+                        ) { entry ->
+                            EinkAlbumDetailsScreen(navController, entry.arguments?.getString("albumId").orEmpty())
+                        }
+                        composable(
+                            route = detailRoute(EinkScreen.ArtistDetails.route, "artistId"),
+                            arguments = listOf(navArgument("artistId") { type = NavType.StringType }),
+                        ) { entry ->
+                            EinkArtistDetailsScreen(navController, entry.arguments?.getString("artistId").orEmpty())
+                        }
+                        composable(
+                            route = detailRoute(EinkScreen.PlaylistDetails.route, "playlistId"),
+                            arguments = listOf(navArgument("playlistId") { type = NavType.StringType }),
+                        ) { entry ->
+                            EinkPlaylistDetailsScreen(
+                                navController = navController, 
+                                playlistId = entry.arguments?.getString("playlistId").orEmpty(),
+                                showRenameDialog = showRenamePlaylistDialog,
+                                onRenameDialogDismiss = { showRenamePlaylistDialog = false },
+                                showDeleteSheet = showDeletePlaylistSongsConfirmation, // Actually for deleting playlist itself here
+                                onDeleteSheetDismiss = { showDeletePlaylistSongsConfirmation = false },
+                                isInEditMode = isPlaylistDetailsEditMode,
+                                onSelectionChanged = {
+                                    playlistDetailsSelectionIds.clear()
+                                    playlistDetailsSelectionIds.addAll(it)
+                                    playlistDetailsSelectionCount = it.size
+                                },
+                                selectedIds = playlistDetailsSelectionIds
+                            )
+                        }
+                        composable(
+                            route = detailRoute(EinkScreen.PlaylistEdit.route, "playlistId"),
+                            arguments = listOf(navArgument("playlistId") { type = NavType.StringType }),
+                        ) { entry ->
+                            EinkPlaylistEditScreen(navController, entry.arguments?.getString("playlistId").orEmpty())
+                        }
+                        composable(
+                            route = detailRoute(EinkScreen.PlaylistAddSongs.route, "playlistId"),
+                            arguments = listOf(navArgument("playlistId") { type = NavType.StringType }),
+                        ) { entry ->
+                            EinkPlaylistAddSongsScreen(navController, entry.arguments?.getString("playlistId").orEmpty())
+                        }
+                    }
                 }
 
                 if (isTopLevel) {
@@ -199,70 +464,6 @@ fun EinkApp() {
                 state = LocalEinkBottomSheetPageState.current,
                 modifier = Modifier.align(Alignment.BottomCenter),
             )
-        }
-    }
-}
-
-@Composable
-private fun EinkNavHost(navController: androidx.navigation.NavHostController) {
-    NavHost(
-        navController = navController,
-        startDestination = EinkScreen.Songs.route,
-    ) {
-        composable(EinkScreen.Songs.route) { EinkSongsScreen(navController) }
-        composable(EinkScreen.Playlists.route) { EinkPlaylistsScreen(navController) }
-        composable(EinkScreen.Artists.route) { EinkArtistsScreen(navController) }
-        composable(EinkScreen.Albums.route) { EinkAlbumsScreen(navController) }
-        composable(EinkScreen.More.route) { EinkMoreScreen(navController) }
-        composable(EinkScreen.Settings.route) { EinkSettingsScreen(navController) }
-        composable(EinkScreen.Search.route) { EinkSearchScreen(navController) }
-        composable(EinkScreen.NowPlaying.route) { EinkNowPlayingScreen(navController) }
-
-        composable(
-            route = "$LOGIN_ROUTE?$LOGIN_URL_ARGUMENT={$LOGIN_URL_ARGUMENT}",
-            arguments = listOf(
-                navArgument(LOGIN_URL_ARGUMENT) {
-                    type = NavType.StringType
-                    nullable = true
-                    defaultValue = null
-                }
-            )
-        ) { backStackEntry ->
-            LoginScreen(
-                navController = navController,
-                startUrl = backStackEntry.arguments?.getString(LOGIN_URL_ARGUMENT),
-            )
-        }
-
-        composable(
-            route = detailRoute(EinkScreen.AlbumDetails.route, "albumId"),
-            arguments = listOf(navArgument("albumId") { type = NavType.StringType }),
-        ) { entry ->
-            EinkAlbumDetailsScreen(navController, entry.arguments?.getString("albumId").orEmpty())
-        }
-        composable(
-            route = detailRoute(EinkScreen.ArtistDetails.route, "artistId"),
-            arguments = listOf(navArgument("artistId") { type = NavType.StringType }),
-        ) { entry ->
-            EinkArtistDetailsScreen(navController, entry.arguments?.getString("artistId").orEmpty())
-        }
-        composable(
-            route = detailRoute(EinkScreen.PlaylistDetails.route, "playlistId"),
-            arguments = listOf(navArgument("playlistId") { type = NavType.StringType }),
-        ) { entry ->
-            EinkPlaylistDetailsScreen(navController, entry.arguments?.getString("playlistId").orEmpty())
-        }
-        composable(
-            route = detailRoute(EinkScreen.PlaylistEdit.route, "playlistId"),
-            arguments = listOf(navArgument("playlistId") { type = NavType.StringType }),
-        ) { entry ->
-            EinkPlaylistEditScreen(navController, entry.arguments?.getString("playlistId").orEmpty())
-        }
-        composable(
-            route = detailRoute(EinkScreen.PlaylistAddSongs.route, "playlistId"),
-            arguments = listOf(navArgument("playlistId") { type = NavType.StringType }),
-        ) { entry ->
-            EinkPlaylistAddSongsScreen(navController, entry.arguments?.getString("playlistId").orEmpty())
         }
     }
 }
