@@ -693,6 +693,14 @@ fun EinkPlaylistAddSongsScreen(
     val selectedIds = remember { mutableStateMapOf<String, Boolean>() }
     val selectedCount = selectedIds.count { it.value }
 
+    val (innerTubeCookie) = moe.rukamori.archivetune.utils.rememberPreference(
+        moe.rukamori.archivetune.constants.InnerTubeCookieKey,
+        ""
+    )
+    val isLoggedIn = remember(innerTubeCookie) { 
+        moe.rukamori.archivetune.innertube.utils.hasYouTubeLoginCookie(innerTubeCookie) 
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
             Row(
@@ -711,7 +719,7 @@ fun EinkPlaylistAddSongsScreen(
                     onClick = {
                         val ids = selectedIds.filterValues { it }.keys.toList()
                         if (ids.isNotEmpty()) {
-                            addSongsToPlaylist(database, coroutineScope, playlistId, ids)
+                            addSongsToPlaylist(database, coroutineScope, playlistId, ids, isLoggedIn)
                         }
                         navController.popBackStack()
                     },
@@ -880,13 +888,40 @@ private fun addSongsToPlaylist(
     scope: CoroutineScope,
     playlistId: String,
     songIds: List<String>,
+    isLoggedIn: Boolean = false,
 ) {
     scope.launch(Dispatchers.IO) {
-        database.withTransaction {
-            val playlist = getPlaylistById(playlistId) ?: return@withTransaction
-            val existing = playlistDuplicates(playlistId, songIds).toSet()
-            val toAdd = songIds.filter { it !in existing }
-            if (toAdd.isNotEmpty()) {
+        val playlist = database.getPlaylistById(playlistId) ?: return@launch
+        val existing = database.playlistDuplicates(playlistId, songIds).toSet()
+        val toAdd = songIds.filter { it !in existing }
+        if (toAdd.isEmpty()) return@launch
+
+        val browseId = playlist.playlist.browseId
+        if (isLoggedIn && browseId != null) {
+            val acceptedSongEntries = mutableListOf<Pair<String, String?>>()
+            toAdd.forEach { songId ->
+                var remoteAdded = false
+                var addedSetVideoId: String? = null
+                for (attempt in 0 until 3) {
+                    val result = YouTube.addToPlaylist(browseId, songId)
+                    if (result.isSuccess) {
+                        remoteAdded = true
+                        addedSetVideoId = result.getOrNull()
+                        break
+                    }
+                    if (attempt < 2) kotlinx.coroutines.delay(250)
+                }
+                if (remoteAdded) {
+                    acceptedSongEntries += songId to addedSetVideoId
+                }
+            }
+            if (acceptedSongEntries.isNotEmpty()) {
+                database.transaction {
+                    addSongEntriesToPlaylist(playlist, acceptedSongEntries)
+                }
+            }
+        } else {
+            database.transaction {
                 addSongToPlaylist(playlist, toAdd)
             }
         }

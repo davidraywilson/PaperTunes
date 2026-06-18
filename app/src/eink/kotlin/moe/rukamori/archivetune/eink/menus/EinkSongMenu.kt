@@ -62,7 +62,7 @@ fun EinkSongMenu(
 
     if (showAddToPlaylistDialog) {
         moe.rukamori.archivetune.eink.components.EinkAddToPlaylistDialog(
-            songId = originalSong.id,
+            mediaMetadata = originalSong.toMediaMetadata(),
             onDismiss = {
                 showAddToPlaylistDialog = false
                 onDismiss()

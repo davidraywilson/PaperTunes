@@ -53,7 +53,7 @@ fun EinkYouTubeSongMenu(
 
     if (showAddToPlaylistDialog) {
         moe.rukamori.archivetune.eink.components.EinkAddToPlaylistDialog(
-            songId = song.id,
+            mediaMetadata = song.toMediaMetadata(),
             onDismiss = {
                 showAddToPlaylistDialog = false
                 onDismiss()

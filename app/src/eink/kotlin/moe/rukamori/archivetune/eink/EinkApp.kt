@@ -154,10 +154,17 @@ fun EinkApp() {
             currentRoute?.startsWith("${EinkScreen.PlaylistDetails.route}/") == true
             
         val playlistId = if (isOnPlaylistDetails) navBackStackEntry?.arguments?.getString("playlistId") else null
-        val selectedPlaylistName = remember(playlistId, libraryPlaylists) {
+        val selectedPlaylistName by androidx.compose.runtime.produceState<String?>(
+            initialValue = null,
+            playlistId
+        ) {
             if (playlistId != null) {
-                libraryPlaylists.find { it.playlist.id == playlistId }?.playlist?.name
-            } else null
+                database.playlist(playlistId).collect { playlistItem ->
+                    value = playlistItem?.playlist?.name
+                }
+            } else {
+                value = null
+            }
         }
 
         Box(

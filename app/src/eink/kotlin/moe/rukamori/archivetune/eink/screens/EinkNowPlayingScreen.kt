@@ -384,7 +384,7 @@ fun EinkNowPlayingScreen(navController: NavController) {
 
     if (showAddToPlaylistDialog && mediaMetadata != null) {
         EinkAddToPlaylistDialog(
-            songId = mediaMetadata!!.id,
+            mediaMetadata = mediaMetadata!!,
             onDismiss = { showAddToPlaylistDialog = false }
         )
     }

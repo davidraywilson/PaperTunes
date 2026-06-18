@@ -280,7 +280,7 @@ fun EinkEditPlaylistDialog(
 
 @Composable
 fun EinkAddToPlaylistDialog(
-    songId: String,
+    mediaMetadata: moe.rukamori.archivetune.models.MediaMetadata,
     onDismiss: () -> Unit,
 ) {
     val database = LocalDatabase.current
@@ -354,8 +354,14 @@ fun EinkAddToPlaylistDialog(
                                 .fillMaxWidth()
                                 .clickable {
                                     coroutineScope.launch(Dispatchers.IO) {
+                                        val songId = mediaMetadata.id
                                         val browseId = playlist.playlist.browseId
+
+                                        // Ensure the song and its artists exist in the database
+                                        database.insert(mediaMetadata)
+
                                         if (isLoggedIn && browseId != null) {
+                                            // Synced playlist: try to add remotely first
                                             var remoteAdded = false
                                             var addedSetVideoId: String? = null
                                             for (attempt in 0 until 3) {
@@ -369,13 +375,21 @@ fun EinkAddToPlaylistDialog(
                                             }
                                             if (remoteAdded) {
                                                 database.addSongEntriesToPlaylist(playlist, listOf(songId to addedSetVideoId))
+                                            } else {
+                                                // Remote failed — add locally so the song isn't silently dropped
+                                                database.addSongToPlaylist(playlist, listOf(songId))
                                             }
                                         } else {
                                             database.addSongToPlaylist(playlist, listOf(songId))
                                         }
+
+                                        // Dismiss and notify AFTER the DB write, so the coroutine scope
+                                        // isn't cancelled mid-write by an early dialog dismissal.
+                                        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                                            Toast.makeText(context, "Added to playlist", Toast.LENGTH_SHORT).show()
+                                            onDismiss()
+                                        }
                                     }
-                                    Toast.makeText(context, "Added to playlist", Toast.LENGTH_SHORT).show()
-                                    onDismiss()
                                 }
                                 .padding(vertical = 12.dp)
                         ) {
