@@ -28,7 +28,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.media3.exoplayer.offline.Download
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
@@ -88,17 +91,41 @@ fun EinkSongsScreen(
             TabMMD(
                 selected = selectedTab == 0,
                 onClick = { selectedTab = 0 },
-                text = { TextMMD("All Songs") }
+                text = {
+                    TextMMD(
+                        text = "All",
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        fontSize = 14.sp,
+                        fontWeight = if (selectedTab == 0) FontWeight.Bold else FontWeight.Normal
+                    )
+                }
             )
             TabMMD(
                 selected = selectedTab == 1,
                 onClick = { selectedTab = 1 },
-                text = { TextMMD("Local") }
+                text = {
+                    TextMMD(
+                        text = "Local",
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        fontSize = 14.sp,
+                        fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Normal
+                    )
+                }
             )
             TabMMD(
                 selected = selectedTab == 2,
                 onClick = { selectedTab = 2 },
-                text = { TextMMD("Downloaded") }
+                text = {
+                    TextMMD(
+                        text = "Downloaded",
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        fontSize = 14.sp,
+                        fontWeight = if (selectedTab == 2) FontWeight.Bold else FontWeight.Normal
+                    )
+                }
             )
         }
 

@@ -57,7 +57,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.lazy.LazyColumn
+import com.mudita.mmd.components.lazy.LazyColumnMMD
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.collectAsState
 import androidx.compose.foundation.layout.heightIn
@@ -309,7 +309,8 @@ fun EinkAddToPlaylistDialog(
     }
 
     ModalBottomSheetMMD(
-        onDismissRequest = onDismiss
+        onDismissRequest = onDismiss,
+        containerColor = Color.White
     ) {
         Column(
             modifier = Modifier
@@ -344,7 +345,7 @@ fun EinkAddToPlaylistDialog(
                 TextMMD(text = "You have not created any playlist yet...", fontSize = 16.sp)
                 Spacer(modifier = Modifier.height(8.dp))
             } else {
-                LazyColumn(
+                LazyColumnMMD(
                     modifier = Modifier.heightIn(max = 400.dp)
                 ) {
                     items(availablePlaylists) { playlist ->

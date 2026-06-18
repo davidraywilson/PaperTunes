@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavDestination
@@ -50,6 +51,7 @@ fun EinkTopAppBar(
     isPlaylistDetailsMenuExpanded: Boolean,
     hasNowPlaying: Boolean,
     hasLibraryPlaylists: Boolean,
+    selectedPlaylistName: String? = null,
     onBackClick: () -> Unit,
     onCancelPlaylistsEditClick: () -> Unit,
     onCancelPlaylistDetailsEditClick: () -> Unit,
@@ -144,12 +146,22 @@ fun EinkTopAppBar(
                         },
                     )
                 }
+                isOnPlaylistDetails && selectedPlaylistName != null -> {
+                    Text(
+                        text = selectedPlaylistName,
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
                 else -> {
                     Text(
                         text = einkAppBarTitle(currentDestination),
                         fontSize = 24.sp,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
             }

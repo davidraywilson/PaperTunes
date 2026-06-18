@@ -152,6 +152,13 @@ fun EinkApp() {
 
         val isOnPlaylistDetails = currentRoute == EinkScreen.PlaylistDetails.route ||
             currentRoute?.startsWith("${EinkScreen.PlaylistDetails.route}/") == true
+            
+        val playlistId = if (isOnPlaylistDetails) navBackStackEntry?.arguments?.getString("playlistId") else null
+        val selectedPlaylistName = remember(playlistId, libraryPlaylists) {
+            if (playlistId != null) {
+                libraryPlaylists.find { it.playlist.id == playlistId }?.playlist?.name
+            } else null
+        }
 
         Box(
             modifier = Modifier
@@ -174,6 +181,7 @@ fun EinkApp() {
                             isPlaylistDetailsMenuExpanded = isPlaylistDetailsMenuExpanded,
                             hasNowPlaying = hasNowPlaying,
                             hasLibraryPlaylists = hasLibraryPlaylists,
+                            selectedPlaylistName = selectedPlaylistName,
                             onBackClick = { navController.navigateUp() },
                             onCancelPlaylistsEditClick = { 
                                 isPlaylistsEditMode = false 
