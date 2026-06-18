@@ -7,6 +7,7 @@
 
 package moe.rukamori.archivetune.eink.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,16 +17,20 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.Sort
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.outlined.ArrowDownward
 import androidx.compose.material.icons.outlined.ArrowUpward
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Shuffle
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
@@ -39,6 +44,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
@@ -61,6 +67,9 @@ import moe.rukamori.archivetune.LocalPlayerConnection
 import moe.rukamori.archivetune.db.MusicDatabase
 import moe.rukamori.archivetune.db.entities.Playlist
 import moe.rukamori.archivetune.db.entities.PlaylistSongMap
+import moe.rukamori.archivetune.constants.PlaylistSortDescendingKey
+import moe.rukamori.archivetune.constants.PlaylistSortType
+import moe.rukamori.archivetune.constants.PlaylistSortTypeKey
 import moe.rukamori.archivetune.eink.einkPlaylistAddSongsRoute
 import moe.rukamori.archivetune.eink.einkPlaylistDetailsRoute
 import moe.rukamori.archivetune.eink.components.DashedDivider
@@ -78,6 +87,8 @@ import moe.rukamori.archivetune.eink.components.EinkCreatePlaylistDialog
 import moe.rukamori.archivetune.eink.components.EinkEditPlaylistDialog
 import moe.rukamori.archivetune.eink.components.LocalEinkMenuState
 import moe.rukamori.archivetune.eink.menus.EinkSongMenu
+import moe.rukamori.archivetune.utils.rememberEnumPreference
+import moe.rukamori.archivetune.utils.rememberPreference
 import moe.rukamori.archivetune.viewmodels.LibraryPlaylistsViewModel
 import moe.rukamori.archivetune.viewmodels.LibrarySongsViewModel
 import moe.rukamori.archivetune.viewmodels.LocalPlaylistViewModel
@@ -105,6 +116,16 @@ fun EinkPlaylistsScreen(
     val playlists by viewModel.allPlaylists.collectAsState()
 
     var showCreateDialog by remember { mutableStateOf(false) }
+    var showSortSheet by remember { mutableStateOf(false) }
+
+    val (sortType, onSortTypeChange) = rememberEnumPreference(
+        PlaylistSortTypeKey,
+        PlaylistSortType.CUSTOM,
+    )
+    val (sortDescending, onSortDescendingChange) = rememberPreference(
+        PlaylistSortDescendingKey,
+        true,
+    )
 
     if (showCreateDialog) {
         EinkCreatePlaylistDialog(onDismiss = { showCreateDialog = false })
@@ -156,6 +177,112 @@ fun EinkPlaylistsScreen(
         }
     }
 
+    if (showSortSheet) {
+        ModalBottomSheetMMD(
+            onDismissRequest = { showSortSheet = false },
+            containerColor = androidx.compose.ui.graphics.Color.White
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    TextMMD(
+                        text = "Sort Playlists",
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    IconButton(
+                        onClick = { showSortSheet = false },
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Close,
+                            contentDescription = "Cancel Sort"
+                        )
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                LazyColumnMMD(
+                    modifier = Modifier.heightIn(max = 400.dp)
+                ) {
+                item {
+                    EinkTwoLineRow(
+                        title = "Date created",
+                        subtitle = if (sortType == PlaylistSortType.CREATE_DATE) "Selected" else "",
+                        onClick = {
+                            onSortTypeChange(PlaylistSortType.CREATE_DATE)
+                            showSortSheet = false
+                        }
+                    )
+                }
+                item {
+                    EinkTwoLineRow(
+                        title = "Name",
+                        subtitle = if (sortType == PlaylistSortType.NAME) "Selected" else "",
+                        onClick = {
+                            onSortTypeChange(PlaylistSortType.NAME)
+                            showSortSheet = false
+                        }
+                    )
+                }
+                item {
+                    EinkTwoLineRow(
+                        title = "Last updated",
+                        subtitle = if (sortType == PlaylistSortType.LAST_UPDATED) "Selected" else "",
+                        onClick = {
+                            onSortTypeChange(PlaylistSortType.LAST_UPDATED)
+                            showSortSheet = false
+                        }
+                    )
+                }
+                item {
+                    EinkTwoLineRow(
+                        title = "Song count",
+                        subtitle = if (sortType == PlaylistSortType.SONG_COUNT) "Selected" else "",
+                        onClick = {
+                            onSortTypeChange(PlaylistSortType.SONG_COUNT)
+                            showSortSheet = false
+                        }
+                    )
+                }
+                item {
+                    EinkTwoLineRow(
+                        title = "Custom",
+                        subtitle = if (sortType == PlaylistSortType.CUSTOM) "Selected" else "",
+                        onClick = {
+                            onSortTypeChange(PlaylistSortType.CUSTOM)
+                            showSortSheet = false
+                        }
+                    )
+                }
+                item {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        TextMMD(text = "Descending", fontSize = 18.sp)
+                        androidx.compose.material3.Switch(
+                            checked = sortDescending,
+                            onCheckedChange = onSortDescendingChange
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+            }
+        }
+    }
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
         if (playlists.isEmpty()) {
             Box(
@@ -178,6 +305,36 @@ fun EinkPlaylistsScreen(
             }
         } else {
             Column(modifier = Modifier.fillMaxSize()) {
+                if (!isInEditMode) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.End,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .clip(androidx.compose.foundation.shape.RoundedCornerShape(8.dp))
+                                .clickable { showSortSheet = true }
+                                .padding(8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(Icons.AutoMirrored.Rounded.Sort, contentDescription = "Sort")
+                            TextMMD(
+                                text = when(sortType) {
+                                    PlaylistSortType.CREATE_DATE -> "Date created"
+                                    PlaylistSortType.NAME -> "Name"
+                                    PlaylistSortType.SONG_COUNT -> "Song count"
+                                    PlaylistSortType.LAST_UPDATED -> "Last updated"
+                                    PlaylistSortType.CUSTOM -> "Custom"
+                                } + if (sortDescending) " ↓" else " ↑",
+                                fontSize = 16.sp
+                            )
+                        }
+                    }
+                }
                 LazyColumnMMD(
                     modifier = Modifier.weight(1f),
                     contentPadding = PaddingValues(16.dp),
