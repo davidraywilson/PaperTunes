@@ -23,7 +23,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.net.toUri
+import androidx.media3.exoplayer.offline.Download
+import androidx.media3.exoplayer.offline.DownloadRequest
+import androidx.media3.exoplayer.offline.DownloadService
+import com.mudita.mmd.components.menus.DropdownMenuItemMMD
 import com.mudita.mmd.components.text.TextMMD
+import moe.rukamori.archivetune.LocalDatabase
+import moe.rukamori.archivetune.LocalDownloadUtil
 import moe.rukamori.archivetune.LocalPlayerConnection
 import moe.rukamori.archivetune.db.entities.PlaylistSong
 import moe.rukamori.archivetune.db.entities.Song
@@ -42,76 +51,107 @@ fun EinkSongMenu(
     onDismiss: () -> Unit,
 ) {
     val playerConnection = LocalPlayerConnection.current ?: return
+    val context = LocalContext.current
+    val downloadUtil = LocalDownloadUtil.current
+    val database = LocalDatabase.current
     val isLocalSong = originalSong.song.isLocal
+    val downloadsMap by downloadUtil.downloads.collectAsState()
+    val downloadState = downloadsMap[originalSong.id]?.state
 
     // TODO: Add EinkAddToPlaylistDialog support if needed later.
     // For now, providing the main playback actions to decouple the UI.
 
-    Column(modifier = Modifier.fillMaxWidth()) {
-        TextMMD(
-            text = originalSong.song.title,
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Bold,
-            maxLines = 1,
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        TextMMD(
-            text = songSubtitle(originalSong),
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Normal,
-            maxLines = 1,
-        )
-        
-        Spacer(modifier = Modifier.height(16.dp))
-        DashedDivider(thickness = 1.dp)
-        Spacer(modifier = Modifier.height(8.dp))
+    // TODO: Add EinkAddToPlaylistDialog support if needed later.
 
-        EinkMenuRow(text = "Play Next") {
+    DropdownMenuItemMMD(
+        text = { TextMMD(text = "Play Next", fontSize = 18.sp, fontWeight = FontWeight.SemiBold) },
+        onClick = {
             onDismiss()
             playerConnection.playNext(originalSong.toMediaItem())
         }
-        
-        EinkMenuRow(text = "Add to Queue") {
+    )
+    
+    DashedDivider(thickness = 1.dp)
+
+    DropdownMenuItemMMD(
+        text = { TextMMD(text = "Add to Queue", fontSize = 18.sp, fontWeight = FontWeight.SemiBold) },
+        onClick = {
             onDismiss()
             playerConnection.addToQueue(originalSong.toMediaItem())
         }
+    )
 
-        if (!isLocalSong) {
-            EinkMenuRow(text = "Start Radio") {
+    if (!isLocalSong) {
+        DashedDivider(thickness = 1.dp)
+        DropdownMenuItemMMD(
+            text = { TextMMD(text = "Start Radio", fontSize = 18.sp, fontWeight = FontWeight.SemiBold) },
+            onClick = {
                 onDismiss()
                 playerConnection.playQueue(YouTubeQueue.radio(originalSong.toMediaMetadata()))
             }
-        }
+        )
+    }
 
-        val artist = originalSong.artists.firstOrNull()
-        if (artist != null) {
-            EinkMenuRow(text = "View Artist") {
+    DashedDivider(thickness = 1.dp)
+
+    if (downloadState == Download.STATE_COMPLETED || downloadState == Download.STATE_DOWNLOADING || downloadState == Download.STATE_QUEUED) {
+        DropdownMenuItemMMD(
+            text = { TextMMD(text = "Remove Download", fontSize = 18.sp, fontWeight = FontWeight.SemiBold) },
+            onClick = {
+                onDismiss()
+                DownloadService.sendRemoveDownload(
+                    context,
+                    moe.rukamori.archivetune.playback.ExoDownloadService::class.java,
+                    originalSong.id,
+                    false
+                )
+            }
+        )
+    } else {
+        DropdownMenuItemMMD(
+            text = { TextMMD(text = "Download", fontSize = 18.sp, fontWeight = FontWeight.SemiBold) },
+            onClick = {
+                onDismiss()
+                database.transaction {
+                    insert(originalSong.toMediaMetadata())
+                }
+                val req = DownloadRequest
+                    .Builder(originalSong.id, originalSong.id.toUri())
+                    .setCustomCacheKey(originalSong.id)
+                    .setData(originalSong.song.title.toByteArray())
+                    .build()
+                DownloadService.sendAddDownload(
+                    context,
+                    moe.rukamori.archivetune.playback.ExoDownloadService::class.java,
+                    req,
+                    false
+                )
+            }
+        )
+    }
+
+    val artist = originalSong.artists.firstOrNull()
+    if (artist != null) {
+        DashedDivider(thickness = 1.dp)
+        DropdownMenuItemMMD(
+            text = { TextMMD(text = "View Artist", fontSize = 18.sp, fontWeight = FontWeight.SemiBold) },
+            onClick = {
                 onDismiss()
                 navController.navigate("artist/${artist.id}")
             }
-        }
+        )
+    }
 
-        if (originalSong.song.albumId != null) {
-            EinkMenuRow(text = "View Album") {
+    if (originalSong.song.albumId != null) {
+        DashedDivider(thickness = 1.dp)
+        DropdownMenuItemMMD(
+            text = { TextMMD(text = "View Album", fontSize = 18.sp, fontWeight = FontWeight.SemiBold) },
+            onClick = {
                 onDismiss()
                 navController.navigate("album/${originalSong.song.albumId}")
             }
-        }
+        )
     }
 }
 
-@Composable
-private fun EinkMenuRow(
-    text: String,
-    onClick: () -> Unit,
-) {
-    TextMMD(
-        text = text,
-        fontSize = 18.sp,
-        fontWeight = FontWeight.SemiBold,
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() }
-            .padding(vertical = 12.dp)
-    )
-}
+

@@ -52,6 +52,7 @@ import moe.rukamori.archivetune.viewmodels.LibrarySongsViewModel
 fun EinkSongsScreen(
     navController: NavController,
     viewModel: LibrarySongsViewModel = hiltViewModel(),
+    localViewModel: moe.rukamori.archivetune.viewmodels.LocalSongsViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
     val menuState = LocalEinkMenuState.current
@@ -59,14 +60,24 @@ fun EinkSongsScreen(
     val playerConnection = LocalPlayerConnection.current ?: return
     val downloadUtil = LocalDownloadUtil.current
 
-    val songs by viewModel.allSongs.collectAsState()
+    val librarySongs by viewModel.allSongs.collectAsState()
+    val localSongs by localViewModel.songs.collectAsState()
     val mediaMetadata by playerConnection.mediaMetadata.collectAsState()
     val downloadsMap by downloadUtil.downloads.collectAsState()
 
+    val allSongsMixed = remember(librarySongs, localSongs) {
+        (librarySongs + localSongs).distinctBy { it.id }.sortedBy { it.song.title }
+    }
+
     var selectedTab by remember { mutableIntStateOf(0) }
     
-    val displaySongs = remember(songs, selectedTab, downloadsMap) {
-        if (selectedTab == 0) songs else songs.filter { downloadsMap[it.id]?.state == Download.STATE_COMPLETED }
+    val displaySongs = remember(allSongsMixed, selectedTab, downloadsMap) {
+        when (selectedTab) {
+            0 -> allSongsMixed
+            1 -> allSongsMixed.filter { it.song.isLocal }
+            2 -> allSongsMixed.filter { downloadsMap[it.id]?.state == Download.STATE_COMPLETED }
+            else -> allSongsMixed
+        }
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
@@ -82,15 +93,30 @@ fun EinkSongsScreen(
             TabMMD(
                 selected = selectedTab == 1,
                 onClick = { selectedTab = 1 },
+                text = { TextMMD("Local") }
+            )
+            TabMMD(
+                selected = selectedTab == 2,
+                onClick = { selectedTab = 2 },
                 text = { TextMMD("Downloaded") }
             )
         }
 
         Box(modifier = Modifier.weight(1f)) {
             if (displaySongs.isEmpty()) {
+                val title = when (selectedTab) {
+                    1 -> "No local songs"
+                    2 -> "No downloaded songs"
+                    else -> "No songs yet"
+                }
+                val body = when (selectedTab) {
+                    1 -> "Local files will appear here once scanned."
+                    2 -> "Download some songs to listen offline."
+                    else -> "Like or download songs, or search YouTube Music to start building your library."
+                }
                 EinkEmptyState(
-                    title = if (selectedTab == 0) "No songs yet" else "No downloaded songs",
-                    body = if (selectedTab == 0) "Like or download songs, or search YouTube Music to start building your library." else "Download some songs to listen offline.",
+                    title = title,
+                    body = body,
                     modifier = Modifier.fillMaxSize(),
                 )
             } else {
@@ -117,13 +143,13 @@ fun EinkSongsScreen(
                         },
                         onLongClick = {
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            menuState.show {
-                                EinkSongMenu(
-                                    originalSong = song,
-                                    navController = navController,
-                                    onDismiss = menuState::dismiss,
-                                )
-                            }
+                        },
+                        dropdownContent = { dismiss ->
+                            EinkSongMenu(
+                                originalSong = song,
+                                navController = navController,
+                                onDismiss = dismiss,
+                            )
                         },
                         showDivider = index != displaySongs.lastIndex,
                     )

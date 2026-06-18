@@ -25,6 +25,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Headphones
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -34,10 +38,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.media3.exoplayer.offline.Download
+import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.res.painterResource
 import com.mudita.mmd.components.checkbox.CheckboxMMD
+import com.mudita.mmd.components.menus.DropdownMenuMMD
+import com.mudita.mmd.components.progress_indicator.CircularProgressIndicatorMMD
 import com.mudita.mmd.components.text.TextMMD
+import moe.rukamori.archivetune.LocalDownloadUtil
 import moe.rukamori.archivetune.db.entities.Album
 import moe.rukamori.archivetune.db.entities.Artist
 import moe.rukamori.archivetune.db.entities.Playlist
@@ -106,60 +117,110 @@ fun EinkSongRow(
     trackNumber: Int? = null,
     onLongClick: (() -> Unit)? = null,
     showDivider: Boolean = true,
+    dropdownContent: (@Composable (dismiss: () -> Unit) -> Unit)? = null,
 ) {
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .combinedClickable(
-                onClick = onClick,
-                onLongClick = onLongClick ?: {},
-            )
-            .padding(bottom = 8.dp),
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
+    var expanded by remember { mutableStateOf(false) }
+    val downloadUtil = LocalDownloadUtil.current
+    val downloadsMap by downloadUtil.downloads.collectAsState()
+    val downloadState = downloadsMap[song.id]?.state
+
+    Box(modifier = modifier) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .combinedClickable(
+                    onClick = onClick,
+                    onLongClick = {
+                        if (dropdownContent != null) {
+                            expanded = true
+                        }
+                        onLongClick?.invoke()
+                    },
+                )
+                .padding(bottom = 8.dp),
         ) {
-            if (isCurrentlyPlaying) {
-                Icon(
-                    imageVector = Icons.Outlined.Headphones,
-                    contentDescription = "Now playing",
-                    modifier = Modifier
-                        .size(24.dp)
-                        .padding(start = 4.dp),
-                )
-            } else if (trackNumber != null) {
-                TextMMD(
-                    text = trackNumber.toString(),
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium,
-                    modifier = Modifier.width(28.dp),
-                    textAlign = TextAlign.Center,
-                )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                if (isCurrentlyPlaying) {
+                    Icon(
+                        imageVector = Icons.Outlined.Headphones,
+                        contentDescription = "Now playing",
+                        modifier = Modifier
+                            .size(24.dp)
+                            .padding(start = 4.dp),
+                    )
+                } else if (trackNumber != null) {
+                    TextMMD(
+                        text = trackNumber.toString(),
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.width(28.dp),
+                        textAlign = TextAlign.Center,
+                    )
+                }
+
+                Column(modifier = Modifier.weight(1f)) {
+                    TextMMD(
+                        text = song.song.title,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (song.song.isLocal) {
+                            Icon(
+                                painter = painterResource(id = moe.rukamori.archivetune.R.drawable.snippet_folder),
+                                contentDescription = "Local file",
+                                modifier = Modifier.size(16.dp),
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                        } else {
+                            when (downloadState) {
+                            Download.STATE_COMPLETED -> {
+                                Icon(
+                                    painter = painterResource(id = moe.rukamori.archivetune.R.drawable.offline),
+                                    contentDescription = "Downloaded",
+                                    modifier = Modifier.size(16.dp),
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                            }
+                            Download.STATE_QUEUED, Download.STATE_DOWNLOADING -> {
+                                CircularProgressIndicatorMMD(
+                                    modifier = Modifier.size(16.dp),
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                            }
+                        }
+                        }
+                        TextMMD(
+                            text = songSubtitle(song),
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Normal,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
             }
 
-            Column(modifier = Modifier.weight(1f)) {
-                TextMMD(
-                    text = song.song.title,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                TextMMD(
-                    text = songSubtitle(song),
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Normal,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
+            Spacer(modifier = Modifier.height(12.dp))
+            if (showDivider) DashedDivider(thickness = 1.dp)
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
-        if (showDivider) DashedDivider(thickness = 1.dp)
+        if (dropdownContent != null) {
+            DropdownMenuMMD(
+                expanded = expanded,
+                onDismissRequest = { expanded = false },
+                offset = DpOffset(x = 16.dp, y = 0.dp)
+            ) {
+                dropdownContent { expanded = false }
+            }
+        }
     }
 }
 

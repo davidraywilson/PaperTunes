@@ -19,9 +19,12 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -34,6 +37,7 @@ import androidx.media3.exoplayer.offline.DownloadService
 import androidx.navigation.NavController
 import com.mudita.mmd.components.lazy.LazyColumnMMD
 import com.mudita.mmd.components.progress_indicator.CircularProgressIndicatorMMD
+import kotlinx.coroutines.delay
 import moe.rukamori.archivetune.LocalDownloadUtil
 import moe.rukamori.archivetune.eink.components.EinkEmptyState
 import moe.rukamori.archivetune.playback.ExoDownloadService
@@ -43,9 +47,27 @@ fun EinkDownloadsScreen(navController: NavController) {
     val context = LocalContext.current
     val downloadUtil = LocalDownloadUtil.current
     val downloadsMap by downloadUtil.downloads.collectAsState()
+    var tick by remember { mutableIntStateOf(0) }
     
-    val queuedDownloads = remember(downloadsMap) {
-        downloadsMap.values.filter { 
+    val hasActiveDownloads = remember(downloadsMap) {
+        downloadsMap.values.any { it.state == Download.STATE_DOWNLOADING }
+    }
+    
+    LaunchedEffect(hasActiveDownloads) {
+        if (hasActiveDownloads) {
+            while (true) {
+                delay(3000)
+                tick++
+            }
+        }
+    }
+    
+    val queuedDownloads = remember(downloadsMap, tick) {
+        val freshActiveDownloads = downloadUtil.downloadManager.currentDownloads.associateBy { it.request.id }
+        
+        downloadsMap.values.map { download ->
+            freshActiveDownloads[download.request.id] ?: download
+        }.filter { 
             it.state == Download.STATE_QUEUED || 
             it.state == Download.STATE_DOWNLOADING ||
             it.state == Download.STATE_FAILED ||

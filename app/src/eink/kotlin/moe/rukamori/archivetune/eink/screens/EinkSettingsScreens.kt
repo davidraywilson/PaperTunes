@@ -7,9 +7,17 @@
 
 package moe.rukamori.archivetune.eink.screens
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.core.content.ContextCompat
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.compose.ui.Modifier
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -30,6 +38,7 @@ import moe.rukamori.archivetune.ui.screens.buildLoginRoute
 import moe.rukamori.archivetune.utils.rememberPreference
 import moe.rukamori.archivetune.eink.components.EinkEmptyState
 import moe.rukamori.archivetune.eink.components.EinkTwoLineRow
+import moe.rukamori.archivetune.viewmodels.LocalSongsViewModel
 
 /*
  * Owned by the `settings` child agent. Replace these stub bodies with the real e-ink
@@ -62,13 +71,41 @@ fun EinkMoreScreen(navController: NavController) {
 }
 
 @Composable
-fun EinkSettingsScreen(navController: NavController) {
+fun EinkSettingsScreen(
+    navController: NavController,
+    localViewModel: LocalSongsViewModel = hiltViewModel()
+) {
     val context = LocalContext.current
     val (innerTubeCookie, onInnerTubeCookieChange) = rememberPreference(InnerTubeCookieKey, "")
     val isLoggedIn = hasYouTubeLoginCookie(innerTubeCookie)
     val syncUtils = LocalSyncUtils.current
     val coroutineScope = rememberCoroutineScope()
     var isSyncing by remember { mutableStateOf(false) }
+
+    val scanState by localViewModel.scanState.collectAsState()
+    
+    val storagePermission = remember {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            Manifest.permission.READ_MEDIA_AUDIO
+        } else {
+            Manifest.permission.READ_EXTERNAL_STORAGE
+        }
+    }
+
+    var hasStoragePermission by remember(storagePermission) {
+        mutableStateOf(
+            ContextCompat.checkSelfPermission(context, storagePermission) == PackageManager.PERMISSION_GRANTED,
+        )
+    }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        hasStoragePermission = granted
+        if (granted) {
+            localViewModel.scanDevice()
+        }
+    }
 
     LazyColumnMMD(
         contentPadding = PaddingValues(16.dp),
@@ -84,6 +121,29 @@ fun EinkSettingsScreen(navController: NavController) {
                         forgetAccount(context, clearWebAuthSession = true)
                     } else {
                         navController.navigate(buildLoginRoute())
+                    }
+                },
+                showDivider = true
+            )
+        }
+
+        item {
+            val scanSubtitle = when {
+                scanState.isScanning -> "Scanning device for audio files..."
+                scanState.errorMessage != null -> "Scan failed: ${scanState.errorMessage}"
+                scanState.lastSummary != null -> "Last scan: Found ${scanState.lastSummary?.scannedSongs} new songs"
+                !hasStoragePermission -> "Tap to grant permission and scan"
+                else -> "Scan device for local audio files"
+            }
+            EinkTwoLineRow(
+                title = "Local Audio Files",
+                subtitle = scanSubtitle,
+                onClick = {
+                    if (scanState.isScanning) return@EinkTwoLineRow
+                    if (!hasStoragePermission) {
+                        permissionLauncher.launch(storagePermission)
+                    } else {
+                        localViewModel.scanDevice()
                     }
                 },
                 showDivider = isLoggedIn

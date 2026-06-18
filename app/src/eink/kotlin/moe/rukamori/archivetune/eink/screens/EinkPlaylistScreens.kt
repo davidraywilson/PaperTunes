@@ -414,15 +414,15 @@ fun EinkPlaylistDetailsScreen(
                                 },
                                 onLongClick = {
                                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    menuState.show {
-                                        EinkSongMenu(
-                                            originalSong = song,
-                                            playlistSong = playlistSong,
-                                            playlistBrowseId = playlist?.playlist?.browseId,
-                                            navController = navController,
-                                            onDismiss = menuState::dismiss,
-                                        )
-                                    }
+                                },
+                                dropdownContent = { dismiss ->
+                                    EinkSongMenu(
+                                        originalSong = song,
+                                        playlistSong = playlistSong,
+                                        playlistBrowseId = playlist?.playlist?.browseId,
+                                        navController = navController,
+                                        onDismiss = dismiss,
+                                    )
                                 },
                                 showDivider = index != songs.lastIndex,
                             )

@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -42,32 +43,35 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.mudita.mmd.components.lazy.LazyColumnMMD
+import com.mudita.mmd.components.menus.DropdownMenuMMD
 import com.mudita.mmd.components.tabs.PrimaryTabRowMMD
 import com.mudita.mmd.components.tabs.TabMMD
 import com.mudita.mmd.components.text.TextMMD
-import kotlinx.coroutines.launch
 import moe.rukamori.archivetune.LocalPlayerConnection
 import moe.rukamori.archivetune.eink.EinkScreen
 import moe.rukamori.archivetune.eink.components.DashedDivider
 import moe.rukamori.archivetune.eink.components.EinkEmptyState
 import moe.rukamori.archivetune.eink.components.EinkTwoLineRow
+import moe.rukamori.archivetune.eink.components.LocalEinkMenuState
+import moe.rukamori.archivetune.eink.menus.EinkYouTubeSongMenu
+import moe.rukamori.archivetune.eink.viewmodels.EinkSearchViewModel
 import moe.rukamori.archivetune.extensions.toMediaItem
 import moe.rukamori.archivetune.extensions.togglePlayPause
 import moe.rukamori.archivetune.innertube.models.AlbumItem
 import moe.rukamori.archivetune.innertube.models.SongItem
 import moe.rukamori.archivetune.playback.queues.ListQueue
-import moe.rukamori.archivetune.eink.components.LocalEinkMenuState
-import moe.rukamori.archivetune.eink.menus.EinkYouTubeSongMenu
 import moe.rukamori.archivetune.utils.makeTimeString
-import moe.rukamori.archivetune.eink.viewmodels.EinkSearchViewModel
+import androidx.media3.exoplayer.offline.Download
+import androidx.compose.ui.res.painterResource
+import com.mudita.mmd.components.progress_indicator.CircularProgressIndicatorMMD
+import moe.rukamori.archivetune.LocalDownloadUtil
 
 /**
  * Online YouTube Music search for the e-ink UI. A search field sits at the top; results
@@ -87,7 +91,6 @@ fun EinkSearchScreen(
 
     val mediaMetadata by playerConnection.mediaMetadata.collectAsState()
 
-    val query = searchViewModel.query
     val submittedQuery = searchViewModel.submittedQuery
     val songs = searchViewModel.songs
     val albums = searchViewModel.albums
@@ -163,16 +166,16 @@ fun EinkSearchScreen(
                             )
                         }
                     },
-                    onLongClick = { song ->
+                    onLongClick = {
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        menuState.show {
-                            EinkYouTubeSongMenu(
-                                song = song,
-                                navController = navController,
-                                onDismiss = menuState::dismiss,
-                            )
-                        }
                     },
+                    dropdownContent = { song, dismiss ->
+                        EinkYouTubeSongMenu(
+                            song = song,
+                            navController = navController,
+                            onDismiss = dismiss,
+                        )
+                    }
                 )
 
                 else -> AlbumResults(
@@ -192,7 +195,8 @@ private fun SongResults(
     songs: List<SongItem>,
     currentMediaId: String?,
     onPlay: (Int) -> Unit,
-    onLongClick: (SongItem) -> Unit,
+    onLongClick: ((SongItem) -> Unit)? = null,
+    dropdownContent: (@Composable (SongItem, dismiss: () -> Unit) -> Unit)? = null,
 ) {
     if (songs.isEmpty()) {
         EinkEmptyState(
@@ -211,7 +215,10 @@ private fun SongResults(
                 song = song,
                 isCurrentlyPlaying = song.id == currentMediaId,
                 onClick = { onPlay(index) },
-                onLongClick = { onLongClick(song) },
+                onLongClick = { onLongClick?.invoke(song) },
+                dropdownContent = if (dropdownContent != null) {
+                    { dismiss -> dropdownContent(song, dismiss) }
+                } else null,
                 showDivider = index != songs.lastIndex,
             )
         }
@@ -257,52 +264,93 @@ private fun EinkYouTubeSongRow(
     song: SongItem,
     isCurrentlyPlaying: Boolean,
     onClick: () -> Unit,
-    onLongClick: () -> Unit,
+    onLongClick: (() -> Unit)? = null,
+    dropdownContent: (@Composable (dismiss: () -> Unit) -> Unit)? = null,
     showDivider: Boolean,
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .combinedClickable(
-                onClick = onClick,
-                onLongClick = onLongClick,
-            )
-            .padding(bottom = 8.dp),
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
+    var expanded by remember { mutableStateOf(false) }
+    val downloadUtil = LocalDownloadUtil.current
+    val downloadsMap by downloadUtil.downloads.collectAsState()
+    val downloadState = downloadsMap[song.id]?.state
+
+    Box {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .combinedClickable(
+                    onClick = onClick,
+                    onLongClick = {
+                        if (dropdownContent != null) {
+                            expanded = true
+                        }
+                        onLongClick?.invoke()
+                    },
+                )
+                .padding(bottom = 8.dp),
         ) {
-            if (isCurrentlyPlaying) {
-                Icon(
-                    imageVector = Icons.Outlined.Headphones,
-                    contentDescription = "Now playing",
-                    modifier = Modifier
-                        .size(24.dp)
-                        .padding(start = 4.dp),
-                )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                if (isCurrentlyPlaying) {
+                    Icon(
+                        imageVector = Icons.Outlined.Headphones,
+                        contentDescription = "Now playing",
+                        modifier = Modifier
+                            .size(24.dp)
+                            .padding(start = 4.dp),
+                    )
+                }
+                Column(modifier = Modifier.weight(1f)) {
+                    TextMMD(
+                        text = song.title,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        when (downloadState) {
+                            Download.STATE_COMPLETED -> {
+                                Icon(
+                                    painter = painterResource(id = moe.rukamori.archivetune.R.drawable.offline),
+                                    contentDescription = "Downloaded",
+                                    modifier = Modifier.size(16.dp),
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                            }
+                            Download.STATE_QUEUED, Download.STATE_DOWNLOADING -> {
+                                CircularProgressIndicatorMMD(
+                                    modifier = Modifier.size(16.dp),
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                            }
+                        }
+                        TextMMD(
+                            text = songItemSubtitle(song),
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Normal,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
             }
-            Column(modifier = Modifier.weight(1f)) {
-                TextMMD(
-                    text = song.title,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                TextMMD(
-                    text = songItemSubtitle(song),
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Normal,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+            Spacer(modifier = Modifier.height(12.dp))
+            if (showDivider) DashedDivider(thickness = 1.dp)
+        }
+
+        if (dropdownContent != null) {
+            DropdownMenuMMD(
+                expanded = expanded,
+                onDismissRequest = { expanded = false },
+                offset = DpOffset(x = 16.dp, y = 0.dp)
+            ) {
+                dropdownContent { expanded = false }
             }
         }
-        Spacer(modifier = Modifier.height(12.dp))
-        if (showDivider) DashedDivider(thickness = 1.dp)
     }
 }
 

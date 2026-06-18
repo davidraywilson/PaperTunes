@@ -19,6 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.mudita.mmd.components.menus.DropdownMenuItemMMD
 import com.mudita.mmd.components.text.TextMMD
 import moe.rukamori.archivetune.LocalPlayerConnection
 import moe.rukamori.archivetune.eink.components.DashedDivider
@@ -44,57 +45,64 @@ fun EinkYouTubeSongMenu(
     val context = LocalContext.current
     val database = LocalDatabase.current
 
-    Column(modifier = Modifier.fillMaxWidth()) {
-        TextMMD(
-            text = song.title,
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Bold,
-            maxLines = 1,
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        TextMMD(
-            text = song.artists.joinToString { it.name },
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Normal,
-            maxLines = 1,
-        )
-        
-        Spacer(modifier = Modifier.height(16.dp))
-        DashedDivider(thickness = 1.dp)
-        Spacer(modifier = Modifier.height(8.dp))
-
-        EinkMenuRow(text = "Play Next") {
+    // Dropdown items
+    DropdownMenuItemMMD(
+        text = { TextMMD(text = "Play Next", fontSize = 18.sp, fontWeight = FontWeight.SemiBold) },
+        onClick = {
             onDismiss()
             playerConnection.playNext(song.toMediaItem())
         }
-        
-        EinkMenuRow(text = "Add to Queue") {
+    )
+    
+    DashedDivider(thickness = 1.dp)
+
+    DropdownMenuItemMMD(
+        text = { TextMMD(text = "Add to Queue", fontSize = 18.sp, fontWeight = FontWeight.SemiBold) },
+        onClick = {
             onDismiss()
             playerConnection.addToQueue(song.toMediaItem())
         }
+    )
 
-        EinkMenuRow(text = "Start Radio") {
+    DashedDivider(thickness = 1.dp)
+
+    DropdownMenuItemMMD(
+        text = { TextMMD(text = "Start Radio", fontSize = 18.sp, fontWeight = FontWeight.SemiBold) },
+        onClick = {
             onDismiss()
             playerConnection.playQueue(YouTubeQueue.radio(song.toMediaMetadata()))
         }
+    )
 
-        val artist = song.artists.firstOrNull()
-        if (artist?.id != null) {
-            EinkMenuRow(text = "View Artist") {
+    val artist = song.artists.firstOrNull()
+    if (artist?.id != null) {
+        DashedDivider(thickness = 1.dp)
+        DropdownMenuItemMMD(
+            text = { TextMMD(text = "View Artist", fontSize = 18.sp, fontWeight = FontWeight.SemiBold) },
+            onClick = {
                 onDismiss()
                 navController.navigate("artist/${artist.id}")
             }
-        }
+        )
+    }
 
-        val album = song.album
-        if (album?.id != null) {
-            EinkMenuRow(text = "View Album") {
+    val album = song.album
+    if (album?.id != null) {
+        DashedDivider(thickness = 1.dp)
+        DropdownMenuItemMMD(
+            text = { TextMMD(text = "View Album", fontSize = 18.sp, fontWeight = FontWeight.SemiBold) },
+            onClick = {
                 onDismiss()
                 navController.navigate("album/${album.id}")
             }
-        }
+        )
+    }
 
-        EinkMenuRow(text = "Download") {
+    DashedDivider(thickness = 1.dp)
+
+    DropdownMenuItemMMD(
+        text = { TextMMD(text = "Download", fontSize = 18.sp, fontWeight = FontWeight.SemiBold) },
+        onClick = {
             onDismiss()
             database.transaction {
                 insert(song.toMediaMetadata())
@@ -111,21 +119,6 @@ fun EinkYouTubeSongMenu(
                 false,
             )
         }
-    }
-}
-
-@Composable
-private fun EinkMenuRow(
-    text: String,
-    onClick: () -> Unit,
-) {
-    TextMMD(
-        text = text,
-        fontSize = 18.sp,
-        fontWeight = FontWeight.SemiBold,
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() }
-            .padding(vertical = 12.dp)
     )
 }
+

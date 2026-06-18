@@ -206,13 +206,13 @@ fun EinkArtistDetailsScreen(
                                 },
                                 onLongClick = {
                                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    menuState.show {
-                                        EinkSongMenu(
-                                            originalSong = song,
-                                            navController = navController,
-                                            onDismiss = menuState::dismiss,
-                                        )
-                                    }
+                                },
+                                dropdownContent = { dismiss ->
+                                    EinkSongMenu(
+                                        originalSong = song,
+                                        navController = navController,
+                                        onDismiss = dismiss,
+                                    )
                                 },
                                 showDivider = index != songs.lastIndex,
                             )
@@ -345,13 +345,13 @@ fun EinkAlbumDetailsScreen(
                         },
                         onLongClick = {
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            menuState.show {
-                                EinkSongMenu(
-                                    originalSong = song,
-                                    navController = navController,
-                                    onDismiss = menuState::dismiss,
-                                )
-                            }
+                        },
+                        dropdownContent = { dismiss ->
+                            EinkSongMenu(
+                                originalSong = song,
+                                navController = navController,
+                                onDismiss = dismiss,
+                            )
                         },
                         showDivider = index != songs.lastIndex,
                     )
