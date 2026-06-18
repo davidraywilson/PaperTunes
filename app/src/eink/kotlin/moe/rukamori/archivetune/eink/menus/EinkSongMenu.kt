@@ -26,6 +26,7 @@ import androidx.navigation.NavController
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.platform.LocalContext
 import moe.rukamori.archivetune.eink.einkYouTubeArtistDetailsRoute
+import moe.rukamori.archivetune.eink.einkAlbumDetailsRoute
 import androidx.core.net.toUri
 import androidx.media3.exoplayer.offline.Download
 import androidx.media3.exoplayer.offline.DownloadRequest
@@ -165,7 +166,7 @@ fun EinkSongMenu(
             text = { TextMMD(text = "View Album", fontSize = 18.sp, fontWeight = FontWeight.SemiBold) },
             onClick = {
                 onDismiss()
-                navController.navigate("album/${originalSong.song.albumId}")
+                navController.navigate(einkAlbumDetailsRoute(originalSong.song.albumId))
             }
         )
     }

@@ -58,6 +58,8 @@ fun EinkTopAppBar(
     selectedPlaylistName: String? = null,
     selectedArtistName: String? = null,
     selectedArtistSubtitle: String? = null,
+    selectedAlbumName: String? = null,
+    selectedAlbumSubtitle: String? = null,
     onBackClick: () -> Unit,
     onCancelPlaylistsEditClick: () -> Unit,
     onCancelPlaylistDetailsEditClick: () -> Unit,
@@ -82,8 +84,8 @@ fun EinkTopAppBar(
     val navRoutes = remember { einkNavItems.map { it.route } }
     val keyboardController = LocalSoftwareKeyboardController.current
 
-    val isOnPlaylistDetails = currentDestination?.route == EinkScreen.PlaylistDetails.route ||
-        currentDestination?.route?.startsWith("${EinkScreen.PlaylistDetails.route}/") == true
+    val isOnPlaylistDetails = currentDestination?.route?.startsWith(EinkScreen.PlaylistDetails.route) == true
+    val isOnAlbumDetails = currentDestination?.route?.startsWith(EinkScreen.AlbumDetails.route) == true
 
     val isOnYouTubeArtistDetails = currentDestination?.route == EinkScreen.YouTubeArtistDetails.route ||
         currentDestination?.route?.startsWith("${EinkScreen.YouTubeArtistDetails.route}/") == true
@@ -180,6 +182,26 @@ fun EinkTopAppBar(
                         if (!selectedArtistSubtitle.isNullOrBlank()) {
                             Text(
                                 text = selectedArtistSubtitle,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Medium,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                    }
+                }
+                isOnAlbumDetails && selectedAlbumName != null -> {
+                    Column {
+                        Text(
+                            text = selectedAlbumName,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        if (!selectedAlbumSubtitle.isNullOrBlank()) {
+                            Text(
+                                text = selectedAlbumSubtitle,
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Medium,
                                 maxLines = 1,

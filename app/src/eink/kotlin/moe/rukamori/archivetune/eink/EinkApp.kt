@@ -214,6 +214,34 @@ fun EinkApp() {
         }
 
         val currentEntry = navBackStackEntry
+        
+        val isOnAlbumDetails = currentRoute?.startsWith("${EinkScreen.AlbumDetails.route}/") == true
+        val albumViewModel: moe.rukamori.archivetune.viewmodels.AlbumViewModel? = 
+            if (isOnAlbumDetails && currentEntry != null) {
+                androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel(currentEntry)
+            } else null
+            
+        val albumWithSongsFlow = albumViewModel?.albumWithSongs ?: kotlinx.coroutines.flow.MutableStateFlow(null)
+        val albumWithSongs by albumWithSongsFlow.collectAsStateWithLifecycle()
+        
+        val selectedAlbumName = albumWithSongs?.album?.title
+        val selectedAlbumSubtitle = albumWithSongs?.let { data ->
+            val artistName = data.artists.joinToString(", ") { it.name }
+            val year = data.album.year
+            val songCount = data.songs.size
+            buildString {
+                if (artistName.isNotBlank()) append(artistName)
+                if (year != null && year > 0) {
+                    if (isNotEmpty()) append(" • ")
+                    append(year)
+                }
+                if (songCount > 0) {
+                    if (isNotEmpty()) append(" • ")
+                    append("$songCount ${if (songCount == 1) "song" else "songs"}")
+                }
+            }.takeIf { it.isNotBlank() }
+        }
+
         val ytArtistViewModel: moe.rukamori.archivetune.viewmodels.ArtistViewModel? = 
             if (isOnYouTubeArtistDetails && currentEntry != null) {
                 androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel(currentEntry)
@@ -249,6 +277,8 @@ fun EinkApp() {
                             selectedPlaylistName = selectedPlaylistName,
                             selectedArtistName = selectedArtistName,
                             selectedArtistSubtitle = selectedArtistSubtitle,
+                            selectedAlbumName = selectedAlbumName,
+                            selectedAlbumSubtitle = selectedAlbumSubtitle,
                             onBackClick = { navController.navigateUp() },
                             onCancelPlaylistsEditClick = { 
                                 isPlaylistsEditMode = false 

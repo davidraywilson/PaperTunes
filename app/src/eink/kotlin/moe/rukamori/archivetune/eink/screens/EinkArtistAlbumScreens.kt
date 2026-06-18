@@ -22,6 +22,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import moe.rukamori.archivetune.viewmodels.AlbumUiState
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -277,51 +281,38 @@ fun EinkAlbumDetailsScreen(
     val haptic = LocalHapticFeedback.current
     val playerConnection = LocalPlayerConnection.current ?: return
 
-    val albumWithSongs by viewModel.albumWithSongs.collectAsState()
-    val mediaMetadata by playerConnection.mediaMetadata.collectAsState()
+    val albumWithSongs by viewModel.albumWithSongs.collectAsStateWithLifecycle()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val otherVersions by viewModel.otherVersions.collectAsStateWithLifecycle()
+    val mediaMetadata by playerConnection.mediaMetadata.collectAsStateWithLifecycle()
 
     val album = albumWithSongs
     val songs = album?.songs.orEmpty()
     val albumTitle = album?.album?.title.orEmpty()
-    val albumArtist = album?.artists?.joinToString(", ") { it.name }.orEmpty()
 
     Box(modifier = Modifier.fillMaxSize()) {
-        if (album == null) {
-            EinkEmptyState(
-                title = "Loading album…",
-                body = "Fetching album details.",
-                modifier = Modifier.fillMaxSize(),
-            )
-        } else if (songs.isEmpty()) {
-            EinkEmptyState(
-                title = albumTitle.ifBlank { "Album" },
-                body = "No songs in this album yet.",
-                modifier = Modifier.fillMaxSize(),
-            )
-        } else {
-            LazyColumnMMD(contentPadding = PaddingValues(16.dp)) {
-                item(key = "album-header") {
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        TextMMD(
-                            text = albumTitle,
-                            fontSize = 26.sp,
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                        if (albumArtist.isNotBlank()) {
-                            Spacer(modifier = Modifier.height(4.dp))
-                            TextMMD(
-                                text = albumArtist,
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Normal,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(16.dp))
-                    }
+        when {
+            uiState is AlbumUiState.Loading -> {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.onBackground)
                 }
+            }
+            uiState is AlbumUiState.Error -> {
+                EinkEmptyState(
+                    title = "Error",
+                    body = "Failed to fetch album details.",
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
+            uiState is AlbumUiState.Empty || (uiState is AlbumUiState.Content && songs.isEmpty()) -> {
+                EinkEmptyState(
+                    title = albumTitle.ifBlank { "Album" },
+                    body = "No songs in this album yet.",
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
+            else -> {
+                LazyColumnMMD(contentPadding = PaddingValues(16.dp)) {
                 itemsIndexed(
                     items = songs,
                     key = { _, song -> song.id },
@@ -353,8 +344,30 @@ fun EinkAlbumDetailsScreen(
                                 onDismiss = dismiss,
                             )
                         },
-                        showDivider = index != songs.lastIndex,
+                        showDivider = index != songs.lastIndex || otherVersions.isNotEmpty(),
                     )
+                }
+                
+                if (otherVersions.isNotEmpty()) {
+                    item(key = "other-versions-header") {
+                        TextMMD(
+                            text = "Other versions",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(top = 24.dp, bottom = 8.dp),
+                        )
+                    }
+                    itemsIndexed(
+                        items = otherVersions,
+                        key = { _, version -> "other_version_${version.id}" },
+                    ) { index, version ->
+                        EinkTwoLineRow(
+                            title = version.title,
+                            subtitle = version.year.toString(),
+                            onClick = { navController.navigate(einkAlbumDetailsRoute(version.id)) },
+                            showDivider = index != otherVersions.lastIndex,
+                        )
+                    }
                 }
             }
 
@@ -378,4 +391,5 @@ fun EinkAlbumDetailsScreen(
             }
         }
     }
+}
 }
