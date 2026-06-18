@@ -59,6 +59,10 @@ import com.mudita.mmd.components.search_bar.SearchBarDefaultsMMD
 import com.mudita.mmd.components.text.TextMMD
 import com.mudita.mmd.components.top_app_bar.TopAppBarMMD
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import moe.rukamori.archivetune.LocalDatabase
+import moe.rukamori.archivetune.LocalDownloadUtil
 import moe.rukamori.archivetune.LocalPlayerConnection
 import moe.rukamori.archivetune.eink.components.DashedDivider
 import moe.rukamori.archivetune.eink.components.EinkBottomSheetMenu
@@ -84,7 +88,11 @@ import moe.rukamori.archivetune.eink.viewmodels.EinkSearchViewModel
 import moe.rukamori.archivetune.ui.screens.LOGIN_ROUTE
 import moe.rukamori.archivetune.ui.screens.LOGIN_URL_ARGUMENT
 import moe.rukamori.archivetune.ui.screens.LoginScreen
+import moe.rukamori.archivetune.ui.utils.HeaderDownloadItem
+import moe.rukamori.archivetune.ui.utils.sendAddMissingDownloads
 import moe.rukamori.archivetune.viewmodels.LibraryPlaylistsViewModel
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.platform.LocalContext
 
 /** Route helpers for destinations that take an id argument. */
 private fun detailRoute(base: String, argName: String) = "$base/{$argName}"
@@ -112,6 +120,11 @@ fun EinkApp() {
     val playlistsViewModel: LibraryPlaylistsViewModel = hiltViewModel()
     val libraryPlaylists by playlistsViewModel.allPlaylists.collectAsState()
     val hasLibraryPlaylists = libraryPlaylists.isNotEmpty()
+
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val database = LocalDatabase.current
+    val downloadUtil = LocalDownloadUtil.current
 
     var isPlaylistsEditMode by remember { mutableStateOf(false) }
     var playlistEditSelectionCount by remember { mutableIntStateOf(0) }
@@ -196,6 +209,25 @@ fun EinkApp() {
                             onPlaylistDetailsDeleteClick = { 
                                 isPlaylistDetailsMenuExpanded = false
                                 showDeletePlaylistSongsConfirmation = true 
+                            },
+                            onPlaylistDetailsDownloadClick = {
+                                isPlaylistDetailsMenuExpanded = false
+                                val playlistId = navBackStackEntry?.arguments?.getString("playlistId")
+                                if (playlistId != null) {
+                                    coroutineScope.launch {
+                                        val songs = database.playlistSongs(playlistId).first().map { it.song }
+                                        sendAddMissingDownloads(
+                                            context = context,
+                                            songs = songs.map { song ->
+                                                HeaderDownloadItem(
+                                                    id = song.id,
+                                                    title = song.song.title,
+                                                )
+                                            },
+                                            downloads = downloadUtil.downloads.value,
+                                        )
+                                    }
+                                }
                             },
                             onShowDeletePlaylistSongsConfirmationClick = { showDeletePlaylistSongsConfirmation = true },
                             onShowDeletePlaylistsConfirmationClick = { showDeletePlaylistsConfirmation = true },

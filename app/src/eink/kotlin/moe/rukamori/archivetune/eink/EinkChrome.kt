@@ -60,6 +60,7 @@ fun EinkTopAppBar(
     onPlaylistDetailsAddSongsClick: () -> Unit,
     onPlaylistDetailsRenameClick: () -> Unit,
     onPlaylistDetailsDeleteClick: () -> Unit,
+    onPlaylistDetailsDownloadClick: () -> Unit,
     onShowDeletePlaylistSongsConfirmationClick: () -> Unit,
     onShowDeletePlaylistsConfirmationClick: () -> Unit,
     onPlaylistAddSongsDoneClick: () -> Unit,
@@ -171,6 +172,7 @@ fun EinkTopAppBar(
                 onPlaylistDetailsAddSongsClick = onPlaylistDetailsAddSongsClick,
                 onPlaylistDetailsRenameClick = onPlaylistDetailsRenameClick,
                 onPlaylistDetailsDeleteClick = onPlaylistDetailsDeleteClick,
+                onPlaylistDetailsDownloadClick = onPlaylistDetailsDownloadClick,
                 onShowDeletePlaylistSongsConfirmationClick = onShowDeletePlaylistSongsConfirmationClick,
                 onShowDeletePlaylistsConfirmationClick = onShowDeletePlaylistsConfirmationClick,
                 onPlaylistAddSongsDoneClick = onPlaylistAddSongsDoneClick,
@@ -200,6 +202,7 @@ private fun EinkTopAppBarActions(
     onPlaylistDetailsAddSongsClick: () -> Unit,
     onPlaylistDetailsRenameClick: () -> Unit,
     onPlaylistDetailsDeleteClick: () -> Unit,
+    onPlaylistDetailsDownloadClick: () -> Unit,
     onShowDeletePlaylistSongsConfirmationClick: () -> Unit,
     onShowDeletePlaylistsConfirmationClick: () -> Unit,
     onPlaylistAddSongsDoneClick: () -> Unit,
@@ -262,6 +265,13 @@ private fun EinkTopAppBarActions(
                 DropdownMenuItemMMD(
                     text = { TextMMD("Delete") },
                     onClick = onPlaylistDetailsDeleteClick,
+                )
+
+                DashedDivider(thickness = 1.dp)
+
+                DropdownMenuItemMMD(
+                    text = { TextMMD("Download playlist") },
+                    onClick = onPlaylistDetailsDownloadClick,
                 )
             }
         }
