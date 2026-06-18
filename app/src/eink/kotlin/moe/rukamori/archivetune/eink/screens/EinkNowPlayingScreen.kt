@@ -56,6 +56,7 @@ import kotlinx.coroutines.delay
 import moe.rukamori.archivetune.LocalPlayerConnection
 import moe.rukamori.archivetune.extensions.togglePlayPause
 import moe.rukamori.archivetune.utils.makeTimeString
+import moe.rukamori.archivetune.eink.components.EinkAddToPlaylistDialog
 
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.net.toUri
@@ -83,6 +84,7 @@ fun EinkNowPlayingScreen(navController: NavController) {
     var duration by remember { mutableLongStateOf(0L) }
     var sliderPosition by remember { mutableFloatStateOf(0f) }
     var isSeeking by remember { mutableStateOf(false) }
+    var showAddToPlaylistDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(playerConnection, isPlaying) {
         while (true) {
@@ -254,7 +256,11 @@ fun EinkNowPlayingScreen(navController: NavController) {
                 )
             }
 
-            IconButton(onClick = { /* Add to playlist */ }) {
+            IconButton(onClick = { 
+                if (mediaMetadata != null) {
+                    showAddToPlaylistDialog = true
+                }
+            }) {
                 Icon(
                     imageVector = Icons.Outlined.PlaylistAdd,
                     contentDescription = "Add to playlist",
@@ -374,5 +380,12 @@ fun EinkNowPlayingScreen(navController: NavController) {
                 }
             }
         }
+    }
+
+    if (showAddToPlaylistDialog && mediaMetadata != null) {
+        EinkAddToPlaylistDialog(
+            songId = mediaMetadata!!.id,
+            onDismiss = { showAddToPlaylistDialog = false }
+        )
     }
 }

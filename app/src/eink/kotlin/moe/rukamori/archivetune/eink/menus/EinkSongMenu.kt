@@ -58,10 +58,26 @@ fun EinkSongMenu(
     val downloadsMap by downloadUtil.downloads.collectAsState()
     val downloadState = downloadsMap[originalSong.id]?.state
 
-    // TODO: Add EinkAddToPlaylistDialog support if needed later.
-    // For now, providing the main playback actions to decouple the UI.
+    var showAddToPlaylistDialog by remember { mutableStateOf(false) }
 
-    // TODO: Add EinkAddToPlaylistDialog support if needed later.
+    if (showAddToPlaylistDialog) {
+        moe.rukamori.archivetune.eink.components.EinkAddToPlaylistDialog(
+            songId = originalSong.id,
+            onDismiss = {
+                showAddToPlaylistDialog = false
+                onDismiss()
+            }
+        )
+    }
+
+    DropdownMenuItemMMD(
+        text = { TextMMD(text = "Add to Playlist", fontSize = 18.sp, fontWeight = FontWeight.SemiBold) },
+        onClick = {
+            showAddToPlaylistDialog = true
+        }
+    )
+    
+    DashedDivider(thickness = 1.dp)
 
     DropdownMenuItemMMD(
         text = { TextMMD(text = "Play Next", fontSize = 18.sp, fontWeight = FontWeight.SemiBold) },

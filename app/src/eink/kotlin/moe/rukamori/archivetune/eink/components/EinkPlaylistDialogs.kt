@@ -56,6 +56,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.runtime.collectAsState
+import androidx.compose.foundation.layout.heightIn
+import kotlinx.coroutines.delay
+import moe.rukamori.archivetune.innertube.utils.hasYouTubeLoginCookie
 
 @Composable
 fun EinkCreatePlaylistDialog(
@@ -258,6 +265,108 @@ fun EinkEditPlaylistDialog(
                     }
                 ) {
                     TextMMD("Save")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun EinkAddToPlaylistDialog(
+    songId: String,
+    onDismiss: () -> Unit,
+) {
+    val database = LocalDatabase.current
+    val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current
+
+    val allPlaylists by database.playlistsByCreateDateAsc().collectAsState(initial = emptyList())
+    val innerTubeCookie by rememberPreference(InnerTubeCookieKey, "")
+    val isLoggedIn = remember(innerTubeCookie) { hasYouTubeLoginCookie(innerTubeCookie) }
+
+    val availablePlaylists = remember(allPlaylists) {
+        allPlaylists
+            .filter { it.playlist.isEditable || it.playlist.browseId != null }
+            .groupBy { it.playlist.browseId ?: it.id }
+            .values
+            .map { it.first() }
+            .sortedByDescending { it.playlist.lastUpdateTime ?: it.playlist.createdAt }
+    }
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth(0.9f)
+                .background(Color.White, RoundedCornerShape(12.dp))
+                .border(2.dp, Color.Black, RoundedCornerShape(12.dp))
+                .padding(24.dp)
+        ) {
+            TextMMD(
+                text = "Add to Playlist",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            if (availablePlaylists.isEmpty()) {
+                TextMMD(text = "No playlists available.", fontSize = 16.sp)
+            } else {
+                LazyColumn(
+                    modifier = Modifier.heightIn(max = 400.dp)
+                ) {
+                    items(availablePlaylists) { playlist ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    coroutineScope.launch(Dispatchers.IO) {
+                                        val browseId = playlist.playlist.browseId
+                                        if (isLoggedIn && browseId != null) {
+                                            var remoteAdded = false
+                                            var addedSetVideoId: String? = null
+                                            for (attempt in 0 until 3) {
+                                                val result = YouTube.addToPlaylist(browseId, songId)
+                                                if (result.isSuccess) {
+                                                    remoteAdded = true
+                                                    addedSetVideoId = result.getOrNull()
+                                                    break
+                                                }
+                                                if (attempt < 2) delay(250)
+                                            }
+                                            if (remoteAdded) {
+                                                database.addSongEntriesToPlaylist(playlist, listOf(songId to addedSetVideoId))
+                                            }
+                                        } else {
+                                            database.addSongToPlaylist(playlist, listOf(songId))
+                                        }
+                                    }
+                                    Toast.makeText(context, "Added to playlist", Toast.LENGTH_SHORT).show()
+                                    onDismiss()
+                                }
+                                .padding(vertical = 12.dp)
+                        ) {
+                            TextMMD(
+                                text = playlist.playlist.name,
+                                fontSize = 18.sp
+                            )
+                        }
+                        DashedDivider(thickness = 1.dp)
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Row(
+                horizontalArrangement = Arrangement.End,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                OutlinedButtonMMD(onClick = onDismiss) {
+                    TextMMD("Cancel")
                 }
             }
         }

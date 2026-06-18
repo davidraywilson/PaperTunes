@@ -32,6 +32,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.core.net.toUri
 import androidx.media3.exoplayer.offline.DownloadRequest
 import androidx.media3.exoplayer.offline.DownloadService
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import moe.rukamori.archivetune.LocalDatabase
 import moe.rukamori.archivetune.playback.ExoDownloadService
 
@@ -45,7 +49,27 @@ fun EinkYouTubeSongMenu(
     val context = LocalContext.current
     val database = LocalDatabase.current
 
+    var showAddToPlaylistDialog by remember { mutableStateOf(false) }
+
+    if (showAddToPlaylistDialog) {
+        moe.rukamori.archivetune.eink.components.EinkAddToPlaylistDialog(
+            songId = song.id,
+            onDismiss = {
+                showAddToPlaylistDialog = false
+                onDismiss()
+            }
+        )
+    }
+
     // Dropdown items
+    DropdownMenuItemMMD(
+        text = { TextMMD(text = "Add to Playlist", fontSize = 18.sp, fontWeight = FontWeight.SemiBold) },
+        onClick = {
+            showAddToPlaylistDialog = true
+        }
+    )
+    
+    DashedDivider(thickness = 1.dp)
     DropdownMenuItemMMD(
         text = { TextMMD(text = "Play Next", fontSize = 18.sp, fontWeight = FontWeight.SemiBold) },
         onClick = {
