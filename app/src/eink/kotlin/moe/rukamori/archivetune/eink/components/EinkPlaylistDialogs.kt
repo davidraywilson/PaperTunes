@@ -61,6 +61,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.collectAsState
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.size
+import com.mudita.mmd.components.bottom_sheet.ModalBottomSheetMMD
 import kotlinx.coroutines.delay
 import moe.rukamori.archivetune.innertube.utils.hasYouTubeLoginCookie
 
@@ -284,6 +291,14 @@ fun EinkAddToPlaylistDialog(
     val innerTubeCookie by rememberPreference(InnerTubeCookieKey, "")
     val isLoggedIn = remember(innerTubeCookie) { hasYouTubeLoginCookie(innerTubeCookie) }
 
+    var showCreateDialog by remember { mutableStateOf(false) }
+
+    if (showCreateDialog) {
+        EinkCreatePlaylistDialog(
+            onDismiss = { showCreateDialog = false }
+        )
+    }
+
     val availablePlaylists = remember(allPlaylists) {
         allPlaylists
             .filter { it.playlist.isEditable || it.playlist.browseId != null }
@@ -293,27 +308,41 @@ fun EinkAddToPlaylistDialog(
             .sortedByDescending { it.playlist.lastUpdateTime ?: it.playlist.createdAt }
     }
 
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ModalBottomSheetMMD(
+        onDismissRequest = onDismiss
     ) {
         Column(
             modifier = Modifier
-                .fillMaxWidth(0.9f)
-                .background(Color.White, RoundedCornerShape(12.dp))
-                .border(2.dp, Color.Black, RoundedCornerShape(12.dp))
-                .padding(24.dp)
+                .fillMaxWidth()
+                .padding(16.dp)
         ) {
-            TextMMD(
-                text = "Add to Playlist",
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                TextMMD(
+                    text = "Add to Playlist",
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                )
+
+                IconButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Close,
+                        contentDescription = "Cancel Add to Playlist"
+                    )
+                }
+            }
 
             Spacer(modifier = Modifier.height(16.dp))
 
             if (availablePlaylists.isEmpty()) {
-                TextMMD(text = "No playlists available.", fontSize = 16.sp)
+                TextMMD(text = "You have not created any playlist yet...", fontSize = 16.sp)
+                Spacer(modifier = Modifier.height(8.dp))
             } else {
                 LazyColumn(
                     modifier = Modifier.heightIn(max = 400.dp)
@@ -359,16 +388,21 @@ fun EinkAddToPlaylistDialog(
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            Row(
-                horizontalArrangement = Arrangement.End,
-                modifier = Modifier.fillMaxWidth()
+            ButtonMMD(
+                onClick = { showCreateDialog = true },
+                modifier = Modifier.fillMaxWidth(),
+                contentPadding = PaddingValues(12.dp)
             ) {
-                OutlinedButtonMMD(onClick = onDismiss) {
-                    TextMMD("Cancel")
-                }
+                TextMMD(
+                    text = "New playlist",
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                )
             }
+
+            Spacer(modifier = Modifier.height(8.dp))
         }
     }
 }
