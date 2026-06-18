@@ -27,6 +27,7 @@ import moe.rukamori.archivetune.extensions.toMediaItem
 import moe.rukamori.archivetune.innertube.models.SongItem
 import moe.rukamori.archivetune.models.toMediaMetadata
 import moe.rukamori.archivetune.playback.queues.YouTubeQueue
+import moe.rukamori.archivetune.eink.einkYouTubeArtistDetailsRoute
 
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.net.toUri
@@ -99,13 +100,14 @@ fun EinkYouTubeSongMenu(
     )
 
     val artist = song.artists.firstOrNull()
-    if (artist?.id != null) {
+    val artistId = artist?.id
+    if (artistId != null) {
         DashedDivider(thickness = 1.dp)
         DropdownMenuItemMMD(
             text = { TextMMD(text = "View Artist", fontSize = 18.sp, fontWeight = FontWeight.SemiBold) },
             onClick = {
                 onDismiss()
-                navController.navigate("artist/${artist.id}")
+                navController.navigate(einkYouTubeArtistDetailsRoute(artistId))
             }
         )
     }

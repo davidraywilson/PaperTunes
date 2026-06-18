@@ -1,6 +1,7 @@
 package moe.rukamori.archivetune.eink
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
@@ -10,6 +11,9 @@ import androidx.compose.material.icons.outlined.Clear
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.PersonAdd
+import androidx.compose.material.icons.outlined.PersonRemove
+import androidx.compose.material.icons.outlined.Radio
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -52,6 +56,8 @@ fun EinkTopAppBar(
     hasNowPlaying: Boolean,
     hasLibraryPlaylists: Boolean,
     selectedPlaylistName: String? = null,
+    selectedArtistName: String? = null,
+    selectedArtistSubtitle: String? = null,
     onBackClick: () -> Unit,
     onCancelPlaylistsEditClick: () -> Unit,
     onCancelPlaylistDetailsEditClick: () -> Unit,
@@ -67,6 +73,10 @@ fun EinkTopAppBar(
     onShowDeletePlaylistsConfirmationClick: () -> Unit,
     onPlaylistAddSongsDoneClick: () -> Unit,
     onNowPlayingClick: () -> Unit,
+    isYouTubeArtistSubscribed: Boolean = false,
+    canYouTubeArtistRadio: Boolean = false,
+    onYouTubeArtistSubscribeClick: () -> Unit = {},
+    onYouTubeArtistRadioClick: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val navRoutes = remember { einkNavItems.map { it.route } }
@@ -74,6 +84,9 @@ fun EinkTopAppBar(
 
     val isOnPlaylistDetails = currentDestination?.route == EinkScreen.PlaylistDetails.route ||
         currentDestination?.route?.startsWith("${EinkScreen.PlaylistDetails.route}/") == true
+
+    val isOnYouTubeArtistDetails = currentDestination?.route == EinkScreen.YouTubeArtistDetails.route ||
+        currentDestination?.route?.startsWith("${EinkScreen.YouTubeArtistDetails.route}/") == true
 
     TopAppBarMMD(
         navigationIcon = {
@@ -155,6 +168,26 @@ fun EinkTopAppBar(
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
+                isOnYouTubeArtistDetails && selectedArtistName != null -> {
+                    Column {
+                        Text(
+                            text = selectedArtistName,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        if (!selectedArtistSubtitle.isNullOrBlank()) {
+                            Text(
+                                text = selectedArtistSubtitle,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Medium,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                    }
+                }
                 else -> {
                     Text(
                         text = einkAppBarTitle(currentDestination),
@@ -189,6 +222,11 @@ fun EinkTopAppBar(
                 onShowDeletePlaylistsConfirmationClick = onShowDeletePlaylistsConfirmationClick,
                 onPlaylistAddSongsDoneClick = onPlaylistAddSongsDoneClick,
                 onNowPlayingClick = onNowPlayingClick,
+                isYouTubeArtistSubscribed = isYouTubeArtistSubscribed,
+                canYouTubeArtistRadio = canYouTubeArtistRadio,
+                onYouTubeArtistSubscribeClick = onYouTubeArtistSubscribeClick,
+                onYouTubeArtistRadioClick = onYouTubeArtistRadioClick,
+                isOnYouTubeArtistDetails = isOnYouTubeArtistDetails,
             )
         },
         showDivider = false,
@@ -219,8 +257,30 @@ private fun EinkTopAppBarActions(
     onShowDeletePlaylistsConfirmationClick: () -> Unit,
     onPlaylistAddSongsDoneClick: () -> Unit,
     onNowPlayingClick: () -> Unit,
+    isYouTubeArtistSubscribed: Boolean = false,
+    canYouTubeArtistRadio: Boolean = false,
+    onYouTubeArtistSubscribeClick: () -> Unit = {},
+    onYouTubeArtistRadioClick: () -> Unit = {},
+    isOnYouTubeArtistDetails: Boolean = false,
 ) {
     val navRoutes = remember { einkNavItems.map { it.route } }
+
+    if (isOnYouTubeArtistDetails) {
+        IconButton(onClick = onYouTubeArtistSubscribeClick) {
+            Icon(
+                imageVector = if (isYouTubeArtistSubscribed) Icons.Outlined.PersonRemove else Icons.Outlined.PersonAdd,
+                contentDescription = if (isYouTubeArtistSubscribed) "Unsubscribe" else "Subscribe",
+            )
+        }
+        if (canYouTubeArtistRadio) {
+            IconButton(onClick = onYouTubeArtistRadioClick) {
+                Icon(
+                    imageVector = Icons.Outlined.Radio,
+                    contentDescription = "Start radio",
+                )
+            }
+        }
+    }
 
     if (currentDestination?.route != EinkScreen.Search.route && currentDestination?.route in navRoutes) {
         if (currentDestination?.route == EinkScreen.Playlists.route && hasLibraryPlaylists && !isPlaylistsEditMode) {

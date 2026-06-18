@@ -33,6 +33,7 @@ sealed class EinkScreen(val route: String, val label: String, val icon: ImageVec
     data object PlaylistEdit : EinkScreen("playlistEdit", "Edit Playlist", Icons.Outlined.LibraryMusic)
     data object AlbumDetails : EinkScreen("albumDetails", "Album", Icons.Outlined.Album)
     data object ArtistDetails : EinkScreen("artistDetails", "Artist", Icons.Outlined.PersonOutline)
+    data object YouTubeArtistDetails : EinkScreen("youtubeArtistDetails", "Artist", Icons.Outlined.PersonOutline)
     data object Search : EinkScreen("search", "Search", Icons.AutoMirrored.Outlined.QueueMusic)
     data object Settings : EinkScreen("settings", "Settings", Icons.Outlined.MoreHoriz)
     data object NowPlaying : EinkScreen("nowPlaying", "Now Playing", Icons.AutoMirrored.Outlined.QueueMusic)
@@ -57,6 +58,7 @@ fun einkAppBarTitle(destination: NavDestination?): String =
         EinkScreen.AlbumDetails.route -> "Album"
         EinkScreen.Artists.route -> "Artists"
         EinkScreen.ArtistDetails.route -> "Artist"
+        EinkScreen.YouTubeArtistDetails.route -> "Artist"
         EinkScreen.Search.route -> "Search"
         EinkScreen.More.route -> "More"
         EinkScreen.Settings.route -> "Settings"

@@ -8,6 +8,8 @@
 package moe.rukamori.archivetune.eink
 
 import androidx.compose.foundation.background
+import moe.rukamori.archivetune.db.entities.Artist
+import moe.rukamori.archivetune.db.entities.ArtistEntity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -37,6 +39,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -84,6 +87,7 @@ import moe.rukamori.archivetune.eink.screens.EinkPlaylistsScreen
 import moe.rukamori.archivetune.eink.screens.EinkSearchScreen
 import moe.rukamori.archivetune.eink.screens.EinkSettingsScreen
 import moe.rukamori.archivetune.eink.screens.EinkSongsScreen
+import moe.rukamori.archivetune.eink.screens.EinkYouTubeArtistScreen
 import moe.rukamori.archivetune.eink.viewmodels.EinkSearchViewModel
 import moe.rukamori.archivetune.ui.screens.LOGIN_ROUTE
 import moe.rukamori.archivetune.ui.screens.LOGIN_URL_ARGUMENT
@@ -102,6 +106,7 @@ fun einkArtistDetailsRoute(artistId: String) = "${EinkScreen.ArtistDetails.route
 fun einkPlaylistDetailsRoute(playlistId: String) = "${EinkScreen.PlaylistDetails.route}/$playlistId"
 fun einkPlaylistEditRoute(playlistId: String) = "${EinkScreen.PlaylistEdit.route}/$playlistId"
 fun einkPlaylistAddSongsRoute(playlistId: String) = "${EinkScreen.PlaylistAddSongs.route}/$playlistId"
+fun einkYouTubeArtistDetailsRoute(artistId: String) = "${EinkScreen.YouTubeArtistDetails.route}/$artistId"
 
 @Composable
 fun EinkApp() {
@@ -167,6 +172,59 @@ fun EinkApp() {
             }
         }
 
+        val isOnYouTubeArtistDetails = currentRoute?.startsWith("${EinkScreen.YouTubeArtistDetails.route}/") == true
+        val ytArtistId = if (isOnYouTubeArtistDetails) navBackStackEntry?.arguments?.getString("artistId") else null
+        val selectedArtistName by androidx.compose.runtime.produceState<String?>(
+            initialValue = null,
+            ytArtistId,
+        ) {
+            if (ytArtistId != null) {
+                kotlinx.coroutines.flow.combine(
+                    database.artist(ytArtistId),
+                    database.artistAlbumsPreview(ytArtistId),
+                ) { artist, albums ->
+                    value = artist?.artist?.name
+                }.collect {}
+            } else {
+                value = null
+            }
+        }
+        val selectedArtistSubtitle by androidx.compose.runtime.produceState<String?>(
+            initialValue = null,
+            ytArtistId,
+        ) {
+            if (ytArtistId != null) {
+                kotlinx.coroutines.flow.combine(
+                    database.artist(ytArtistId),
+                    database.artistAlbumsPreview(ytArtistId),
+                ) { artist, albums ->
+                    val songs = artist?.songCount ?: 0
+                    val albumCount = albums.size
+                    buildString {
+                        if (songs > 0) append("$songs ${if (songs == 1) "song" else "songs"}")
+                        if (albumCount > 0) {
+                            if (isNotEmpty()) append(" • ")
+                            append("$albumCount ${if (albumCount == 1) "album" else "albums"}")
+                        }
+                    }.takeIf { it.isNotBlank() }
+                }.collect { value = it }
+            } else {
+                value = null
+            }
+        }
+
+        val currentEntry = navBackStackEntry
+        val ytArtistViewModel: moe.rukamori.archivetune.viewmodels.ArtistViewModel? = 
+            if (isOnYouTubeArtistDetails && currentEntry != null) {
+                androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel(currentEntry)
+            } else null
+
+        val ytArtistFlow = ytArtistViewModel?.libraryArtist ?: kotlinx.coroutines.flow.MutableStateFlow<Artist?>(null)
+        val libraryYtArtist by ytArtistFlow.collectAsStateWithLifecycle()
+        val isYouTubeArtistSubscribed = libraryYtArtist?.artist?.bookmarkedAt != null
+        val ytArtistPage = ytArtistViewModel?.artistPage
+        val canYouTubeArtistRadio = ytArtistPage?.artist?.radioEndpoint != null
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -189,6 +247,8 @@ fun EinkApp() {
                             hasNowPlaying = hasNowPlaying,
                             hasLibraryPlaylists = hasLibraryPlaylists,
                             selectedPlaylistName = selectedPlaylistName,
+                            selectedArtistName = selectedArtistName,
+                            selectedArtistSubtitle = selectedArtistSubtitle,
                             onBackClick = { navController.navigateUp() },
                             onCancelPlaylistsEditClick = { 
                                 isPlaylistsEditMode = false 
@@ -234,7 +294,7 @@ fun EinkApp() {
                                         sendAddMissingDownloads(
                                             context = context,
                                             songs = songs.map { song ->
-                                                HeaderDownloadItem(
+                                                moe.rukamori.archivetune.ui.utils.HeaderDownloadItem(
                                                     id = song.id,
                                                     title = song.song.title,
                                                 )
@@ -248,6 +308,34 @@ fun EinkApp() {
                             onShowDeletePlaylistsConfirmationClick = { showDeletePlaylistsConfirmation = true },
                             onPlaylistAddSongsDoneClick = { navController.popBackStack() },
                             onNowPlayingClick = { navController.navigate(EinkScreen.NowPlaying.route) },
+                            isYouTubeArtistSubscribed = isYouTubeArtistSubscribed,
+                            canYouTubeArtistRadio = canYouTubeArtistRadio,
+                            onYouTubeArtistSubscribeClick = {
+                                coroutineScope.launch {
+                                    database.transaction {
+                                        val artist = libraryYtArtist?.artist
+                                        if (artist != null) {
+                                            update(artist.toggleLike())
+                                        } else {
+                                            ytArtistPage?.artist?.let {
+                                                insert(
+                                                    moe.rukamori.archivetune.db.entities.ArtistEntity(
+                                                        id = it.id,
+                                                        name = it.title,
+                                                        channelId = it.channelId,
+                                                        thumbnailUrl = it.thumbnail,
+                                                    ).toggleLike()
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                            onYouTubeArtistRadioClick = {
+                                ytArtistPage?.artist?.radioEndpoint?.let {
+                                    playerConnection?.playQueue(moe.rukamori.archivetune.playback.queues.YouTubeQueue(it))
+                                }
+                            },
                         )
                         com.mudita.mmd.components.divider.HorizontalDividerMMD(thickness = 2.dp)
                     }
@@ -330,6 +418,12 @@ fun EinkApp() {
                             arguments = listOf(navArgument("artistId") { type = NavType.StringType }),
                         ) { entry ->
                             EinkArtistDetailsScreen(navController, entry.arguments?.getString("artistId").orEmpty())
+                        }
+                        composable(
+                            route = detailRoute(EinkScreen.YouTubeArtistDetails.route, "artistId"),
+                            arguments = listOf(navArgument("artistId") { type = NavType.StringType }),
+                        ) { entry ->
+                            EinkYouTubeArtistScreen(navController, entry.arguments?.getString("artistId").orEmpty())
                         }
                         composable(
                             route = detailRoute(EinkScreen.PlaylistDetails.route, "playlistId"),
