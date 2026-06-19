@@ -169,6 +169,7 @@ fun EinkSongsScreen(
                                     ),
                                 )
                             }
+                            navController.navigate(moe.rukamori.archivetune.eink.EinkScreen.NowPlaying.route)
                         },
                         onLongClick = {
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)

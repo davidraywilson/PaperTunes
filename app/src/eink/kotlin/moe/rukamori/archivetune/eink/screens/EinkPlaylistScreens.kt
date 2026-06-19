@@ -570,6 +570,7 @@ fun EinkPlaylistDetailsScreen(
                                             ),
                                         )
                                     }
+                                    navController.navigate(moe.rukamori.archivetune.eink.EinkScreen.NowPlaying.route)
                                 },
                                 onLongClick = {
                                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -607,6 +608,7 @@ fun EinkPlaylistDetailsScreen(
                                 items = songs.shuffled().map { it.song.toMediaItem() },
                             ),
                         )
+                        navController.navigate(moe.rukamori.archivetune.eink.EinkScreen.NowPlaying.route)
                     },
                 ) {
                     Icon(
