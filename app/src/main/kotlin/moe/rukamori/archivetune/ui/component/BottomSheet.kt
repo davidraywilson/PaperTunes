@@ -52,13 +52,13 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.launch
 import moe.rukamori.archivetune.LocalAnimationsDisabled
 import moe.rukamori.archivetune.constants.BottomSheetAnimationSpec
 import moe.rukamori.archivetune.constants.BottomSheetSoftAnimationSpec
 import moe.rukamori.archivetune.utils.rememberPreference
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.CoroutineStart
-import kotlinx.coroutines.launch
 
 /**
  * Bottom Sheet
@@ -75,39 +75,38 @@ fun BottomSheet(
 ) {
     Box(
         modifier =
-        modifier
-            .fillMaxSize()
-            .offset {
-                val y =
-                    (state.expandedBound - state.value)
-                        .roundToPx()
-                        .coerceAtLeast(0)
-                IntOffset(x = 0, y = y)
-            }
-            .bottomSheetDraggable(state, onDismiss)
-            .clip(
-                RoundedCornerShape(
-                    topStart = if (!state.isExpanded) 16.dp else 0.dp,
-                    topEnd = if (!state.isExpanded) 16.dp else 0.dp,
+            modifier
+                .fillMaxSize()
+                .offset {
+                    val y =
+                        (state.expandedBound - state.value)
+                            .roundToPx()
+                            .coerceAtLeast(0)
+                    IntOffset(x = 0, y = y)
+                }.bottomSheetDraggable(state, onDismiss)
+                .clip(
+                    RoundedCornerShape(
+                        topStart = if (!state.isExpanded) 16.dp else 0.dp,
+                        topEnd = if (!state.isExpanded) 16.dp else 0.dp,
+                    ),
+                ).background(
+                    backgroundColor.copy(
+                        alpha = backgroundColor.alpha * state.progress.coerceIn(0f, 1f),
+                    ),
                 ),
-            ).background(
-                backgroundColor.copy(
-                    alpha = backgroundColor.alpha * state.progress.coerceIn(0f, 1f)
-                )
-            ),
     ) {
-        if (!state.isCollapsed && !state.isDismissed) {
+        if (state.isExpandedOrExpanding) {
             BackHandler(onBack = state::collapseSoft)
         }
 
         if (!state.isCollapsed) {
             BoxWithConstraints(
                 modifier =
-                Modifier
-                    .fillMaxSize()
-                    .graphicsLayer {
-                        alpha = ((state.progress - 0.25f) * 4).coerceIn(0f, 1f)
-                    },
+                    Modifier
+                        .fillMaxSize()
+                        .graphicsLayer {
+                            alpha = ((state.progress - 0.25f) * 4).coerceIn(0f, 1f)
+                        },
                 content = content,
             )
         }
@@ -115,15 +114,15 @@ fun BottomSheet(
         if (!state.isExpanded && (onDismiss == null || !state.isDismissed)) {
             Box(
                 modifier =
-                Modifier
-                    .graphicsLayer {
-                        alpha = 1f - (state.progress * 4).coerceAtMost(1f)
-                    }.clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                        onClick = state::expandSoft,
-                    ).fillMaxWidth()
-                    .height(state.collapsedBound),
+                    Modifier
+                        .graphicsLayer {
+                            alpha = 1f - (state.progress * 4).coerceAtMost(1f)
+                        }.clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = state::expandSoft,
+                        ).fillMaxWidth()
+                        .height(state.collapsedBound),
                 content = collapsedContent,
             )
         }
@@ -138,6 +137,7 @@ class BottomSheetState(
     private val onAnchorChanged: (Int) -> Unit,
     private val animationsDisabled: Boolean,
     val collapsedBound: Dp,
+    initialAnchor: Int = DISMISSED_ANCHOR,
 ) : DraggableState by draggableState {
     val dismissedBound: Dp
         get() = animatable.lowerBound!!
@@ -146,6 +146,9 @@ class BottomSheetState(
         get() = animatable.upperBound!!
 
     val value by animatable.asState()
+
+    var targetAnchor by mutableIntStateOf(initialAnchor)
+        private set
 
     val isDismissed by derivedStateOf {
         value == animatable.lowerBound!!
@@ -159,19 +162,27 @@ class BottomSheetState(
         value == animatable.upperBound
     }
 
+    val isExpandedOrExpanding: Boolean
+        get() = targetAnchor == EXPANDED_ANCHOR
+
     val progress by derivedStateOf {
         1f - (animatable.upperBound!! - animatable.value) / (animatable.upperBound!! - collapsedBound)
     }
 
+    private fun updateAnchor(anchor: Int) {
+        targetAnchor = anchor
+        onAnchorChanged(anchor)
+    }
+
     fun collapse(animationSpec: AnimationSpec<Dp>) {
-        onAnchorChanged(COLLAPSED_ANCHOR)
+        updateAnchor(COLLAPSED_ANCHOR)
         coroutineScope.launch(start = CoroutineStart.UNDISPATCHED) {
             animatable.animateTo(collapsedBound, animationSpec)
         }
     }
 
     fun expand(animationSpec: AnimationSpec<Dp>) {
-        onAnchorChanged(EXPANDED_ANCHOR)
+        updateAnchor(EXPANDED_ANCHOR)
         coroutineScope.launch(start = CoroutineStart.UNDISPATCHED) {
             animatable.animateTo(animatable.upperBound!!, animationSpec)
         }
@@ -194,13 +205,21 @@ class BottomSheetState(
     }
 
     fun dismiss() {
-        onAnchorChanged(DISMISSED_ANCHOR)
+        updateAnchor(DISMISSED_ANCHOR)
         coroutineScope.launch(start = CoroutineStart.UNDISPATCHED) {
             animatable.animateTo(animatable.lowerBound!!, if (animationsDisabled) snap() else BottomSheetAnimationSpec)
         }
     }
 
     fun snapTo(value: Dp) {
+        updateAnchor(
+            when (value) {
+                expandedBound -> EXPANDED_ANCHOR
+                collapsedBound -> COLLAPSED_ANCHOR
+                dismissedBound -> DISMISSED_ANCHOR
+                else -> COLLAPSED_ANCHOR
+            },
+        )
         coroutineScope.launch(start = CoroutineStart.UNDISPATCHED) {
             animatable.snapTo(value)
         }
@@ -235,9 +254,17 @@ class BottomSheetState(
                     }
                 }
 
-                in l1..l2 -> collapse()
-                in l2..l3 -> expand()
-                else -> Unit
+                in l1..l2 -> {
+                    collapse()
+                }
+
+                in l2..l3 -> {
+                    expand()
+                }
+
+                else -> {
+                    Unit
+                }
             }
         }
     }
@@ -339,16 +366,17 @@ fun rememberBottomSheetState(
 
         BottomSheetState(
             draggableState =
-            DraggableState { delta ->
-                coroutineScope.launch(start = CoroutineStart.UNDISPATCHED) {
-                    animatable.snapTo(animatable.value - with(density) { delta.toDp() })
-                }
-            },
+                DraggableState { delta ->
+                    coroutineScope.launch(start = CoroutineStart.UNDISPATCHED) {
+                        animatable.snapTo(animatable.value - with(density) { delta.toDp() })
+                    }
+                },
             onAnchorChanged = { previousAnchor = it },
             coroutineScope = coroutineScope,
             animatable = animatable,
             animationsDisabled = animationsDisabled,
             collapsedBound = collapsedBound,
+            initialAnchor = previousAnchor,
         )
     }
 }
@@ -357,8 +385,8 @@ fun rememberBottomSheetState(
 fun Modifier.bottomSheetDraggable(
     state: BottomSheetState,
     onDismiss: (() -> Unit)? = null,
-): Modifier {
-    return this.pointerInput(state) {
+): Modifier =
+    this.pointerInput(state) {
         val velocityTracker = VelocityTracker()
 
         detectVerticalDragGestures(
@@ -377,4 +405,3 @@ fun Modifier.bottomSheetDraggable(
             },
         )
     }
-}

@@ -17,21 +17,25 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
 import androidx.media3.common.Player
 import androidx.media3.common.TrackSelectionParameters
-import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.okhttp.OkHttpDataSource
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.compose.ContentFrame
 import androidx.media3.ui.compose.SURFACE_TYPE_TEXTURE_VIEW
@@ -49,11 +53,13 @@ internal fun CanvasArtworkPlayer(
     resizeMode: Int = AspectRatioFrameLayout.RESIZE_MODE_FIT,
 ) {
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
     val primary = primaryUrl?.takeIf { it.isNotBlank() }
     val fallback = fallbackUrl?.takeIf { it.isNotBlank() }
     val initial = primary ?: fallback ?: return
     var currentUrl by remember(initial) { mutableStateOf(initial) }
     var isVideoReady by remember(initial) { mutableStateOf(false) }
+    val shouldPlay by rememberUpdatedState(isPlaying)
 
     val okHttpClient =
         remember {
@@ -74,13 +80,13 @@ internal fun CanvasArtworkPlayer(
 
                     val requestProfile = StreamClientUtils.resolveRequestProfile(request.url)
                     chain.proceed(
-                        StreamClientUtils.applyRequestProfile(
-                            request.newBuilder(),
-                            requestProfile,
-                        ).build(),
+                        StreamClientUtils
+                            .applyRequestProfile(
+                                request.newBuilder(),
+                                requestProfile,
+                            ).build(),
                     )
-                }
-                .build()
+                }.build()
         }
     val mediaSourceFactory =
         remember(okHttpClient) {
@@ -93,7 +99,8 @@ internal fun CanvasArtworkPlayer(
         }
     val exoPlayer =
         remember(initial, mediaSourceFactory) {
-            ExoPlayer.Builder(context)
+            ExoPlayer
+                .Builder(context)
                 .setMediaSourceFactory(mediaSourceFactory)
                 .build()
                 .apply {
@@ -117,8 +124,19 @@ internal fun CanvasArtworkPlayer(
         }
 
     LaunchedEffect(isPlaying) {
-        if (exoPlayer.playWhenReady != isPlaying) {
-            exoPlayer.playWhenReady = isPlaying
+        exoPlayer.setCanvasPlayback(isPlaying)
+    }
+
+    DisposableEffect(exoPlayer, lifecycleOwner) {
+        val observer =
+            LifecycleEventObserver { _, event ->
+                if (event == Lifecycle.Event.ON_START || event == Lifecycle.Event.ON_RESUME) {
+                    exoPlayer.setCanvasPlayback(shouldPlay)
+                }
+            }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
         }
     }
 
@@ -139,6 +157,29 @@ internal fun CanvasArtworkPlayer(
 
                 override fun onRenderedFirstFrame() {
                     isVideoReady = true
+                    if (shouldPlay) {
+                        exoPlayer.setCanvasPlayback(isPlaying = true)
+                    }
+                }
+
+                override fun onPlaybackStateChanged(playbackState: Int) {
+                    if (!shouldPlay) return
+                    exoPlayer.setCanvasPlayback(isPlaying = true)
+                }
+
+                override fun onPlayWhenReadyChanged(
+                    playWhenReady: Boolean,
+                    reason: Int,
+                ) {
+                    if (shouldPlay && !playWhenReady) {
+                        exoPlayer.setCanvasPlayback(isPlaying = true)
+                    }
+                }
+
+                override fun onIsPlayingChanged(isPlaying: Boolean) {
+                    if (shouldPlay && !isPlaying) {
+                        exoPlayer.setCanvasPlayback(isPlaying = true)
+                    }
                 }
             }
         exoPlayer.addListener(listener)
@@ -159,7 +200,8 @@ internal fun CanvasArtworkPlayer(
             }
 
         val mediaItem =
-            MediaItem.Builder()
+            MediaItem
+                .Builder()
                 .setUri(normalized)
                 .setMimeType(mimeType)
                 .build()
@@ -167,7 +209,7 @@ internal fun CanvasArtworkPlayer(
         exoPlayer.stop()
         exoPlayer.setMediaItem(mediaItem)
         exoPlayer.prepare()
-        exoPlayer.playWhenReady = isPlaying
+        exoPlayer.setCanvasPlayback(isPlaying)
     }
 
     DisposableEffect(exoPlayer) {
@@ -195,9 +237,23 @@ internal fun CanvasArtworkPlayer(
 private fun Int.toContentScale(): ContentScale =
     when (this) {
         AspectRatioFrameLayout.RESIZE_MODE_ZOOM -> ContentScale.Crop
+
         AspectRatioFrameLayout.RESIZE_MODE_FILL -> ContentScale.FillBounds
+
         AspectRatioFrameLayout.RESIZE_MODE_FIXED_WIDTH,
         AspectRatioFrameLayout.RESIZE_MODE_FIXED_HEIGHT,
-        AspectRatioFrameLayout.RESIZE_MODE_FIT -> ContentScale.Fit
+        AspectRatioFrameLayout.RESIZE_MODE_FIT,
+        -> ContentScale.Fit
+
         else -> ContentScale.Fit
     }
+
+private fun ExoPlayer.setCanvasPlayback(isPlaying: Boolean) {
+    if (isPlaying) {
+        if (playbackState == Player.STATE_ENDED) seekTo(0)
+        if (playbackState == Player.STATE_IDLE && mediaItemCount > 0) prepare()
+        play()
+    } else {
+        pause()
+    }
+}

@@ -16,12 +16,12 @@ import moe.rukamori.archivetune.BuildConfig
 import moe.rukamori.archivetune.constants.EnableUpdateNotificationKey
 import moe.rukamori.archivetune.constants.UpdateChannel
 import moe.rukamori.archivetune.constants.UpdateChannelKey
+import moe.rukamori.archivetune.defaultUpdateChannel
 
 class UpdateCheckWorker(
     context: Context,
-    params: WorkerParameters
+    params: WorkerParameters,
 ) : CoroutineWorker(context, params) {
-
     override suspend fun doWork(): Result {
         if (!BuildConfig.UPDATER_AVAILABLE) {
             return Result.success()
@@ -33,17 +33,26 @@ class UpdateCheckWorker(
             val isEnabled = dataStore.data.map { it[EnableUpdateNotificationKey] ?: false }.first()
             if (!isEnabled) return Result.success()
 
-            val updateChannel = dataStore.data.map {
-                it[UpdateChannelKey]?.let { value ->
-                    try { UpdateChannel.valueOf(value) } catch (e: Exception) { UpdateChannel.STABLE }
-                } ?: UpdateChannel.STABLE
-            }.first()
+            val updateChannel =
+                dataStore.data
+                    .map {
+                        it[UpdateChannelKey]?.let { value ->
+                            try {
+                                UpdateChannel.valueOf(value)
+                            } catch (_: IllegalArgumentException) {
+                                defaultUpdateChannel
+                            }
+                        } ?: defaultUpdateChannel
+                    }.first()
 
             when (updateChannel) {
-                UpdateChannel.NIGHTLY -> return Result.success()
+                UpdateChannel.NIGHTLY -> {
+                    return Result.success()
+                }
+
                 UpdateChannel.DAILY_NIGHTLY -> {
                     Updater.getLatestDailyNightlyVersionName().onSuccess { latestVersion ->
-                        if (!Updater.isSameVersion(latestVersion, BuildConfig.VERSION_NAME)) {
+                        if (Updater.isUpdateAvailable(latestVersion, BuildConfig.VERSION_NAME)) {
                             UpdateNotificationManager.notifyIfNewVersion(
                                 applicationContext,
                                 latestVersion,
@@ -52,9 +61,10 @@ class UpdateCheckWorker(
                         }
                     }
                 }
+
                 else -> {
                     Updater.getLatestVersionName().onSuccess { latestVersion ->
-                        if (!Updater.isSameVersion(latestVersion, BuildConfig.VERSION_NAME)) {
+                        if (Updater.isUpdateAvailable(latestVersion, BuildConfig.VERSION_NAME)) {
                             UpdateNotificationManager.notifyIfNewVersion(applicationContext, latestVersion)
                         }
                     }

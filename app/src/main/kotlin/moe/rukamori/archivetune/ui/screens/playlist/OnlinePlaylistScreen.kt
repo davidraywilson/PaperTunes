@@ -10,6 +10,7 @@
 package moe.rukamori.archivetune.ui.screens.playlist
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -40,7 +41,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ButtonGroupDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
@@ -58,7 +58,6 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -99,6 +98,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastAny
 import androidx.compose.ui.zIndex
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.exoplayer.offline.Download
 import androidx.navigation.NavController
 import androidx.palette.graphics.Palette
@@ -143,14 +143,14 @@ import moe.rukamori.archivetune.ui.theme.PlayerColorExtractor
 import moe.rukamori.archivetune.ui.utils.DownloadProgressFloatingToolbar
 import moe.rukamori.archivetune.ui.utils.DownloadProgressToolbarState
 import moe.rukamori.archivetune.ui.utils.HeaderDownloadItem
+import moe.rukamori.archivetune.ui.utils.HeaderDownloadProgressIndicator
 import moe.rukamori.archivetune.ui.utils.HeaderDownloadState
 import moe.rukamori.archivetune.ui.utils.ItemWrapper
 import moe.rukamori.archivetune.ui.utils.backToMain
 import moe.rukamori.archivetune.ui.utils.formatCompactCount
-import moe.rukamori.archivetune.ui.utils.headerDownloadState
 import moe.rukamori.archivetune.ui.utils.hasActiveDownloads
+import moe.rukamori.archivetune.ui.utils.headerDownloadState
 import moe.rukamori.archivetune.ui.utils.sendAddMissingDownloads
-import moe.rukamori.archivetune.ui.utils.sendCancelIncompleteDownloads
 import moe.rukamori.archivetune.ui.utils.sendPauseDownloads
 import moe.rukamori.archivetune.ui.utils.sendRemoveDownloads
 import moe.rukamori.archivetune.ui.utils.sendResumeDownloads
@@ -184,6 +184,7 @@ fun OnlinePlaylistScreen(
     var downloads by remember { mutableStateOf<Map<String, Download>>(emptyMap()) }
     var downloadState by remember { mutableStateOf<HeaderDownloadState>(HeaderDownloadState.None) }
     var downloadsPaused by remember { mutableStateOf(false) }
+    var downloadProgressToolbarDismissed by remember { mutableStateOf(true) }
 
     var selection by remember { mutableStateOf(false) }
     val hideExplicit by rememberPreference(key = HideExplicitKey, defaultValue = false)
@@ -265,13 +266,13 @@ fun OnlinePlaylistScreen(
         val thumbnailUrl = playlist?.thumbnail
         if (thumbnailUrl != null) {
             val request =
-                ImageRequest.Builder(context)
+                ImageRequest
+                    .Builder(context)
                     .data(thumbnailUrl)
                     .size(
                         PlayerColorExtractor.Config.IMAGE_SIZE,
-                        PlayerColorExtractor.Config.IMAGE_SIZE
-                    )
-                    .allowHardware(false)
+                        PlayerColorExtractor.Config.IMAGE_SIZE,
+                    ).allowHardware(false)
                     .build()
 
             val result = runCatching { context.imageLoader.execute(request) }.getOrNull()
@@ -281,7 +282,8 @@ fun OnlinePlaylistScreen(
                 if (bitmap != null) {
                     val palette =
                         withContext(Dispatchers.Default) {
-                            Palette.from(bitmap)
+                            Palette
+                                .from(bitmap)
                                 .maximumColorCount(PlayerColorExtractor.Config.MAX_COLOR_COUNT)
                                 .resizeBitmapArea(PlayerColorExtractor.Config.BITMAP_AREA)
                                 .generate()
@@ -290,7 +292,7 @@ fun OnlinePlaylistScreen(
                     val extractedColors =
                         PlayerColorExtractor.extractGradientColors(
                             palette = palette,
-                            fallbackColor = fallbackColor
+                            fallbackColor = fallbackColor,
                         )
                     gradientColors = extractedColors
                 }
@@ -324,30 +326,35 @@ fun OnlinePlaylistScreen(
     }
 
     LaunchedEffect(lazyListState) {
-        snapshotFlow { lazyListState.layoutInfo.visibleItemsInfo.lastOrNull()?.index }
-            .collect { lastVisibleIndex ->
-                if (
-                    songs.size >= 5 &&
-                        lastVisibleIndex != null &&
-                        lastVisibleIndex >= songs.size - 5
-                ) {
-                    viewModel.loadMoreSongs()
-                }
+        snapshotFlow {
+            lazyListState.layoutInfo.visibleItemsInfo
+                .lastOrNull()
+                ?.index
+        }.collect { lastVisibleIndex ->
+            if (
+                songs.size >= 5 &&
+                lastVisibleIndex != null &&
+                lastVisibleIndex >= songs.size - 5
+            ) {
+                viewModel.loadMoreSongs()
             }
+        }
     }
 
     ExpressivePullToRefreshBox(
         isRefreshing = isRefreshing,
         onRefresh = viewModel::refresh,
-        modifier = Modifier
-            .fillMaxSize()
-            .background(surfaceColor),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .background(surfaceColor),
     ) {
         // Mesh gradient background layer
         if (!disableBlur && gradientColors.isNotEmpty() && gradientAlpha > 0f) {
             Box(
                 modifier =
-                    Modifier.fillMaxWidth()
+                    Modifier
+                        .fillMaxWidth()
                         .fillMaxSize(0.55f)
                         .align(Alignment.TopCenter)
                         .zIndex(-1f)
@@ -368,16 +375,16 @@ fun OnlinePlaylistScreen(
                                             colors =
                                                 listOf(
                                                     c0.copy(
-                                                        alpha = gradientAlpha * 0.75f
+                                                        alpha = gradientAlpha * 0.75f,
                                                     ),
                                                     c0.copy(
-                                                        alpha = gradientAlpha * 0.4f
+                                                        alpha = gradientAlpha * 0.4f,
                                                     ),
-                                                    Color.Transparent
+                                                    Color.Transparent,
                                                 ),
                                             center = Offset(width * 0.5f, height * 0.15f),
-                                            radius = width * 0.8f
-                                        )
+                                            radius = width * 0.8f,
+                                        ),
                                 )
 
                                 // Secondary color blob - left side
@@ -387,16 +394,16 @@ fun OnlinePlaylistScreen(
                                             colors =
                                                 listOf(
                                                     c1.copy(
-                                                        alpha = gradientAlpha * 0.55f
+                                                        alpha = gradientAlpha * 0.55f,
                                                     ),
                                                     c1.copy(
-                                                        alpha = gradientAlpha * 0.3f
+                                                        alpha = gradientAlpha * 0.3f,
                                                     ),
-                                                    Color.Transparent
+                                                    Color.Transparent,
                                                 ),
                                             center = Offset(width * 0.1f, height * 0.4f),
-                                            radius = width * 0.6f
-                                        )
+                                            radius = width * 0.6f,
+                                        ),
                                 )
 
                                 // Third color blob - right side
@@ -406,16 +413,16 @@ fun OnlinePlaylistScreen(
                                             colors =
                                                 listOf(
                                                     c2.copy(
-                                                        alpha = gradientAlpha * 0.5f
+                                                        alpha = gradientAlpha * 0.5f,
                                                     ),
                                                     c2.copy(
-                                                        alpha = gradientAlpha * 0.25f
+                                                        alpha = gradientAlpha * 0.25f,
                                                     ),
-                                                    Color.Transparent
+                                                    Color.Transparent,
                                                 ),
                                             center = Offset(width * 0.9f, height * 0.35f),
-                                            radius = width * 0.55f
-                                        )
+                                            radius = width * 0.55f,
+                                        ),
                                 )
 
                                 drawRect(
@@ -424,16 +431,16 @@ fun OnlinePlaylistScreen(
                                             colors =
                                                 listOf(
                                                     c3.copy(
-                                                        alpha = gradientAlpha * 0.35f
+                                                        alpha = gradientAlpha * 0.35f,
                                                     ),
                                                     c3.copy(
-                                                        alpha = gradientAlpha * 0.18f
+                                                        alpha = gradientAlpha * 0.18f,
                                                     ),
-                                                    Color.Transparent
+                                                    Color.Transparent,
                                                 ),
                                             center = Offset(width * 0.25f, height * 0.65f),
-                                            radius = width * 0.75f
-                                        )
+                                            radius = width * 0.75f,
+                                        ),
                                 )
 
                                 drawRect(
@@ -442,16 +449,16 @@ fun OnlinePlaylistScreen(
                                             colors =
                                                 listOf(
                                                     c4.copy(
-                                                        alpha = gradientAlpha * 0.3f
+                                                        alpha = gradientAlpha * 0.3f,
                                                     ),
                                                     c4.copy(
-                                                        alpha = gradientAlpha * 0.15f
+                                                        alpha = gradientAlpha * 0.15f,
                                                     ),
-                                                    Color.Transparent
+                                                    Color.Transparent,
                                                 ),
                                             center = Offset(width * 0.55f, height * 0.85f),
-                                            radius = width * 0.9f
-                                        )
+                                            radius = width * 0.9f,
+                                        ),
                                 )
                             } else if (gradientColors.isNotEmpty()) {
                                 drawRect(
@@ -460,16 +467,16 @@ fun OnlinePlaylistScreen(
                                             colors =
                                                 listOf(
                                                     gradientColors[0].copy(
-                                                        alpha = gradientAlpha * 0.7f
+                                                        alpha = gradientAlpha * 0.7f,
                                                     ),
                                                     gradientColors[0].copy(
-                                                        alpha = gradientAlpha * 0.35f
+                                                        alpha = gradientAlpha * 0.35f,
                                                     ),
-                                                    Color.Transparent
+                                                    Color.Transparent,
                                                 ),
                                             center = Offset(width * 0.5f, height * 0.25f),
-                                            radius = width * 0.85f
-                                        )
+                                            radius = width * 0.85f,
+                                        ),
                                 )
                             }
 
@@ -482,13 +489,13 @@ fun OnlinePlaylistScreen(
                                                 Color.Transparent,
                                                 surfaceColor.copy(alpha = gradientAlpha * 0.22f),
                                                 surfaceColor.copy(alpha = gradientAlpha * 0.55f),
-                                                surfaceColor
+                                                surfaceColor,
                                             ),
                                         startY = height * 0.4f,
-                                        endY = height
-                                    )
+                                        endY = height,
+                                    ),
                             )
-                        }
+                        },
             )
         }
 
@@ -504,25 +511,27 @@ fun OnlinePlaylistScreen(
                         ShimmerHost {
                             Column(
                                 modifier =
-                                    Modifier.fillMaxWidth()
+                                    Modifier
+                                        .fillMaxWidth()
                                         .padding(top = systemBarsTopPadding + AppBarHeight),
-                                horizontalAlignment = Alignment.CenterHorizontally
+                                horizontalAlignment = Alignment.CenterHorizontally,
                             ) {
                                 // Playlist art placeholder
                                 Box(
                                     modifier =
-                                        Modifier.padding(top = 8.dp, bottom = 20.dp)
+                                        Modifier
+                                            .padding(top = 8.dp, bottom = 20.dp)
                                             .size(240.dp)
                                             .shimmer()
                                             .clip(RoundedCornerShape(16.dp))
-                                            .background(MaterialTheme.colorScheme.onSurface)
+                                            .background(MaterialTheme.colorScheme.onSurface),
                                 )
 
                                 // Title placeholder
                                 TextPlaceholder(
                                     height = 28.dp,
                                     modifier =
-                                        Modifier.fillMaxWidth(0.6f).padding(horizontal = 32.dp)
+                                        Modifier.fillMaxWidth(0.6f).padding(horizontal = 32.dp),
                                 )
 
                                 Spacer(modifier = Modifier.height(8.dp))
@@ -530,7 +539,7 @@ fun OnlinePlaylistScreen(
                                 // Author placeholder
                                 TextPlaceholder(
                                     height = 20.dp,
-                                    modifier = Modifier.fillMaxWidth(0.4f)
+                                    modifier = Modifier.fillMaxWidth(0.4f),
                                 )
 
                                 Spacer(modifier = Modifier.height(16.dp))
@@ -538,12 +547,12 @@ fun OnlinePlaylistScreen(
                                 // Metadata placeholder
                                 Row(
                                     modifier = Modifier.fillMaxWidth().padding(horizontal = 48.dp),
-                                    horizontalArrangement = Arrangement.SpaceEvenly
+                                    horizontalArrangement = Arrangement.SpaceEvenly,
                                 ) {
                                     repeat(2) {
                                         TextPlaceholder(
                                             height = 32.dp,
-                                            modifier = Modifier.width(80.dp)
+                                            modifier = Modifier.width(80.dp),
                                         )
                                     }
                                 }
@@ -554,23 +563,25 @@ fun OnlinePlaylistScreen(
                                 Row(
                                     modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
                                     horizontalArrangement =
-                                        Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally)
+                                        Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
                                 ) {
                                     Box(
                                         modifier =
-                                            Modifier.size(48.dp)
+                                            Modifier
+                                                .size(48.dp)
                                                 .shimmer()
                                                 .clip(CircleShape)
-                                                .background(MaterialTheme.colorScheme.onSurface)
+                                                .background(MaterialTheme.colorScheme.onSurface),
                                     )
                                     ButtonPlaceholder(modifier = Modifier.weight(1f).height(48.dp))
                                     ButtonPlaceholder(modifier = Modifier.weight(1f).height(48.dp))
                                     Box(
                                         modifier =
-                                            Modifier.size(48.dp)
+                                            Modifier
+                                                .size(48.dp)
                                                 .shimmer()
                                                 .clip(CircleShape)
-                                                .background(MaterialTheme.colorScheme.onSurface)
+                                                .background(MaterialTheme.colorScheme.onSurface),
                                     )
                                 }
 
@@ -586,16 +597,18 @@ fun OnlinePlaylistScreen(
                         item(key = "header") {
                             Column(
                                 modifier =
-                                    Modifier.fillMaxWidth()
+                                    Modifier
+                                        .fillMaxWidth()
                                         .padding(top = systemBarsTopPadding + AppBarHeight)
                                         .animateItem(),
-                                horizontalAlignment = Alignment.CenterHorizontally
+                                horizontalAlignment = Alignment.CenterHorizontally,
                             ) {
                                 // Playlist Thumbnail - Large centered with shadow
                                 Box(modifier = Modifier.padding(top = 8.dp, bottom = 20.dp)) {
                                     Surface(
                                         modifier =
-                                            Modifier.size(240.dp)
+                                            Modifier
+                                                .size(240.dp)
                                                 .shadow(
                                                     elevation = 24.dp,
                                                     shape = RoundedCornerShape(16.dp),
@@ -604,15 +617,15 @@ fun OnlinePlaylistScreen(
                                                             .getOrNull(0)
                                                             ?.copy(alpha = 0.5f)
                                                             ?: MaterialTheme.colorScheme.primary
-                                                                .copy(alpha = 0.3f)
+                                                                .copy(alpha = 0.3f),
                                                 ),
-                                        shape = RoundedCornerShape(16.dp)
+                                        shape = RoundedCornerShape(16.dp),
                                     ) {
                                         AsyncImage(
                                             model = playlist.thumbnail,
                                             contentDescription = null,
                                             contentScale = ContentScale.Crop,
-                                            modifier = Modifier.fillMaxSize()
+                                            modifier = Modifier.fillMaxSize(),
                                         )
                                     }
                                 }
@@ -625,7 +638,7 @@ fun OnlinePlaylistScreen(
                                     textAlign = TextAlign.Center,
                                     maxLines = 2,
                                     overflow = TextOverflow.Ellipsis,
-                                    modifier = Modifier.padding(horizontal = 32.dp)
+                                    modifier = Modifier.padding(horizontal = 32.dp),
                                 )
 
                                 // Author (Clickable)
@@ -641,15 +654,14 @@ fun OnlinePlaylistScreen(
                                                                 fontWeight = FontWeight.Normal,
                                                                 color =
                                                                     MaterialTheme.colorScheme
-                                                                        .primary
-                                                            )
-                                                            .toSpanStyle()
+                                                                        .primary,
+                                                            ).toSpanStyle(),
                                                 ) {
                                                     if (artist.id != null) {
                                                         val link =
                                                             LinkAnnotation.Clickable(artist.id!!) {
                                                                 navController.navigate(
-                                                                    "artist/${artist.id}"
+                                                                    "artist/${artist.id}",
                                                                 )
                                                             }
                                                         withLink(link) { append(artist.name) }
@@ -659,7 +671,7 @@ fun OnlinePlaylistScreen(
                                                 }
                                             },
                                         textAlign = TextAlign.Center,
-                                        modifier = Modifier.padding(horizontal = 32.dp)
+                                        modifier = Modifier.padding(horizontal = 32.dp),
                                     )
                                 }
 
@@ -671,11 +683,11 @@ fun OnlinePlaylistScreen(
                                         modifier =
                                             Modifier.fillMaxWidth().padding(horizontal = 48.dp),
                                         horizontalArrangement = Arrangement.Center,
-                                        verticalAlignment = Alignment.CenterVertically
+                                        verticalAlignment = Alignment.CenterVertically,
                                     ) {
                                         MetadataChip(
                                             icon = R.drawable.music_note,
-                                            text = songCountText
+                                            text = songCountText,
                                         )
                                     }
                                 }
@@ -690,7 +702,7 @@ fun OnlinePlaylistScreen(
                                         textAlign = TextAlign.Center,
                                         maxLines = 3,
                                         overflow = TextOverflow.Ellipsis,
-                                        modifier = Modifier.padding(horizontal = 32.dp)
+                                        modifier = Modifier.padding(horizontal = 32.dp),
                                     )
                                 }
 
@@ -700,7 +712,7 @@ fun OnlinePlaylistScreen(
                                 Row(
                                     modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
                                     horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    verticalAlignment = Alignment.CenterVertically
+                                    verticalAlignment = Alignment.CenterVertically,
                                 ) {
                                     val hasLike = playlist.id != "LM"
                                     val hasPlay = playlist.playEndpoint != null
@@ -715,12 +727,25 @@ fun OnlinePlaylistScreen(
                                         }
 
                                     @Composable
-                                    fun shapeFor(slotIndex: Int) = when {
-                                        activeIndices.first() == slotIndex && activeIndices.last() == slotIndex -> ButtonGroupDefaults.connectedLeadingButtonShapes()
-                                        activeIndices.first() == slotIndex -> ButtonGroupDefaults.connectedLeadingButtonShapes()
-                                        activeIndices.last() == slotIndex -> ButtonGroupDefaults.connectedTrailingButtonShapes()
-                                        else -> ButtonGroupDefaults.connectedMiddleButtonShapes()
-                                    }
+                                    fun shapeFor(slotIndex: Int) =
+                                        when {
+                                            activeIndices.first() == slotIndex && activeIndices.last() == slotIndex -> {
+                                                ButtonGroupDefaults
+                                                    .connectedLeadingButtonShapes()
+                                            }
+
+                                            activeIndices.first() == slotIndex -> {
+                                                ButtonGroupDefaults.connectedLeadingButtonShapes()
+                                            }
+
+                                            activeIndices.last() == slotIndex -> {
+                                                ButtonGroupDefaults.connectedTrailingButtonShapes()
+                                            }
+
+                                            else -> {
+                                                ButtonGroupDefaults.connectedMiddleButtonShapes()
+                                            }
+                                        }
 
                                     if (hasLike) {
                                         val isBookmarked = dbPlaylist?.playlist?.bookmarkedAt != null
@@ -731,23 +756,22 @@ fun OnlinePlaylistScreen(
                                                     database.transaction {
                                                         val playlistEntity =
                                                             PlaylistEntity(
-                                                                    name = playlist.title,
-                                                                    browseId = playlist.id,
-                                                                    thumbnailUrl =
-                                                                        playlist.thumbnail,
-                                                                    isEditable =
-                                                                        playlist.isEditable,
-                                                                    playEndpointParams =
-                                                                        playlist.playEndpoint
-                                                                            ?.params,
-                                                                    shuffleEndpointParams =
-                                                                        playlist.shuffleEndpoint
-                                                                            ?.params,
-                                                                    radioEndpointParams =
-                                                                        playlist.radioEndpoint
-                                                                            ?.params
-                                                                )
-                                                                .toggleLike()
+                                                                name = playlist.title,
+                                                                browseId = playlist.id,
+                                                                thumbnailUrl =
+                                                                    playlist.thumbnail,
+                                                                isEditable =
+                                                                    playlist.isEditable,
+                                                                playEndpointParams =
+                                                                    playlist.playEndpoint
+                                                                        ?.params,
+                                                                shuffleEndpointParams =
+                                                                    playlist.shuffleEndpoint
+                                                                        ?.params,
+                                                                radioEndpointParams =
+                                                                    playlist.radioEndpoint
+                                                                        ?.params,
+                                                            ).toggleLike()
                                                         insert(playlistEntity)
                                                         songs
                                                             .onEach { song -> insert(song.toMediaMetadata()) }
@@ -758,8 +782,7 @@ fun OnlinePlaylistScreen(
                                                                     position = index,
                                                                     setVideoId = song.setVideoId,
                                                                 )
-                                                            }
-                                                            .forEach(::insert)
+                                                            }.forEach(::insert)
                                                     }
                                                 } else {
                                                     database.transaction {
@@ -771,22 +794,25 @@ fun OnlinePlaylistScreen(
                                             },
                                             modifier = Modifier.size(56.dp),
                                             shapes = shapeFor(0),
-                                            colors = ToggleButtonDefaults.toggleButtonColors(
-                                                containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                                                contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                checkedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                                                checkedContentColor = MaterialTheme.colorScheme.error,
-                                            ),
+                                            colors =
+                                                ToggleButtonDefaults.toggleButtonColors(
+                                                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                    checkedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                                    checkedContentColor = MaterialTheme.colorScheme.error,
+                                                ),
                                         ) {
                                             Icon(
                                                 painter =
                                                     painterResource(
-                                                        if (isBookmarked)
+                                                        if (isBookmarked) {
                                                             R.drawable.favorite
-                                                        else R.drawable.favorite_border
+                                                        } else {
+                                                            R.drawable.favorite_border
+                                                        },
                                                     ),
                                                 contentDescription = null,
-                                                modifier = Modifier.size(28.dp)
+                                                modifier = Modifier.size(28.dp),
                                             )
                                         }
                                     }
@@ -796,23 +822,24 @@ fun OnlinePlaylistScreen(
                                             checked = false,
                                             onCheckedChange = {
                                                 playerConnection.playQueue(
-                                                    YouTubeQueue.playlist(playEndpoint)
+                                                    YouTubeQueue.playlist(playEndpoint),
                                                 )
                                             },
                                             modifier = Modifier.weight(1f).height(56.dp),
                                             shapes = shapeFor(1),
-                                            colors = ToggleButtonDefaults.toggleButtonColors(
-                                                containerColor = MaterialTheme.colorScheme.primary,
-                                                contentColor = MaterialTheme.colorScheme.onPrimary,
-                                                checkedContainerColor = MaterialTheme.colorScheme.primary,
-                                                checkedContentColor = MaterialTheme.colorScheme.onPrimary,
-                                            ),
+                                            colors =
+                                                ToggleButtonDefaults.toggleButtonColors(
+                                                    containerColor = MaterialTheme.colorScheme.primary,
+                                                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                                                    checkedContainerColor = MaterialTheme.colorScheme.primary,
+                                                    checkedContentColor = MaterialTheme.colorScheme.onPrimary,
+                                                ),
                                         ) {
                                             Icon(
                                                 painter = painterResource(R.drawable.play),
                                                 contentDescription =
                                                     stringResource(R.string.play),
-                                                modifier = Modifier.size(28.dp)
+                                                modifier = Modifier.size(28.dp),
                                             )
                                         }
                                     }
@@ -822,23 +849,24 @@ fun OnlinePlaylistScreen(
                                             checked = false,
                                             onCheckedChange = {
                                                 playerConnection.playQueue(
-                                                    YouTubeQueue.playlist(shuffleEndpoint)
+                                                    YouTubeQueue.playlist(shuffleEndpoint),
                                                 )
                                             },
                                             modifier = Modifier.weight(1f).height(56.dp),
                                             shapes = shapeFor(2),
-                                            colors = ToggleButtonDefaults.toggleButtonColors(
-                                                containerColor = MaterialTheme.colorScheme.primary,
-                                                contentColor = MaterialTheme.colorScheme.onPrimary,
-                                                checkedContainerColor = MaterialTheme.colorScheme.primary,
-                                                checkedContentColor = MaterialTheme.colorScheme.onPrimary,
-                                            ),
+                                            colors =
+                                                ToggleButtonDefaults.toggleButtonColors(
+                                                    containerColor = MaterialTheme.colorScheme.primary,
+                                                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                                                    checkedContainerColor = MaterialTheme.colorScheme.primary,
+                                                    checkedContentColor = MaterialTheme.colorScheme.onPrimary,
+                                                ),
                                         ) {
                                             Icon(
                                                 painter = painterResource(R.drawable.shuffle),
                                                 contentDescription =
                                                     stringResource(R.string.shuffle),
-                                                modifier = Modifier.size(28.dp)
+                                                modifier = Modifier.size(28.dp),
                                             )
                                         }
                                     }
@@ -848,22 +876,23 @@ fun OnlinePlaylistScreen(
                                             checked = false,
                                             onCheckedChange = {
                                                 playerConnection.playQueue(
-                                                    YouTubeQueue(radioEndpoint)
+                                                    YouTubeQueue(radioEndpoint),
                                                 )
                                             },
                                             modifier = Modifier.weight(1f).height(56.dp),
                                             shapes = shapeFor(3),
-                                            colors = ToggleButtonDefaults.toggleButtonColors(
-                                                containerColor = MaterialTheme.colorScheme.primary,
-                                                contentColor = MaterialTheme.colorScheme.onPrimary,
-                                                checkedContainerColor = MaterialTheme.colorScheme.primary,
-                                                checkedContentColor = MaterialTheme.colorScheme.onPrimary,
-                                            ),
+                                            colors =
+                                                ToggleButtonDefaults.toggleButtonColors(
+                                                    containerColor = MaterialTheme.colorScheme.primary,
+                                                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                                                    checkedContainerColor = MaterialTheme.colorScheme.primary,
+                                                    checkedContentColor = MaterialTheme.colorScheme.onPrimary,
+                                                ),
                                         ) {
                                             Icon(
                                                 painter = painterResource(R.drawable.radio),
                                                 contentDescription = stringResource(R.string.radio),
-                                                modifier = Modifier.size(28.dp)
+                                                modifier = Modifier.size(28.dp),
                                             )
                                         }
                                     }
@@ -872,30 +901,38 @@ fun OnlinePlaylistScreen(
                                         checked = downloadState == HeaderDownloadState.Completed,
                                         onCheckedChange = {
                                             when (downloadState) {
-                                                HeaderDownloadState.Completed -> sendRemoveDownloads(
-                                                    context = context,
-                                                    songIds = songs.map { it.id },
-                                                )
-                                                else -> sendAddMissingDownloads(
-                                                    context = context,
-                                                    songs = songs.map { song ->
-                                                        HeaderDownloadItem(
-                                                            id = song.id,
-                                                            title = song.title,
-                                                        )
-                                                    },
-                                                    downloads = downloads,
-                                                )
+                                                HeaderDownloadState.Completed -> {
+                                                    sendRemoveDownloads(
+                                                        context = context,
+                                                        songIds = songs.map { it.id },
+                                                    )
+                                                }
+
+                                                else -> {
+                                                    downloadProgressToolbarDismissed = false
+                                                    sendAddMissingDownloads(
+                                                        context = context,
+                                                        songs =
+                                                            songs.map { song ->
+                                                                HeaderDownloadItem(
+                                                                    id = song.id,
+                                                                    title = song.title,
+                                                                )
+                                                            },
+                                                        downloads = downloads,
+                                                    )
+                                                }
                                             }
                                         },
                                         modifier = Modifier.size(56.dp),
                                         shapes = shapeFor(4),
-                                        colors = ToggleButtonDefaults.toggleButtonColors(
-                                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            checkedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                                            checkedContentColor = MaterialTheme.colorScheme.primary,
-                                        ),
+                                        colors =
+                                            ToggleButtonDefaults.toggleButtonColors(
+                                                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                                contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                checkedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                                checkedContentColor = MaterialTheme.colorScheme.primary,
+                                            ),
                                     ) {
                                         val state = downloadState
                                         when (state) {
@@ -903,23 +940,19 @@ fun OnlinePlaylistScreen(
                                                 Icon(
                                                     painter = painterResource(R.drawable.offline),
                                                     contentDescription = null,
-                                                    modifier = Modifier.size(28.dp)
+                                                    modifier = Modifier.size(28.dp),
                                                 )
                                             }
+
                                             is HeaderDownloadState.Partial -> {
-                                                CircularProgressIndicator(
-                                                    progress = { state.progress },
-                                                    modifier = Modifier.size(36.dp),
-                                                    color = MaterialTheme.colorScheme.onSurface,
-                                                    trackColor = MaterialTheme.colorScheme.outlineVariant,
-                                                    strokeWidth = 3.dp,
-                                                )
+                                                HeaderDownloadProgressIndicator(progress = state.progress)
                                             }
+
                                             HeaderDownloadState.None -> {
                                                 Icon(
                                                     painter = painterResource(R.drawable.download),
                                                     contentDescription = null,
-                                                    modifier = Modifier.size(28.dp)
+                                                    modifier = Modifier.size(28.dp),
                                                 )
                                             }
                                         }
@@ -942,27 +975,29 @@ fun OnlinePlaylistScreen(
                                         },
                                         modifier = Modifier.size(56.dp),
                                         shapes = shapeFor(5),
-                                        colors = ToggleButtonDefaults.toggleButtonColors(
-                                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            checkedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                                            checkedContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        ),
+                                        colors =
+                                            ToggleButtonDefaults.toggleButtonColors(
+                                                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                                contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                checkedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                                checkedContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            ),
                                     ) {
                                         Icon(
                                             painter = painterResource(R.drawable.more_vert),
                                             contentDescription = null,
-                                            modifier = Modifier.size(28.dp)
+                                            modifier = Modifier.size(28.dp),
                                         )
                                     }
                                 }
 
                                 Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 20.dp, vertical = 20.dp),
+                                    modifier =
+                                        Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 20.dp, vertical = 20.dp),
                                     horizontalArrangement = Arrangement.Center,
-                                    verticalAlignment = Alignment.CenterVertically
+                                    verticalAlignment = Alignment.CenterVertically,
                                 ) {
                                     val mixEndpoint = playlist.shuffleEndpoint ?: playlist.radioEndpoint
                                     if (mixEndpoint != null) {
@@ -973,7 +1008,7 @@ fun OnlinePlaylistScreen(
                                                         YouTubeQueue.playlist(mixEndpoint)
                                                     } else {
                                                         YouTubeQueue(mixEndpoint)
-                                                    }
+                                                    },
                                                 )
                                             },
                                             modifier = Modifier.weight(1f).height(48.dp),
@@ -982,7 +1017,7 @@ fun OnlinePlaylistScreen(
                                             Icon(
                                                 painter = painterResource(R.drawable.mix),
                                                 contentDescription = stringResource(R.string.start_radio),
-                                                modifier = Modifier.size(24.dp)
+                                                modifier = Modifier.size(24.dp),
                                             )
                                         }
                                     }
@@ -997,24 +1032,28 @@ fun OnlinePlaylistScreen(
                         item(key = "empty") {
                             Column(
                                 modifier = Modifier.fillMaxWidth().padding(32.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally
+                                horizontalAlignment = Alignment.CenterHorizontally,
                             ) {
                                 Text(
                                     text = stringResource(R.string.empty_playlist),
-                                    style = MaterialTheme.typography.titleLarge
+                                    style = MaterialTheme.typography.titleLarge,
                                 )
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(
                                     text = stringResource(R.string.empty_playlist_desc),
                                     style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
                         }
                     }
 
                     // Songs List
-                    items(items = wrappedSongs, key = { it.item.second.id }) { song ->
+                    items(
+                        items = wrappedSongs,
+                        key = { it.item.second.setVideoId ?: "${it.item.second.id}-${it.item.first}" },
+                        contentType = { "online_playlist_song" },
+                    ) { song ->
                         YouTubeListItem(
                             item = song.item.second,
                             viewCountText =
@@ -1035,7 +1074,7 @@ fun OnlinePlaylistScreen(
                                             )
                                         }
                                     },
-                                    onLongClick = {}
+                                    onLongClick = {},
                                 ) {
                                     Icon(
                                         painter = painterResource(R.drawable.more_vert),
@@ -1044,7 +1083,8 @@ fun OnlinePlaylistScreen(
                                 }
                             },
                             modifier =
-                                Modifier.combinedClickable(
+                                Modifier
+                                    .combinedClickable(
                                         enabled = !hideExplicit || !song.item.second.explicit,
                                         onClick = {
                                             if (!selection) {
@@ -1071,7 +1111,7 @@ fun OnlinePlaylistScreen(
                                         },
                                         onLongClick = {
                                             haptic.performHapticFeedback(
-                                                HapticFeedbackType.LongPress
+                                                HapticFeedbackType.LongPress,
                                             )
                                             if (!selection) {
                                                 selection = true
@@ -1079,8 +1119,7 @@ fun OnlinePlaylistScreen(
                                             wrappedSongs.forEach { it.isSelected = false }
                                             song.isSelected = true
                                         },
-                                    )
-                                    .animateItem(),
+                                    ).animateItem(),
                         )
                     }
 
@@ -1094,26 +1133,26 @@ fun OnlinePlaylistScreen(
                     item(key = "error") {
                         Column(
                             modifier = Modifier.fillMaxWidth().padding(32.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
+                            horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
                             if (isPrivatePlaylist) {
                                 Image(
                                     painter = painterResource(R.drawable.anime_blank),
                                     contentDescription = null,
-                                    modifier = Modifier.size(120.dp)
+                                    modifier = Modifier.size(120.dp),
                                 )
                                 Spacer(modifier = Modifier.height(16.dp))
                                 Text(
                                     text = stringResource(R.string.playlist_private_title),
                                     style = MaterialTheme.typography.titleLarge,
-                                    color = MaterialTheme.colorScheme.onSurface
+                                    color = MaterialTheme.colorScheme.onSurface,
                                 )
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(
                                     text = stringResource(R.string.playlist_private_desc),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    textAlign = TextAlign.Center
+                                    textAlign = TextAlign.Center,
                                 )
                             } else {
                                 Text(
@@ -1125,8 +1164,11 @@ fun OnlinePlaylistScreen(
                                         },
                                     style = MaterialTheme.typography.titleLarge,
                                     color =
-                                        if (error != null) MaterialTheme.colorScheme.error
-                                        else MaterialTheme.colorScheme.onSurface
+                                        if (error != null) {
+                                            MaterialTheme.colorScheme.error
+                                        } else {
+                                            MaterialTheme.colorScheme.onSurface
+                                        },
                                 )
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(
@@ -1137,7 +1179,7 @@ fun OnlinePlaylistScreen(
                                             stringResource(R.string.playlist_not_found_desc)
                                         },
                                     style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                                 if (error != null) {
                                     Spacer(modifier = Modifier.height(16.dp))
@@ -1154,14 +1196,14 @@ fun OnlinePlaylistScreen(
 
         DraggableScrollbar(
             modifier =
-                Modifier.padding(
+                Modifier
+                    .padding(
                         LocalPlayerAwareWindowInsets.current
                             .union(WindowInsets.ime)
-                            .asPaddingValues()
-                    )
-                    .align(Alignment.CenterEnd),
+                            .asPaddingValues(),
+                    ).align(Alignment.CenterEnd),
             scrollState = lazyListState,
-            headerItems = headerItems
+            headerItems = headerItems,
         )
 
         // Top App Bar
@@ -1172,12 +1214,12 @@ fun OnlinePlaylistScreen(
                     scrolledContainerColor = Color.Transparent,
                     navigationIconContentColor = MaterialTheme.colorScheme.onBackground,
                     titleContentColor = MaterialTheme.colorScheme.onBackground,
-                    actionIconContentColor = MaterialTheme.colorScheme.onBackground
+                    actionIconContentColor = MaterialTheme.colorScheme.onBackground,
                 )
             } else {
                 TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,
-                    scrolledContainerColor = MaterialTheme.colorScheme.surface
+                    scrolledContainerColor = MaterialTheme.colorScheme.surface,
                 )
             }
 
@@ -1188,7 +1230,7 @@ fun OnlinePlaylistScreen(
                     val count = wrappedSongs.count { it.isSelected }
                     Text(
                         text = pluralStringResource(R.plurals.n_song, count, count),
-                        style = MaterialTheme.typography.titleLarge
+                        style = MaterialTheme.typography.titleLarge,
                     )
                 } else if (isSearching) {
                     TextField(
@@ -1197,7 +1239,7 @@ fun OnlinePlaylistScreen(
                         placeholder = {
                             Text(
                                 text = stringResource(R.string.search),
-                                style = MaterialTheme.typography.titleLarge
+                                style = MaterialTheme.typography.titleLarge,
                             )
                         },
                         singleLine = true,
@@ -1211,7 +1253,7 @@ fun OnlinePlaylistScreen(
                                 unfocusedIndicatorColor = Color.Transparent,
                                 disabledIndicatorColor = Color.Transparent,
                             ),
-                        modifier = Modifier.fillMaxWidth().focusRequester(focusRequester)
+                        modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),
                     )
                 } else if (showTopBarTitle) {
                     Text(playlist?.title.orEmpty())
@@ -1233,14 +1275,14 @@ fun OnlinePlaylistScreen(
                         if (!isSearching && !selection) {
                             navController.backToMain()
                         }
-                    }
+                    },
                 ) {
                     Icon(
                         painter =
                             painterResource(
-                                if (selection) R.drawable.close else R.drawable.arrow_back
+                                if (selection) R.drawable.close else R.drawable.arrow_back,
                             ),
-                        contentDescription = null
+                        contentDescription = null,
                     )
                 }
             },
@@ -1255,15 +1297,18 @@ fun OnlinePlaylistScreen(
                                 wrappedSongs.forEach { it.isSelected = true }
                             }
                         },
-                        onLongClick = {}
+                        onLongClick = {},
                     ) {
                         Icon(
                             painter =
                                 painterResource(
-                                    if (count == wrappedSongs.size) R.drawable.deselect
-                                    else R.drawable.select_all
+                                    if (count == wrappedSongs.size) {
+                                        R.drawable.deselect
+                                    } else {
+                                        R.drawable.select_all
+                                    },
                                 ),
-                            contentDescription = null
+                            contentDescription = null,
                         )
                     }
                     IconButton(
@@ -1273,98 +1318,111 @@ fun OnlinePlaylistScreen(
                                     songSelection =
                                         wrappedSongs
                                             .filter { it.isSelected }
-                                            .map { it.item.second.toMediaItem().metadata!! },
+                                            .map {
+                                                it.item.second
+                                                    .toMediaItem()
+                                                    .metadata!!
+                                            },
                                     onDismiss = menuState::dismiss,
                                     clearAction = { selection = false },
-                                    currentItems = emptyList()
+                                    currentItems = emptyList(),
                                 )
                             }
                         },
-                        onLongClick = {}
+                        onLongClick = {},
                     ) {
                         Icon(
                             painter = painterResource(R.drawable.more_vert),
-                            contentDescription = null
+                            contentDescription = null,
                         )
                     }
                 } else if (!isSearching) {
                     IconButton(onClick = { isSearching = true }, onLongClick = {}) {
                         Icon(
                             painter = painterResource(R.drawable.search),
-                            contentDescription = null
+                            contentDescription = null,
                         )
                     }
                 }
-            }
+            },
         )
 
         val currentDownloadState = downloadState
-        if (currentDownloadState is HeaderDownloadState.Partial && songs.isNotEmpty()) {
-            val songIds = remember(songs) { songs.map { it.id } }
-            DownloadProgressFloatingToolbar(
-                state = DownloadProgressToolbarState(
-                    progress = currentDownloadState.progress,
-                    paused = downloadsPaused,
-                    canPause = hasActiveDownloads(songIds, downloads),
-                ),
-                onPauseResume = {
-                    if (downloadsPaused) {
-                        sendResumeDownloads(context, songIds)
-                    } else {
-                        sendPauseDownloads(context, songIds)
-                    }
-                    downloadsPaused = !downloadsPaused
-                },
-                onStop = {
-                    sendCancelIncompleteDownloads(
-                        context = context,
-                        songIds = songIds,
-                        downloads = downloads,
-                    )
-                    downloadsPaused = false
-                },
-                modifier =
-                    Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(LocalPlayerAwareWindowInsets.current.asPaddingValues())
-                        .padding(bottom = 16.dp),
-            )
+        val showDownloadProgressToolbar =
+            currentDownloadState is HeaderDownloadState.Partial &&
+                songs.isNotEmpty() &&
+                !downloadProgressToolbarDismissed
+        AnimatedVisibility(
+            visible = showDownloadProgressToolbar,
+            modifier =
+                Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(LocalPlayerAwareWindowInsets.current.asPaddingValues())
+                    .padding(bottom = 16.dp),
+        ) {
+            if (currentDownloadState is HeaderDownloadState.Partial && songs.isNotEmpty()) {
+                val songIds = remember(songs) { songs.map { it.id } }
+                DownloadProgressFloatingToolbar(
+                    state =
+                        DownloadProgressToolbarState(
+                            progress = currentDownloadState.progress,
+                            paused = downloadsPaused,
+                            canPause = hasActiveDownloads(songIds, downloads),
+                        ),
+                    onPauseResume = {
+                        if (downloadsPaused) {
+                            sendResumeDownloads(context, songIds)
+                        } else {
+                            sendPauseDownloads(context, songIds)
+                        }
+                        downloadsPaused = !downloadsPaused
+                    },
+                    onDismiss = {
+                        downloadsPaused = false
+                        downloadProgressToolbarDismissed = true
+                    },
+                )
+            }
         }
 
         SnackbarHost(
             hostState = snackbarHostState,
             modifier =
-                Modifier.windowInsetsPadding(
-                        LocalPlayerAwareWindowInsets.current.union(WindowInsets.ime)
-                    )
-                    .align(Alignment.BottomCenter),
+                Modifier
+                    .windowInsetsPadding(
+                        LocalPlayerAwareWindowInsets.current.union(WindowInsets.ime),
+                    ).align(Alignment.BottomCenter),
         )
     }
 }
 
 @Composable
-private fun MetadataChip(icon: Int, text: String, modifier: Modifier = Modifier) {
+private fun MetadataChip(
+    icon: Int,
+    text: String,
+    modifier: Modifier = Modifier,
+) {
     Surface(
         modifier = modifier,
         shape = RoundedCornerShape(20.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
             horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
                 painter = painterResource(icon),
                 contentDescription = null,
                 modifier = Modifier.size(16.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(
                 text = text,
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1
+                maxLines = 1,
             )
         }
     }

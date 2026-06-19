@@ -68,9 +68,9 @@ import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedIconButton
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SplitButtonDefaults
 import androidx.compose.material3.SplitButtonLayout
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
@@ -104,6 +104,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
@@ -138,10 +139,10 @@ import moe.rukamori.archivetune.utils.decodeSavedAccounts
 import moe.rukamori.archivetune.utils.encodeSavedAccounts
 import moe.rukamori.archivetune.utils.putLegacyPoToken
 import moe.rukamori.archivetune.utils.rememberPreference
-import java.util.UUID
-import moe.rukamori.archivetune.viewmodels.HomeViewModel
 import moe.rukamori.archivetune.viewmodels.AccountChannelUiModel
 import moe.rukamori.archivetune.viewmodels.AccountChannelsState
+import moe.rukamori.archivetune.viewmodels.HomeViewModel
+import java.util.UUID
 
 private val CardShape = RoundedCornerShape(28.dp)
 private val InnerTileShape = RoundedCornerShape(22.dp)
@@ -184,9 +185,10 @@ fun AccountSettings(
         rememberPreference(ForceSyncOnAccountSwitchKey, false)
     val (selectedYtmPlaylists, _) = rememberPreference(SelectedYtmPlaylistsKey, "")
     val (savedAccountsJson, onSavedAccountsJsonChange) = rememberPreference(SavedAccountsKey, "")
-    val savedAccounts = remember(savedAccountsJson) {
-        SavedAccountCollection(decodeSavedAccounts(savedAccountsJson))
-    }
+    val savedAccounts =
+        remember(savedAccountsJson) {
+            SavedAccountCollection(decodeSavedAccounts(savedAccountsJson))
+        }
 
     val onLegacyPoTokenChange: (String) -> Unit = { value ->
         PreferenceStore.launchEdit(context.dataStore) {
@@ -194,9 +196,10 @@ fun AccountSettings(
         }
     }
 
-    val isLoggedIn = remember(innerTubeCookie) {
-        hasYouTubeLoginCookie(innerTubeCookie)
-    }
+    val isLoggedIn =
+        remember(innerTubeCookie) {
+            hasYouTubeLoginCookie(innerTubeCookie)
+        }
 
     LaunchedEffect(useLoginForBrowse) {
         YouTube.useLoginForBrowse = useLoginForBrowse
@@ -207,15 +210,17 @@ fun AccountSettings(
     val accountImageUrl by viewModel.accountImageUrl.collectAsStateWithLifecycle()
     val accountChannelsState by viewModel.accountChannelsState.collectAsStateWithLifecycle()
 
-    val displayName = when {
-        accountNameFromViewModel.isNotBlank() -> accountNameFromViewModel
-        accountNamePref.isNotBlank() -> accountNamePref
-        isLoggedIn -> accountLabel
-        else -> loginLabel
-    }
+    val displayName =
+        when {
+            accountNameFromViewModel.isNotBlank() -> accountNameFromViewModel
+            accountNamePref.isNotBlank() -> accountNamePref
+            isLoggedIn -> accountLabel
+            else -> loginLabel
+        }
 
     var showToken by remember { mutableStateOf(false) }
     var showTokenEditor by remember { mutableStateOf(false) }
+    var showUnsavedAccountDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(isLoggedIn) {
         if (!isLoggedIn) {
@@ -223,28 +228,31 @@ fun AccountSettings(
         }
     }
 
-    val hasUpdate = BuildConfig.UPDATER_AVAILABLE &&
-        !Updater.isSameVersion(latestVersionName, BuildConfig.VERSION_NAME)
-    val tokenActionTitle = when {
-        !isLoggedIn -> stringResource(R.string.advanced_login)
-        showToken -> stringResource(R.string.token_shown)
-        else -> stringResource(R.string.token_hidden)
-    }
+    val hasUpdate =
+        BuildConfig.UPDATER_AVAILABLE &&
+            Updater.isUpdateAvailable(latestVersionName, BuildConfig.VERSION_NAME)
+    val tokenActionTitle =
+        when {
+            !isLoggedIn -> stringResource(R.string.advanced_login)
+            showToken -> stringResource(R.string.token_shown)
+            else -> stringResource(R.string.token_hidden)
+        }
 
     val saveCurrentAccount: () -> Unit = {
         val existing = decodeSavedAccounts(savedAccountsJson)
         if (isLoggedIn && existing.none { it.innerTubeCookie == innerTubeCookie }) {
-            val newAccount = SavedAccount(
-                id = UUID.randomUUID().toString(),
-                name = if (accountNameFromViewModel.isNotBlank()) accountNameFromViewModel else accountNamePref,
-                email = accountEmail,
-                channelHandle = accountChannelHandle,
-                innerTubeCookie = innerTubeCookie,
-                visitorData = visitorData,
-                dataSyncId = dataSyncId,
-                ytmSync = ytmSync,
-                selectedYtmPlaylists = selectedYtmPlaylists,
-            )
+            val newAccount =
+                SavedAccount(
+                    id = UUID.randomUUID().toString(),
+                    name = if (accountNameFromViewModel.isNotBlank()) accountNameFromViewModel else accountNamePref,
+                    email = accountEmail,
+                    channelHandle = accountChannelHandle,
+                    innerTubeCookie = innerTubeCookie,
+                    visitorData = visitorData,
+                    dataSyncId = dataSyncId,
+                    ytmSync = ytmSync,
+                    selectedYtmPlaylists = selectedYtmPlaylists,
+                )
             onSavedAccountsJsonChange(encodeSavedAccounts(existing + newAccount))
         }
     }
@@ -269,9 +277,10 @@ fun AccountSettings(
     }
 
     Scaffold(
-        modifier = Modifier
-            .fillMaxSize()
-            .nestedScroll(scrollBehavior.nestedScrollConnection),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = MaterialTheme.colorScheme.surface,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
@@ -300,10 +309,11 @@ fun AccountSettings(
                 actions = {
                     OutlinedIconButton(
                         onClick = { showTokenEditor = true },
-                        colors = IconButtonDefaults.outlinedIconButtonColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                            contentColor = MaterialTheme.colorScheme.primary,
-                        ),
+                        colors =
+                            IconButtonDefaults.outlinedIconButtonColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                contentColor = MaterialTheme.colorScheme.primary,
+                            ),
                         border = null,
                     ) {
                         Icon(
@@ -321,10 +331,11 @@ fun AccountSettings(
                         ) {
                             OutlinedIconButton(
                                 onClick = { uriHandler.openUri(Updater.getLatestDownloadUrl()) },
-                                colors = IconButtonDefaults.outlinedIconButtonColors(
-                                    containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                                    contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
-                                ),
+                                colors =
+                                    IconButtonDefaults.outlinedIconButtonColors(
+                                        containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                                        contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                                    ),
                                 border = null,
                             ) {
                                 Icon(
@@ -337,28 +348,31 @@ fun AccountSettings(
                     }
                 },
                 windowInsets = TopAppBarDefaults.windowInsets,
-                colors = TopAppBarDefaults.largeTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
-                ),
+                colors =
+                    TopAppBarDefaults.largeTopAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+                    ),
                 scrollBehavior = scrollBehavior,
             )
         },
     ) { innerPadding ->
         LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .windowInsetsPadding(
-                    LocalPlayerAwareWindowInsets.current.only(
-                        WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom,
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .windowInsetsPadding(
+                        LocalPlayerAwareWindowInsets.current.only(
+                            WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom,
+                        ),
                     ),
+            contentPadding =
+                PaddingValues(
+                    start = 16.dp,
+                    top = innerPadding.calculateTopPadding() + 8.dp,
+                    end = 16.dp,
+                    bottom = 32.dp,
                 ),
-            contentPadding = PaddingValues(
-                start = 16.dp,
-                top = innerPadding.calculateTopPadding() + 8.dp,
-                end = 16.dp,
-                bottom = 32.dp,
-            ),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             item {
@@ -392,6 +406,14 @@ fun AccountSettings(
                     onSwitchAccount = switchToAccount,
                     onSwitchAccountChannel = switchToAccountChannel,
                     onRemoveAccount = removeAccount,
+                    onAddAnotherAccount = {
+                        val isSaved = savedAccounts.accounts.any { it.innerTubeCookie == innerTubeCookie }
+                        if (isLoggedIn && !isSaved) {
+                            showUnsavedAccountDialog = true
+                        } else {
+                            navController.navigate(buildLoginRoute())
+                        }
+                    },
                 )
             }
 
@@ -407,9 +429,11 @@ fun AccountSettings(
             item {
                 AnimatedVisibility(
                     visible = isLoggedIn,
-                    enter = fadeIn(spring(stiffness = Spring.StiffnessLow)) + expandVertically(
-                        spring(stiffness = Spring.StiffnessLow),
-                    ),
+                    enter =
+                        fadeIn(spring(stiffness = Spring.StiffnessLow)) +
+                            expandVertically(
+                                spring(stiffness = Spring.StiffnessLow),
+                            ),
                     exit = fadeOut() + shrinkVertically(),
                 ) {
                     ExpressiveSectionCard(title = generalLabel) {
@@ -506,6 +530,70 @@ fun AccountSettings(
             onDismiss = { showTokenEditor = false },
         )
     }
+
+    if (showUnsavedAccountDialog) {
+        Dialog(onDismissRequest = { showUnsavedAccountDialog = false }) {
+            Card(
+                shape = CardShape,
+                colors =
+                    CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    verticalArrangement = Arrangement.spacedBy(20.dp),
+                ) {
+                    Text(
+                        text = stringResource(R.string.unsaved_account_dialog_title),
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Text(
+                        text = stringResource(R.string.unsaved_account_dialog_text),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        TextButton(
+                            onClick = { showUnsavedAccountDialog = false },
+                        ) {
+                            Text(text = stringResource(R.string.unsaved_account_dialog_cancel))
+                        }
+                        Spacer(modifier = Modifier.width(4.dp))
+                        TextButton(
+                            onClick = {
+                                showUnsavedAccountDialog = false
+                                navController.navigate(buildLoginRoute())
+                            },
+                        ) {
+                            Text(
+                                text = stringResource(R.string.unsaved_account_dialog_no_thanks),
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(4.dp))
+                        TextButton(
+                            onClick = {
+                                showUnsavedAccountDialog = false
+                                saveCurrentAccount()
+                                navController.navigate(buildLoginRoute())
+                            },
+                        ) {
+                            Text(
+                                text = stringResource(R.string.unsaved_account_dialog_save_yes),
+                                fontWeight = FontWeight.Bold,
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 @Composable
@@ -525,6 +613,7 @@ private fun ProfileIdentityCard(
     onSwitchAccount: (SavedAccount) -> Unit,
     onSwitchAccountChannel: (AccountChannelUiModel) -> Unit,
     onRemoveAccount: (SavedAccount) -> Unit,
+    onAddAnotherAccount: () -> Unit,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
@@ -541,71 +630,82 @@ private fun ProfileIdentityCard(
     )
 
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .graphicsLayer { scaleX = scale; scaleY = scale },
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .graphicsLayer {
+                    scaleX = scale
+                    scaleY = scale
+                },
         shape = CardShape,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-        ),
+        colors =
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+            ),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         onClick = onPrimaryAction,
         interactionSource = interactionSource,
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f),
-                            MaterialTheme.colorScheme.surfaceContainerLow.copy(alpha = 0f),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .background(
+                        Brush.verticalGradient(
+                            colors =
+                                listOf(
+                                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f),
+                                    MaterialTheme.colorScheme.surfaceContainerLow.copy(alpha = 0f),
+                                ),
                         ),
-                    ),
-                )
-                .padding(horizontal = 24.dp, vertical = 28.dp),
+                    ).padding(horizontal = 24.dp, vertical = 28.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Box(contentAlignment = Alignment.BottomEnd) {
                 Box(
-                    modifier = Modifier
-                        .size(AvatarSize)
-                        .clip(CircleShape)
-                        .background(
-                            Brush.radialGradient(
-                                colors = listOf(
-                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.20f),
-                                    MaterialTheme.colorScheme.tertiary.copy(alpha = 0.10f),
+                    modifier =
+                        Modifier
+                            .size(AvatarSize)
+                            .clip(CircleShape)
+                            .background(
+                                Brush.radialGradient(
+                                    colors =
+                                        listOf(
+                                            MaterialTheme.colorScheme.primary.copy(alpha = 0.20f),
+                                            MaterialTheme.colorScheme.tertiary.copy(alpha = 0.10f),
+                                        ),
                                 ),
+                            ).border(
+                                width = 2.dp,
+                                brush =
+                                    Brush.linearGradient(
+                                        colors =
+                                            listOf(
+                                                MaterialTheme.colorScheme.primary.copy(alpha = 0.40f),
+                                                MaterialTheme.colorScheme.tertiary.copy(alpha = 0.30f),
+                                            ),
+                                    ),
+                                shape = CircleShape,
                             ),
-                        )
-                        .border(
-                            width = 2.dp,
-                            brush = Brush.linearGradient(
-                                colors = listOf(
-                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.40f),
-                                    MaterialTheme.colorScheme.tertiary.copy(alpha = 0.30f),
-                                ),
-                            ),
-                            shape = CircleShape,
-                        ),
                     contentAlignment = Alignment.Center,
                 ) {
                     if (isLoggedIn && !accountImageUrl.isNullOrBlank()) {
                         AsyncImage(
                             model = accountImageUrl,
                             contentDescription = null,
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .clip(CircleShape),
+                            modifier =
+                                Modifier
+                                    .fillMaxSize()
+                                    .clip(CircleShape),
                             contentScale = ContentScale.Crop,
                         )
                     } else {
                         Icon(
-                            painter = painterResource(
-                                if (isLoggedIn) R.drawable.account else R.drawable.login,
-                            ),
+                            painter =
+                                painterResource(
+                                    if (isLoggedIn) R.drawable.account else R.drawable.login,
+                                ),
                             contentDescription = null,
                             modifier = Modifier.size(38.dp),
                             tint = MaterialTheme.colorScheme.primary,
@@ -642,8 +742,10 @@ private fun ProfileIdentityCard(
                 AnimatedContent(
                     targetState = accountName,
                     transitionSpec = {
-                        (fadeIn(spring(stiffness = Spring.StiffnessLow)) togetherWith
-                                fadeOut(spring(stiffness = Spring.StiffnessHigh)))
+                        (
+                            fadeIn(spring(stiffness = Spring.StiffnessLow)) togetherWith
+                                fadeOut(spring(stiffness = Spring.StiffnessHigh))
+                        )
                     },
                     label = "nameTransition",
                 ) { name ->
@@ -712,19 +814,22 @@ private fun ProfileIdentityCard(
                         leadingButton = {
                             SplitButtonDefaults.ElevatedLeadingButton(
                                 onClick = onPrimaryAction,
-                                colors = ButtonDefaults.elevatedButtonColors(
-                                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                                ),
-                                elevation = ButtonDefaults.elevatedButtonElevation(
-                                    defaultElevation = 1.dp,
-                                    pressedElevation = 0.dp,
-                                ),
+                                colors =
+                                    ButtonDefaults.elevatedButtonColors(
+                                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    ),
+                                elevation =
+                                    ButtonDefaults.elevatedButtonElevation(
+                                        defaultElevation = 1.dp,
+                                        pressedElevation = 0.dp,
+                                    ),
                             ) {
                                 Icon(
-                                    painter = painterResource(
-                                        if (isLoggedIn) R.drawable.account else R.drawable.login,
-                                    ),
+                                    painter =
+                                        painterResource(
+                                            if (isLoggedIn) R.drawable.account else R.drawable.login,
+                                        ),
                                     contentDescription = null,
                                     modifier = Modifier.size(18.dp),
                                 )
@@ -740,21 +845,24 @@ private fun ProfileIdentityCard(
                                 checked = accountMenuExpanded,
                                 onCheckedChange = { accountMenuExpanded = it },
                                 enabled = isLoggedIn || savedAccounts.accounts.isNotEmpty(),
-                                colors = ButtonDefaults.elevatedButtonColors(
-                                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                                ),
-                                elevation = ButtonDefaults.elevatedButtonElevation(
-                                    defaultElevation = 1.dp,
-                                    pressedElevation = 0.dp,
-                                ),
+                                colors =
+                                    ButtonDefaults.elevatedButtonColors(
+                                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    ),
+                                elevation =
+                                    ButtonDefaults.elevatedButtonElevation(
+                                        defaultElevation = 1.dp,
+                                        pressedElevation = 0.dp,
+                                    ),
                             ) {
                                 Icon(
                                     painter = painterResource(R.drawable.expand_more),
                                     contentDescription = null,
-                                    modifier = Modifier
-                                        .size(SplitButtonDefaults.TrailingIconSize)
-                                        .rotate(menuChevronRotation),
+                                    modifier =
+                                        Modifier
+                                            .size(SplitButtonDefaults.TrailingIconSize)
+                                            .rotate(menuChevronRotation),
                                 )
                             }
                         },
@@ -800,11 +908,12 @@ private fun ProfileIdentityCard(
                                         Icon(
                                             painter = painterResource(R.drawable.account),
                                             contentDescription = null,
-                                            tint = if (isActive) {
-                                                MaterialTheme.colorScheme.primary
-                                            } else {
-                                                MaterialTheme.colorScheme.onSurfaceVariant
-                                            },
+                                            tint =
+                                                if (isActive) {
+                                                    MaterialTheme.colorScheme.primary
+                                                } else {
+                                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                                },
                                             modifier = Modifier.size(20.dp),
                                         )
                                     },
@@ -864,8 +973,12 @@ private fun ProfileIdentityCard(
                                         Icon(
                                             painter = painterResource(R.drawable.account),
                                             contentDescription = null,
-                                            tint = if (isActive) MaterialTheme.colorScheme.primary
-                                                   else MaterialTheme.colorScheme.onSurfaceVariant,
+                                            tint =
+                                                if (isActive) {
+                                                    MaterialTheme.colorScheme.primary
+                                                } else {
+                                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                                },
                                             modifier = Modifier.size(20.dp),
                                         )
                                     },
@@ -874,9 +987,10 @@ private fun ProfileIdentityCard(
                                             onClick = { onRemoveAccount(account) },
                                             modifier = Modifier.size(32.dp),
                                             border = null,
-                                            colors = IconButtonDefaults.outlinedIconButtonColors(
-                                                contentColor = MaterialTheme.colorScheme.error,
-                                            ),
+                                            colors =
+                                                IconButtonDefaults.outlinedIconButtonColors(
+                                                    contentColor = MaterialTheme.colorScheme.error,
+                                                ),
                                         ) {
                                             Icon(
                                                 painter = painterResource(R.drawable.delete),
@@ -914,6 +1028,27 @@ private fun ProfileIdentityCard(
                                     accountMenuExpanded = false
                                 },
                             )
+
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        text = stringResource(R.string.add_another_account),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                    )
+                                },
+                                leadingIcon = {
+                                    Icon(
+                                        painter = painterResource(R.drawable.add_circle),
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(20.dp),
+                                    )
+                                },
+                                onClick = {
+                                    accountMenuExpanded = false
+                                    onAddAnotherAccount()
+                                },
+                            )
                         }
                     }
                 }
@@ -946,9 +1081,13 @@ private fun UpdateBannerStrip(
     )
 
     Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .graphicsLayer { scaleX = scale; scaleY = scale },
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .graphicsLayer {
+                    scaleX = scale
+                    scaleY = scale
+                },
         shape = CardShape,
         color = MaterialTheme.colorScheme.tertiaryContainer,
         onClick = onClick,
@@ -998,10 +1137,11 @@ private fun UpdateBannerStrip(
 
             FilledTonalButton(
                 onClick = onClick,
-                colors = ButtonDefaults.filledTonalButtonColors(
-                    containerColor = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.14f),
-                    contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
-                ),
+                colors =
+                    ButtonDefaults.filledTonalButtonColors(
+                        containerColor = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.14f),
+                        contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                    ),
                 shapes = ButtonDefaults.shapes(),
             ) {
                 Text(
@@ -1030,9 +1170,10 @@ private fun ExpressiveSectionCard(
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = CardShape,
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-            ),
+            colors =
+                CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                ),
             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         ) {
             Column(
@@ -1061,16 +1202,19 @@ private fun ExpressiveActionRow(
     val tint = accent ?: MaterialTheme.colorScheme.primary
 
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 6.dp, vertical = 2.dp)
-            .graphicsLayer { scaleX = scale; scaleY = scale }
-            .clip(InnerTileShape)
-            .clickable(
-                interactionSource = interactionSource,
-                indication = androidx.compose.material3.ripple(),
-                onClick = onClick,
-            ),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 6.dp, vertical = 2.dp)
+                .graphicsLayer {
+                    scaleX = scale
+                    scaleY = scale
+                }.clip(InnerTileShape)
+                .clickable(
+                    interactionSource = interactionSource,
+                    indication = androidx.compose.material3.ripple(),
+                    onClick = onClick,
+                ),
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 14.dp),
@@ -1121,22 +1265,24 @@ private fun ExpressiveSwitchRow(
     onCheckedChange: (Boolean) -> Unit,
 ) {
     val containerColor by animateColorAsState(
-        targetValue = if (checked) {
-            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
-        } else {
-            Color.Transparent
-        },
+        targetValue =
+            if (checked) {
+                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
+            } else {
+                Color.Transparent
+            },
         animationSpec = spring(stiffness = Spring.StiffnessLow),
         label = "switchRowBg",
     )
 
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 6.dp, vertical = 2.dp)
-            .clip(InnerTileShape)
-            .background(containerColor)
-            .clickable { onCheckedChange(!checked) },
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 6.dp, vertical = 2.dp)
+                .clip(InnerTileShape)
+                .background(containerColor)
+                .clickable { onCheckedChange(!checked) },
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 14.dp),
@@ -1175,13 +1321,14 @@ private fun ExpressiveSwitchRow(
             Switch(
                 checked = checked,
                 onCheckedChange = onCheckedChange,
-                colors = SwitchDefaults.colors(
-                    checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
-                    checkedTrackColor = MaterialTheme.colorScheme.primary,
-                    uncheckedThumbColor = MaterialTheme.colorScheme.outline,
-                    uncheckedTrackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                    uncheckedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.40f),
-                ),
+                colors =
+                    SwitchDefaults.colors(
+                        checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
+                        checkedTrackColor = MaterialTheme.colorScheme.primary,
+                        uncheckedThumbColor = MaterialTheme.colorScheme.outline,
+                        uncheckedTrackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                        uncheckedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.40f),
+                    ),
             )
         }
     }
@@ -1227,9 +1374,10 @@ private fun ExpressiveDivider() {
 @Composable
 private fun VersionStamp() {
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 8.dp, bottom = 12.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp, bottom = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
@@ -1264,7 +1412,8 @@ private fun TokenEditorDialog(
     onAccountChannelHandleChange: (String) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val text = """
+    val text =
+        """
         ***INNERTUBE COOKIE*** =$innerTubeCookie
         ***VISITOR DATA*** =$visitorData
         ***DATASYNC ID*** =$dataSyncId
@@ -1272,7 +1421,7 @@ private fun TokenEditorDialog(
         ***ACCOUNT NAME*** =$accountNamePref
         ***ACCOUNT EMAIL*** =$accountEmail
         ***ACCOUNT CHANNEL HANDLE*** =$accountChannelHandle
-    """.trimIndent()
+        """.trimIndent()
 
     TextFieldDialog(
         initialTextFieldValue = TextFieldValue(text),
@@ -1306,9 +1455,7 @@ private fun hasVisibleSecureDetails(
     visitorData: String,
     dataSyncId: String,
     poToken: String,
-): Boolean {
-    return innerTubeCookie.isNotBlank() || visitorData.isNotBlank() || dataSyncId.isNotBlank() || poToken.isNotBlank()
-}
+): Boolean = innerTubeCookie.isNotBlank() || visitorData.isNotBlank() || dataSyncId.isNotBlank() || poToken.isNotBlank()
 
 private fun previewSecureValue(value: String): String {
     val normalized = value.replace("\n", " ").replace("\r", " ").trim()
@@ -1317,4 +1464,3 @@ private fun previewSecureValue(value: String): String {
     }
     return normalized.take(52) + "\u2025" + normalized.takeLast(18)
 }
-
