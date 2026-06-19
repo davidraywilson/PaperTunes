@@ -7,6 +7,7 @@
 
 package moe.rukamori.archivetune.eink.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -71,7 +72,7 @@ fun EinkArtistsScreen(
 ) {
     val artists by viewModel.allArtists.collectAsState()
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         if (artists.isEmpty()) {
             EinkEmptyState(
                 title = "No artists yet",
@@ -103,7 +104,7 @@ fun EinkAlbumsScreen(
 ) {
     val albums by viewModel.allAlbums.collectAsState()
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         if (albums.isEmpty()) {
             EinkEmptyState(
                 title = "No albums yet",
@@ -148,7 +149,7 @@ fun EinkArtistDetailsScreen(
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
     val tabOptions = remember { listOf("Songs", "Albums") }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         Column(modifier = Modifier.fillMaxSize()) {
             if (artistName.isNotBlank()) {
                 TextMMD(
@@ -290,7 +291,7 @@ fun EinkAlbumDetailsScreen(
     val songs = album?.songs.orEmpty()
     val albumTitle = album?.album?.title.orEmpty()
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         when {
             uiState is AlbumUiState.Loading -> {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {

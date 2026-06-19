@@ -12,8 +12,10 @@ import android.content.pm.PackageManager
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.core.content.ContextCompat
@@ -51,7 +53,7 @@ import moe.rukamori.archivetune.viewmodels.LocalSongsViewModel
 fun EinkMoreScreen(navController: NavController) {
     LazyColumnMMD(
         contentPadding = PaddingValues(16.dp),
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
     ) {
         item {
             EinkTwoLineRow(
@@ -109,7 +111,7 @@ fun EinkSettingsScreen(
 
     LazyColumnMMD(
         contentPadding = PaddingValues(16.dp),
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
     ) {
         item {
             EinkTwoLineRow(

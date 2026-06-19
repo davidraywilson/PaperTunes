@@ -8,6 +8,7 @@
 package moe.rukamori.archivetune.eink.screens
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -25,6 +26,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Headphones
 import androidx.compose.material.icons.outlined.Shuffle
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -118,7 +120,7 @@ fun EinkYouTubeArtistScreen(
     val artistName = artistPage?.artist?.title ?: libraryArtist?.artist?.name ?: "Artist"
     val isSubscribed = libraryArtist?.artist?.bookmarkedAt != null
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         Column(modifier = Modifier.fillMaxSize()) {
             // ── Tabs ─────────────────────────────────────────────────────────────────────────
             // Always show tabs so the user can switch to online even if library is empty.

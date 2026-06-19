@@ -28,6 +28,7 @@ import moe.rukamori.archivetune.innertube.models.SongItem
 import moe.rukamori.archivetune.models.toMediaMetadata
 import moe.rukamori.archivetune.playback.queues.YouTubeQueue
 import moe.rukamori.archivetune.eink.einkYouTubeArtistDetailsRoute
+import moe.rukamori.archivetune.eink.EinkScreen
 
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.net.toUri
@@ -119,7 +120,7 @@ fun EinkYouTubeSongMenu(
             text = { TextMMD(text = "View Album", fontSize = 18.sp, fontWeight = FontWeight.SemiBold) },
             onClick = {
                 onDismiss()
-                navController.navigate("album/${album.id}")
+                navController.navigate("${EinkScreen.AlbumDetails.route}/${album.id}")
             }
         )
     }

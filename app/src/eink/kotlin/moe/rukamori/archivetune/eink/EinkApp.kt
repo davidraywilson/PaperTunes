@@ -26,6 +26,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import kotlinx.coroutines.flow.map
+import androidx.datastore.preferences.core.edit
+import moe.rukamori.archivetune.utils.dataStore
+import moe.rukamori.archivetune.eink.components.EinkAutoDownloadObserver
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -45,6 +49,8 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -253,11 +259,19 @@ fun EinkApp() {
         val ytArtistPage = ytArtistViewModel?.artistPage
         val canYouTubeArtistRadio = ytArtistPage?.artist?.radioEndpoint != null
 
+        val context = androidx.compose.ui.platform.LocalContext.current
+        val coroutineScope = androidx.compose.runtime.rememberCoroutineScope()
+        val autoDownloadPlaylists by context.dataStore.data
+            .map { it[moe.rukamori.archivetune.eink.AutoDownloadPlaylistsKey] ?: emptySet<String>() }
+            .collectAsStateWithLifecycle(initialValue = emptySet())
+        val isPlaylistAutoDownloadEnabled = playlistId != null && autoDownloadPlaylists.contains(playlistId)
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
         ) {
+            EinkAutoDownloadObserver()
             Scaffold(
                 topBar = {
                     Column {
@@ -334,6 +348,23 @@ fun EinkApp() {
                                     }
                                 }
                             },
+                            isPlaylistAutoDownloadEnabled = isPlaylistAutoDownloadEnabled,
+                            onPlaylistAutoDownloadToggle = {
+                                isPlaylistDetailsMenuExpanded = false
+                                val playlistId = navBackStackEntry?.arguments?.getString("playlistId")
+                                if (playlistId != null) {
+                                    coroutineScope.launch {
+                                        context.dataStore.edit { prefs ->
+                                            val current = prefs[moe.rukamori.archivetune.eink.AutoDownloadPlaylistsKey] ?: emptySet()
+                                            prefs[moe.rukamori.archivetune.eink.AutoDownloadPlaylistsKey] = if (current.contains(playlistId)) {
+                                                current - playlistId
+                                            } else {
+                                                current + playlistId
+                                            }
+                                        }
+                                    }
+                                }
+                            },
                             onShowDeletePlaylistSongsConfirmationClick = { showDeletePlaylistSongsConfirmation = true },
                             onShowDeletePlaylistsConfirmationClick = { showDeletePlaylistsConfirmation = true },
                             onPlaylistAddSongsDoneClick = { navController.popBackStack() },
@@ -387,108 +418,117 @@ fun EinkApp() {
                     )
                 }
             ) { innerPadding ->
-                Box(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
-                    NavHost(
-                        navController = navController,
-                        startDestination = EinkScreen.Songs.route,
+                    Box(
+                        modifier = Modifier
+                            .padding(innerPadding)
+                            .fillMaxSize()
+                            .background(MaterialTheme.colorScheme.background)
                     ) {
-                        composable(EinkScreen.Songs.route) { EinkSongsScreen(navController) }
-                        composable(EinkScreen.Playlists.route) { 
-                            EinkPlaylistsScreen(
-                                navController = navController,
-                                isInEditMode = isPlaylistsEditMode,
-                                onSelectionChanged = { 
-                                    playlistEditSelectionIds.clear()
-                                    playlistEditSelectionIds.addAll(it)
-                                    playlistEditSelectionCount = it.size 
-                                },
-                                showDeleteConfirmation = showDeletePlaylistsConfirmation,
-                                onDeleteConfirmed = { 
-                                    showDeletePlaylistsConfirmation = false
-                                    isPlaylistsEditMode = false
-                                    playlistEditSelectionIds.clear()
-                                    playlistEditSelectionCount = 0
-                                },
-                                onCancelDelete = { showDeletePlaylistsConfirmation = false },
-                                selectedIds = playlistEditSelectionIds
-                            ) 
-                        }
-                        composable(EinkScreen.Artists.route) { EinkArtistsScreen(navController) }
-                        composable(EinkScreen.Albums.route) { EinkAlbumsScreen(navController) }
-                        composable(EinkScreen.More.route) { EinkMoreScreen(navController) }
-                        composable(EinkScreen.Settings.route) { EinkSettingsScreen(navController) }
-                        composable(EinkScreen.Search.route) { EinkSearchScreen(navController, searchViewModel) }
-                        composable(EinkScreen.NowPlaying.route) { EinkNowPlayingScreen(navController) }
-                        composable(EinkScreen.Downloads.route) { moe.rukamori.archivetune.eink.screens.EinkDownloadsScreen(navController) }
+                        NavHost(
+                            navController = navController,
+                            startDestination = EinkScreen.Songs.route,
+                            enterTransition = { EnterTransition.None },
+                            exitTransition = { ExitTransition.None },
+                            popEnterTransition = { EnterTransition.None },
+                            popExitTransition = { ExitTransition.None },
+                        ) {
+                            composable(EinkScreen.Songs.route) { EinkSongsScreen(navController) }
+                            composable(EinkScreen.Playlists.route) { 
+                                EinkPlaylistsScreen(
+                                    navController = navController,
+                                    isInEditMode = isPlaylistsEditMode,
+                                    onSelectionChanged = { 
+                                        playlistEditSelectionIds.clear()
+                                        playlistEditSelectionIds.addAll(it)
+                                        playlistEditSelectionCount = it.size 
+                                    },
+                                    showDeleteConfirmation = showDeletePlaylistsConfirmation,
+                                    onDeleteConfirmed = { 
+                                        showDeletePlaylistsConfirmation = false
+                                        isPlaylistsEditMode = false
+                                        playlistEditSelectionIds.clear()
+                                        playlistEditSelectionCount = 0
+                                    },
+                                    onCancelDelete = { showDeletePlaylistsConfirmation = false },
+                                    selectedIds = playlistEditSelectionIds
+                                ) 
+                            }
+                            composable(EinkScreen.Artists.route) { EinkArtistsScreen(navController) }
+                            composable(EinkScreen.Albums.route) { EinkAlbumsScreen(navController) }
+                            composable(EinkScreen.More.route) { EinkMoreScreen(navController) }
+                            composable(EinkScreen.Settings.route) { EinkSettingsScreen(navController) }
+                            composable(EinkScreen.Search.route) { EinkSearchScreen(navController, searchViewModel) }
+                            composable(EinkScreen.NowPlaying.route) { EinkNowPlayingScreen(navController) }
+                            composable(EinkScreen.Downloads.route) { moe.rukamori.archivetune.eink.screens.EinkDownloadsScreen(navController) }
 
-                        composable(
-                            route = "$LOGIN_ROUTE?$LOGIN_URL_ARGUMENT={$LOGIN_URL_ARGUMENT}",
-                            arguments = listOf(
-                                navArgument(LOGIN_URL_ARGUMENT) {
-                                    type = NavType.StringType
-                                    nullable = true
-                                    defaultValue = null
-                                }
-                            )
-                        ) { backStackEntry ->
-                            LoginScreen(
-                                navController = navController,
-                                startUrl = backStackEntry.arguments?.getString(LOGIN_URL_ARGUMENT),
-                            )
-                        }
+                            composable(
+                                route = "$LOGIN_ROUTE?$LOGIN_URL_ARGUMENT={$LOGIN_URL_ARGUMENT}",
+                                arguments = listOf(
+                                    navArgument(LOGIN_URL_ARGUMENT) {
+                                        type = NavType.StringType
+                                        nullable = true
+                                        defaultValue = null
+                                    }
+                                )
+                            ) { backStackEntry ->
+                                LoginScreen(
+                                    navController = navController,
+                                    startUrl = backStackEntry.arguments?.getString(LOGIN_URL_ARGUMENT),
+                                )
+                            }
 
-                        composable(
-                            route = detailRoute(EinkScreen.AlbumDetails.route, "albumId"),
-                            arguments = listOf(navArgument("albumId") { type = NavType.StringType }),
-                        ) { entry ->
-                            EinkAlbumDetailsScreen(navController, entry.arguments?.getString("albumId").orEmpty())
-                        }
-                        composable(
-                            route = detailRoute(EinkScreen.ArtistDetails.route, "artistId"),
-                            arguments = listOf(navArgument("artistId") { type = NavType.StringType }),
-                        ) { entry ->
-                            EinkArtistDetailsScreen(navController, entry.arguments?.getString("artistId").orEmpty())
-                        }
-                        composable(
-                            route = detailRoute(EinkScreen.YouTubeArtistDetails.route, "artistId"),
-                            arguments = listOf(navArgument("artistId") { type = NavType.StringType }),
-                        ) { entry ->
-                            EinkYouTubeArtistScreen(navController, entry.arguments?.getString("artistId").orEmpty())
-                        }
-                        composable(
-                            route = detailRoute(EinkScreen.PlaylistDetails.route, "playlistId"),
-                            arguments = listOf(navArgument("playlistId") { type = NavType.StringType }),
-                        ) { entry ->
-                            EinkPlaylistDetailsScreen(
-                                navController = navController, 
-                                playlistId = entry.arguments?.getString("playlistId").orEmpty(),
-                                showRenameDialog = showRenamePlaylistDialog,
-                                onRenameDialogDismiss = { showRenamePlaylistDialog = false },
-                                showDeleteSheet = showDeletePlaylistSongsConfirmation, // Actually for deleting playlist itself here
-                                onDeleteSheetDismiss = { showDeletePlaylistSongsConfirmation = false },
-                                isInEditMode = isPlaylistDetailsEditMode,
-                                onSelectionChanged = {
-                                    playlistDetailsSelectionIds.clear()
-                                    playlistDetailsSelectionIds.addAll(it)
-                                    playlistDetailsSelectionCount = it.size
-                                },
-                                selectedIds = playlistDetailsSelectionIds
-                            )
-                        }
-                        composable(
-                            route = detailRoute(EinkScreen.PlaylistEdit.route, "playlistId"),
-                            arguments = listOf(navArgument("playlistId") { type = NavType.StringType }),
-                        ) { entry ->
-                            EinkPlaylistEditScreen(navController, entry.arguments?.getString("playlistId").orEmpty())
-                        }
-                        composable(
-                            route = detailRoute(EinkScreen.PlaylistAddSongs.route, "playlistId"),
-                            arguments = listOf(navArgument("playlistId") { type = NavType.StringType }),
-                        ) { entry ->
-                            EinkPlaylistAddSongsScreen(navController, entry.arguments?.getString("playlistId").orEmpty())
+                            composable(
+                                route = detailRoute(EinkScreen.AlbumDetails.route, "albumId"),
+                                arguments = listOf(navArgument("albumId") { type = NavType.StringType }),
+                            ) { entry ->
+                                EinkAlbumDetailsScreen(navController, entry.arguments?.getString("albumId").orEmpty())
+                            }
+                            composable(
+                                route = detailRoute(EinkScreen.ArtistDetails.route, "artistId"),
+                                arguments = listOf(navArgument("artistId") { type = NavType.StringType }),
+                            ) { entry ->
+                                EinkArtistDetailsScreen(navController, entry.arguments?.getString("artistId").orEmpty())
+                            }
+                            composable(
+                                route = detailRoute(EinkScreen.YouTubeArtistDetails.route, "artistId"),
+                                arguments = listOf(navArgument("artistId") { type = NavType.StringType }),
+                            ) { entry ->
+                                EinkYouTubeArtistScreen(navController, entry.arguments?.getString("artistId").orEmpty())
+                            }
+                            composable(
+                                route = detailRoute(EinkScreen.PlaylistDetails.route, "playlistId"),
+                                arguments = listOf(navArgument("playlistId") { type = NavType.StringType }),
+                            ) { entry ->
+                                EinkPlaylistDetailsScreen(
+                                    navController = navController, 
+                                    playlistId = entry.arguments?.getString("playlistId").orEmpty(),
+                                    showRenameDialog = showRenamePlaylistDialog,
+                                    onRenameDialogDismiss = { showRenamePlaylistDialog = false },
+                                    showDeleteSheet = showDeletePlaylistSongsConfirmation, // Actually for deleting playlist itself here
+                                    onDeleteSheetDismiss = { showDeletePlaylistSongsConfirmation = false },
+                                    isInEditMode = isPlaylistDetailsEditMode,
+                                    onSelectionChanged = {
+                                        playlistDetailsSelectionIds.clear()
+                                        playlistDetailsSelectionIds.addAll(it)
+                                        playlistDetailsSelectionCount = it.size
+                                    },
+                                    selectedIds = playlistDetailsSelectionIds
+                                )
+                            }
+                            composable(
+                                route = detailRoute(EinkScreen.PlaylistEdit.route, "playlistId"),
+                                arguments = listOf(navArgument("playlistId") { type = NavType.StringType }),
+                            ) { entry ->
+                                EinkPlaylistEditScreen(navController, entry.arguments?.getString("playlistId").orEmpty())
+                            }
+                            composable(
+                                route = detailRoute(EinkScreen.PlaylistAddSongs.route, "playlistId"),
+                                arguments = listOf(navArgument("playlistId") { type = NavType.StringType }),
+                            ) { entry ->
+                                EinkPlaylistAddSongsScreen(navController, entry.arguments?.getString("playlistId").orEmpty())
+                            }
                         }
                     }
-                }
             }
 
             EinkBottomSheetMenu(

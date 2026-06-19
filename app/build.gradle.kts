@@ -32,8 +32,8 @@ android {
     applicationId = "moe.rukamori.archivetune"
         minSdk = 26
         targetSdk = 37
-        versionCode = 138
-        versionName = "13.5.2"
+        versionCode = 142
+        versionName = "13.5.6"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
@@ -246,11 +246,8 @@ dependencies {
     implementation(libs.material3)
 
     // Mudita Mindful Design (MMD) design system for the e-ink UI.
-    // Vendored locally: the upstream Mudita Artifactory repo no longer serves valid
-    // Gradle/Maven metadata (returns an HTML landing page), so we ship the AAR directly.
-    // MMD's own deps (material3, compose-ui, activity-compose, coroutines, kotlin-stdlib)
-    // are already provided by the app module above.
-    implementation(files("libs/mmd-core-release.aar"))
+    // Published on Maven Central: https://github.com/mudita/MMD
+    implementation("com.mudita:MMD:1.0.1")
 
     implementation(libs.palette)
     implementation(libs.androidsvg)

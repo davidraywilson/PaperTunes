@@ -71,6 +71,8 @@ fun EinkTopAppBar(
     onPlaylistDetailsRenameClick: () -> Unit,
     onPlaylistDetailsDeleteClick: () -> Unit,
     onPlaylistDetailsDownloadClick: () -> Unit,
+    isPlaylistAutoDownloadEnabled: Boolean = false,
+    onPlaylistAutoDownloadToggle: () -> Unit = {},
     onShowDeletePlaylistSongsConfirmationClick: () -> Unit,
     onShowDeletePlaylistsConfirmationClick: () -> Unit,
     onPlaylistAddSongsDoneClick: () -> Unit,
@@ -240,6 +242,8 @@ fun EinkTopAppBar(
                 onPlaylistDetailsRenameClick = onPlaylistDetailsRenameClick,
                 onPlaylistDetailsDeleteClick = onPlaylistDetailsDeleteClick,
                 onPlaylistDetailsDownloadClick = onPlaylistDetailsDownloadClick,
+                isPlaylistAutoDownloadEnabled = isPlaylistAutoDownloadEnabled,
+                onPlaylistAutoDownloadToggle = onPlaylistAutoDownloadToggle,
                 onShowDeletePlaylistSongsConfirmationClick = onShowDeletePlaylistSongsConfirmationClick,
                 onShowDeletePlaylistsConfirmationClick = onShowDeletePlaylistsConfirmationClick,
                 onPlaylistAddSongsDoneClick = onPlaylistAddSongsDoneClick,
@@ -275,6 +279,8 @@ private fun EinkTopAppBarActions(
     onPlaylistDetailsRenameClick: () -> Unit,
     onPlaylistDetailsDeleteClick: () -> Unit,
     onPlaylistDetailsDownloadClick: () -> Unit,
+    isPlaylistAutoDownloadEnabled: Boolean = false,
+    onPlaylistAutoDownloadToggle: () -> Unit = {},
     onShowDeletePlaylistSongsConfirmationClick: () -> Unit,
     onShowDeletePlaylistsConfirmationClick: () -> Unit,
     onPlaylistAddSongsDoneClick: () -> Unit,
@@ -359,6 +365,13 @@ private fun EinkTopAppBarActions(
                 DropdownMenuItemMMD(
                     text = { TextMMD("Delete") },
                     onClick = onPlaylistDetailsDeleteClick,
+                )
+
+                DashedDivider(thickness = 1.dp)
+
+                DropdownMenuItemMMD(
+                    text = { TextMMD(if (isPlaylistAutoDownloadEnabled) "Auto-download: ON" else "Auto-download: OFF") },
+                    onClick = onPlaylistAutoDownloadToggle,
                 )
 
                 DashedDivider(thickness = 1.dp)

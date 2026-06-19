@@ -1,5 +1,6 @@
 package moe.rukamori.archivetune.eink.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -86,7 +87,7 @@ fun EinkDownloadsScreen(navController: NavController) {
 
     LazyColumnMMD(
         contentPadding = PaddingValues(16.dp),
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
     ) {
         items(
             count = queuedDownloads.size,
