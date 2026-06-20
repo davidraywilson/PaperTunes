@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Cancel
 import androidx.compose.material.icons.outlined.Error
+import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -153,6 +154,30 @@ fun EinkDownloadsScreen(navController: NavController) {
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Normal,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+                
+                if (download.state == Download.STATE_FAILED || download.state == Download.STATE_STOPPED) {
+                    IconButton(onClick = {
+                        DownloadService.sendSetStopReason(
+                            context,
+                            ExoDownloadService::class.java,
+                            download.request.id,
+                            androidx.media3.exoplayer.offline.Download.STOP_REASON_NONE,
+                            false
+                        )
+                        DownloadService.sendAddDownload(
+                            context,
+                            ExoDownloadService::class.java,
+                            download.request,
+                            false
+                        )
+                    }) {
+                        Icon(
+                            imageVector = Icons.Outlined.Refresh,
+                            contentDescription = "Retry download",
+                            modifier = Modifier.size(28.dp)
                         )
                     }
                 }

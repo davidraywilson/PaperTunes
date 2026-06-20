@@ -287,9 +287,9 @@ class DownloadUtil
         }
 
         companion object {
-            private const val DEFAULT_MAX_PARALLEL_DOWNLOADS = 6
-            private const val MAX_IDLE_DOWNLOAD_CONNECTIONS = 12
-            private const val MAX_DOWNLOAD_HTTP_REQUESTS = 24
+            private const val DEFAULT_MAX_PARALLEL_DOWNLOADS = 2
+            private const val MAX_IDLE_DOWNLOAD_CONNECTIONS = 4
+            private const val MAX_DOWNLOAD_HTTP_REQUESTS = 8
             private const val DOWNLOAD_CONNECTION_KEEP_ALIVE_MINUTES = 5L
         }
     }

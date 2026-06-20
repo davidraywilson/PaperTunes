@@ -448,6 +448,7 @@ object YTPlayerUtils {
         preferredStreamClient: PlayerStreamClient = PlayerStreamClient.ANDROID_VR,
         // if provided, this preference overrides ConnectivityManager.isActiveNetworkMetered
         networkMetered: Boolean? = null,
+        validateStream: Boolean = true,
     ): Result<PlaybackData> =
         runCatching {
             val attempts =
@@ -471,6 +472,7 @@ object YTPlayerUtils {
                             connectivityManager = connectivityManager,
                             preferredStreamClient = preferredStreamClient,
                             networkMetered = networkMetered,
+                            validateStream = validateStream,
                         )
                     }
                 if (attemptResult.isSuccess) return@runCatching attemptResult.getOrThrow()
@@ -490,6 +492,7 @@ object YTPlayerUtils {
                                 connectivityManager = connectivityManager,
                                 preferredStreamClient = preferredStreamClient,
                                 networkMetered = networkMetered,
+                                validateStream = validateStream,
                             )
                         }
                     if (rotatedAttemptResult.isSuccess) return@runCatching rotatedAttemptResult.getOrThrow()
@@ -519,6 +522,7 @@ object YTPlayerUtils {
                         connectivityManager = connectivityManager,
                         preferredStreamClient = preferredStreamClient,
                         networkMetered = networkMetered,
+                        validateStream = false,
                     )
 
                 if (attemptResult.isSuccess) return@runCatching attemptResult.getOrThrow()
@@ -537,11 +541,12 @@ object YTPlayerUtils {
 
     private val downloadPreferredStreamClientAttempts: List<PlayerStreamClient> =
         buildList {
+            add(PlayerStreamClient.IOS)
             add(PlayerStreamClient.WEB_REMIX)
             addAll(
                 PlayerStreamClient
                     .values()
-                    .filterNot { it == PlayerStreamClient.WEB_REMIX || it == PlayerStreamClient.ANDROID_VR },
+                    .filterNot { it == PlayerStreamClient.WEB_REMIX || it == PlayerStreamClient.ANDROID_VR || it == PlayerStreamClient.IOS },
             )
             add(PlayerStreamClient.ANDROID_VR)
         }.distinct()
@@ -574,6 +579,7 @@ object YTPlayerUtils {
         connectivityManager: ConnectivityManager,
         preferredStreamClient: PlayerStreamClient,
         networkMetered: Boolean?,
+        validateStream: Boolean = true,
     ): PlaybackData {
         Timber.tag(logTag).i("Fetching player response for videoId: $videoId, playlistId: $playlistId")
         val signatureTimestamp = getSignatureTimestampOrNull(videoId)
@@ -908,7 +914,7 @@ object YTPlayerUtils {
             Timber.tag(logTag).i("Format found: ${format.mimeType}, bitrate: ${format.bitrate}")
             Timber.tag(logTag).v("Stream expires in: $streamExpiresInSeconds seconds")
 
-            val valid = validateStatus(streamUrl)
+            val valid = if (validateStream) validateStatus(streamUrl) else true
             if (valid) {
                 Timber.tag(logTag).i("Stream validated successfully with client: ${describeClient(client)}")
                 lastSuccessfulClientKey = StreamClientUtils.buildClientKey(client)

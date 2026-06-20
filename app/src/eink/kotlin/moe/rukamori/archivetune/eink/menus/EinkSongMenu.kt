@@ -130,9 +130,6 @@ fun EinkSongMenu(
             text = { TextMMD(text = "Download", fontSize = 18.sp, fontWeight = FontWeight.SemiBold) },
             onClick = {
                 onDismiss()
-                database.transaction {
-                    insert(originalSong.toMediaMetadata())
-                }
                 val req = DownloadRequest
                     .Builder(originalSong.id, originalSong.id.toUri())
                     .setCustomCacheKey(originalSong.id)
