@@ -46,8 +46,17 @@ fun EinkAutoDownloadObserver() {
                                 if (songs.isEmpty()) return@collectLatest
 
                                 val downloads = downloadUtil.downloads.value
-                                val missingSongs = songs
-                                    .filter { !it.song.song.isLocal && !requestedDownloads.contains(it.song.id) }
+                                val missingSongs = songs.filter { song ->
+                                    !song.song.song.isLocal &&
+                                    !requestedDownloads.contains(song.song.id) &&
+                                    when (downloads[song.song.id]?.state) {
+                                        Download.STATE_COMPLETED,
+                                        Download.STATE_QUEUED,
+                                        Download.STATE_DOWNLOADING,
+                                        Download.STATE_RESTARTING -> false
+                                        else -> true
+                                    }
+                                }
 
                                 if (missingSongs.isNotEmpty()) {
                                     Timber.d("EinkAutoDownloadObserver: Triggering download for %d missing songs in %s", missingSongs.size, playlistId)

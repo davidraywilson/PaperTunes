@@ -38,7 +38,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
-import moe.rukamori.archivetune.LocalDatabase
 import moe.rukamori.archivetune.playback.ExoDownloadService
 
 @Composable
@@ -49,7 +48,6 @@ fun EinkYouTubeSongMenu(
 ) {
     val playerConnection = LocalPlayerConnection.current ?: return
     val context = LocalContext.current
-    val database = LocalDatabase.current
 
     var showAddToPlaylistDialog by remember { mutableStateOf(false) }
 
@@ -131,9 +129,6 @@ fun EinkYouTubeSongMenu(
         text = { TextMMD(text = "Download", fontSize = 18.sp, fontWeight = FontWeight.SemiBold) },
         onClick = {
             onDismiss()
-            database.transaction {
-                insert(song.toMediaMetadata())
-            }
             val downloadRequest = DownloadRequest
                 .Builder(song.id, song.id.toUri())
                 .setCustomCacheKey(song.id)

@@ -63,7 +63,6 @@ import androidx.core.net.toUri
 import androidx.media3.exoplayer.offline.Download
 import androidx.media3.exoplayer.offline.DownloadRequest
 import androidx.media3.exoplayer.offline.DownloadService
-import moe.rukamori.archivetune.LocalDatabase
 import moe.rukamori.archivetune.LocalDownloadUtil
 import moe.rukamori.archivetune.playback.ExoDownloadService
 
@@ -72,7 +71,6 @@ fun EinkNowPlayingScreen(navController: NavController) {
     val playerConnection = LocalPlayerConnection.current ?: return
     val player = playerConnection.player
     val context = LocalContext.current
-    val database = LocalDatabase.current
 
     val mediaMetadata by playerConnection.mediaMetadata.collectAsState()
     val isPlaying by playerConnection.isPlaying.collectAsState()
@@ -305,9 +303,6 @@ fun EinkNowPlayingScreen(navController: NavController) {
                 else -> {
                     IconButton(onClick = {
                         mediaMetadata?.let { metadata ->
-                            database.transaction {
-                                insert(metadata)
-                            }
                             val downloadRequest = DownloadRequest
                                 .Builder(metadata.id, metadata.id.toUri())
                                 .setCustomCacheKey(metadata.id)
