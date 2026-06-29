@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <!-- Upstream InnerTune strings --><!-- Do not add new features here --><!-- Try to re-use strings here, but be careful on its usage e.g. verb vs noun --><!-- "InnerTune" is replaced with "ArchiveTune" --><!-- Translators: Do not modify this file for translations, use InnerTune's Weblate instead. --><resources>
     <!-- Bottom navigation -->
     <string name="home">Home</string>
@@ -659,6 +659,8 @@
     <string name="max_cache_size">Max cache size</string>
     <string name="unlimited">Unlimited</string>
     <string name="clear_all_downloads">Clear all downloads</string>
+    <string name="force_high_quality_downloads">Force high quality downloads</string>
+    <string name="force_high_quality_downloads_desc">Download at high quality even when Data Saver is active. This helps bypass download failures on some tracks.</string>
     <string name="max_image_cache_size">Max image cache size</string>
     <string name="clear_image_cache">Clear image cache</string>
     <string name="max_song_cache_size">Max song cache size</string>

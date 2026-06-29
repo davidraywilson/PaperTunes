@@ -301,6 +301,20 @@ fun StorageSettings(
 
             PreferenceGroup(title = stringResource(R.string.downloaded_songs)) {
                 item {
+                    val (forceHighQualityDownloads, onForceHighQualityDownloadsChange) =
+                        rememberPreference(
+                            key = moe.rukamori.archivetune.constants.ForceHighQualityDownloadsKey,
+                            defaultValue = false,
+                        )
+                    SwitchPreference(
+                        title = { Text(stringResource(R.string.force_high_quality_downloads)) },
+                        description = stringResource(R.string.force_high_quality_downloads_desc),
+                        icon = { Icon(painterResource(R.drawable.graphic_eq), null) },
+                        checked = forceHighQualityDownloads,
+                        onCheckedChange = onForceHighQualityDownloadsChange,
+                    )
+                }
+                item {
                     PreferenceEntry(
                         title = { Text(stringResource(R.string.clear_all_downloads)) },
                         description = stringResource(R.string.size_used, formatFileSize(downloadCacheSize)),

@@ -33,6 +33,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import moe.rukamori.archivetune.constants.AudioQuality
 import moe.rukamori.archivetune.constants.AudioQualityKey
+import moe.rukamori.archivetune.constants.ForceHighQualityDownloadsKey
 import moe.rukamori.archivetune.db.MusicDatabase
 import moe.rukamori.archivetune.db.entities.FormatEntity
 import moe.rukamori.archivetune.db.entities.SongEntity
@@ -43,6 +44,7 @@ import moe.rukamori.archivetune.utils.AuthScopedCacheValue
 import moe.rukamori.archivetune.utils.StreamClientUtils
 import moe.rukamori.archivetune.utils.YTPlayerUtils
 import moe.rukamori.archivetune.utils.enumPreference
+import moe.rukamori.archivetune.utils.preference
 import moe.rukamori.archivetune.utils.get
 import moe.rukamori.archivetune.utils.isLowDataModeActive
 import moe.rukamori.archivetune.utils.retryWithoutPlaybackLoginContext
@@ -67,6 +69,7 @@ class DownloadUtil
     ) {
         private val connectivityManager = context.getSystemService<ConnectivityManager>()!!
         private val audioQuality by enumPreference(context, AudioQualityKey, AudioQuality.AUTO)
+        private val forceHighQualityDownloads by preference(context, ForceHighQualityDownloadsKey, false)
         private val downloadScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
         private val songUrlCache = ConcurrentHashMap<String, AuthScopedCacheValue>()
         private val downloadExecutor = Executors.newFixedThreadPool(DEFAULT_MAX_PARALLEL_DOWNLOADS)
@@ -221,8 +224,10 @@ class DownloadUtil
 
         fun getDownload(songId: String): Flow<Download?> = downloads.map { it[songId] }
 
-        private fun resolveDownloadAudioQuality(lowDataModeActive: Boolean): AudioQuality =
-            if (lowDataModeActive) AudioQuality.LOW else audioQuality
+        private fun resolveDownloadAudioQuality(lowDataModeActive: Boolean): AudioQuality {
+            if (forceHighQualityDownloads) return AudioQuality.HIGH
+            return if (lowDataModeActive) AudioQuality.LOW else audioQuality
+        }
 
         private fun buildSongUrlCacheKey(
             mediaId: String,

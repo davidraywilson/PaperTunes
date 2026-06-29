@@ -38,6 +38,7 @@ import moe.rukamori.archivetune.eink.EinkScreen
 import moe.rukamori.archivetune.innertube.utils.hasYouTubeLoginCookie
 import moe.rukamori.archivetune.ui.screens.buildLoginRoute
 import moe.rukamori.archivetune.utils.rememberPreference
+import moe.rukamori.archivetune.constants.ForceHighQualityDownloadsKey
 import moe.rukamori.archivetune.eink.components.EinkEmptyState
 import moe.rukamori.archivetune.eink.components.EinkTwoLineRow
 import moe.rukamori.archivetune.viewmodels.LocalSongsViewModel
@@ -83,6 +84,8 @@ fun EinkSettingsScreen(
     val syncUtils = LocalSyncUtils.current
     val coroutineScope = rememberCoroutineScope()
     var isSyncing by remember { mutableStateOf(false) }
+    
+    val (forceHighQuality, onForceHighQualityChange) = rememberPreference(ForceHighQualityDownloadsKey, false)
 
     val scanState by localViewModel.scanState.collectAsState()
     
@@ -174,9 +177,18 @@ fun EinkSettingsScreen(
                             }
                         }
                     },
-                    showDivider = false
+                    showDivider = true
                 )
             }
+        }
+        
+        item {
+            EinkTwoLineRow(
+                title = "Force High Quality Downloads",
+                subtitle = if (forceHighQuality) "Enabled (High Quality)" else "Disabled (Data Saver Default)",
+                onClick = { onForceHighQualityChange(!forceHighQuality) },
+                showDivider = false
+            )
         }
     }
 }

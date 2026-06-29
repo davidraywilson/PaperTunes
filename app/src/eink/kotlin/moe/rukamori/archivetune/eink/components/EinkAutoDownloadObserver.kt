@@ -4,19 +4,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
-import androidx.core.net.toUri
 import androidx.media3.exoplayer.offline.Download
-import androidx.media3.exoplayer.offline.DownloadRequest
-import androidx.media3.exoplayer.offline.DownloadService
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import moe.rukamori.archivetune.LocalDatabase
 import moe.rukamori.archivetune.LocalDownloadUtil
 import moe.rukamori.archivetune.eink.AutoDownloadPlaylistsKey
-import moe.rukamori.archivetune.playback.ExoDownloadService
 import moe.rukamori.archivetune.utils.dataStore
 import timber.log.Timber
 import java.util.Collections
@@ -42,39 +39,50 @@ fun EinkAutoDownloadObserver() {
                 coroutineScope {
                     for (playlistId in autoDownloadIds) {
                         launch {
-                            database.playlistSongs(playlistId).collectLatest { songs ->
-                                if (songs.isEmpty()) return@collectLatest
+                            database.playlistSongs(playlistId)
+                                .distinctUntilChanged { old, new -> old.map { it.song.id } == new.map { it.song.id } }
+                                .collectLatest { songs ->
+                                    if (songs.isEmpty()) return@collectLatest
 
-                                val downloads = downloadUtil.downloads.value
-                                val missingSongs = songs.filter { song ->
-                                    !song.song.song.isLocal &&
-                                    !requestedDownloads.contains(song.song.id) &&
-                                    when (downloads[song.song.id]?.state) {
-                                        Download.STATE_COMPLETED,
-                                        Download.STATE_QUEUED,
-                                        Download.STATE_DOWNLOADING,
-                                        Download.STATE_RESTARTING -> false
-                                        else -> true
+                                    // Wait for ExoPlayer's DownloadManager to finish its initial
+                                    // database load. Using .value or plain .first() returns the
+                                    // stale emptyMap() that the StateFlow holds at app startup,
+                                    // causing every song to appear un-downloaded and get re-queued.
+                                    // first { it.isNotEmpty() } suspends until the manager has
+                                    // reported real state; in the steady state the StateFlow already
+                                    // holds a non-empty map so this returns immediately at zero cost.
+                                    val downloads = downloadUtil.downloads
+                                        .first { it.isNotEmpty() }
+
+                                    val missingSongs = songs.filter { song ->
+                                        !song.song.song.isLocal &&
+                                        !requestedDownloads.contains(song.song.id) &&
+                                        when (downloads[song.song.id]?.state) {
+                                            Download.STATE_COMPLETED,
+                                            Download.STATE_QUEUED,
+                                            Download.STATE_DOWNLOADING,
+                                            Download.STATE_RESTARTING -> false
+                                            else -> true
+                                        }
+                                    }
+
+                                    if (missingSongs.isNotEmpty()) {
+                                        Timber.d("EinkAutoDownloadObserver: Triggering download for %d missing songs in %s", missingSongs.size, playlistId)
+                                        
+                                        missingSongs.forEach { requestedDownloads.add(it.song.id) }
+                                        
+                                        moe.rukamori.archivetune.ui.utils.sendAddMissingDownloads(
+                                            context = context,
+                                            songs = missingSongs.map {
+                                                moe.rukamori.archivetune.ui.utils.HeaderDownloadItem(
+                                                    id = it.song.id,
+                                                    title = it.song.song.title
+                                                )
+                                            },
+                                            downloads = downloads
+                                        )
                                     }
                                 }
-
-                                if (missingSongs.isNotEmpty()) {
-                                    Timber.d("EinkAutoDownloadObserver: Triggering download for %d missing songs in %s", missingSongs.size, playlistId)
-                                    
-                                    missingSongs.forEach { requestedDownloads.add(it.song.id) }
-                                    
-                                    moe.rukamori.archivetune.ui.utils.sendAddMissingDownloads(
-                                        context = context,
-                                        songs = missingSongs.map {
-                                            moe.rukamori.archivetune.ui.utils.HeaderDownloadItem(
-                                                id = it.song.id,
-                                                title = it.song.song.title
-                                            )
-                                        },
-                                        downloads = downloads
-                                    )
-                                }
-                            }
                         }
                     }
                 }
