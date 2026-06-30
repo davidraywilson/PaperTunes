@@ -145,6 +145,16 @@ accompanist-lyrics-core = { module = "com.mocharealm.accompanist:lyrics-core", v
 androidsvg = { module = "com.caverock:androidsvg-aar", version.ref = "androidsvg" }
 aboutlibraries-core = { module = "com.mikepenz:aboutlibraries-core", version.ref = "aboutLibraries" }
 
+androidx-compose-bom = { module = "androidx.compose:compose-bom", version = "2024.01.00" }
+androidx-compose-ui = { module = "androidx.compose.ui:ui" }
+androidx-compose-material3 = { module = "androidx.compose.material3:material3" }
+androidx-compose-material-icons-extended = { module = "androidx.compose.material:material-icons-extended" }
+androidx-compose-foundation = { module = "androidx.compose.foundation:foundation" }
+mudita-mmd = { module = "com.mudita:MMD", version = "1.0.1" }
+coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
+androidx-core-ktx = { module = "androidx.core:core-ktx", version = "1.12.0" }
+androidx-compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
+androidx-compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

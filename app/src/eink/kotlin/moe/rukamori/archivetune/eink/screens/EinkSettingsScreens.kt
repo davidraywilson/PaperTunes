@@ -15,6 +15,9 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.systemBars
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -53,7 +56,12 @@ import moe.rukamori.archivetune.viewmodels.LocalSongsViewModel
 @Composable
 fun EinkMoreScreen(navController: NavController) {
     LazyColumnMMD(
-        contentPadding = PaddingValues(16.dp),
+        contentPadding = PaddingValues(
+            top = WindowInsets.systemBars.asPaddingValues().calculateTopPadding() + 16.dp,
+            bottom = 16.dp,
+            start = 16.dp,
+            end = 16.dp
+        ),
         modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
     ) {
         item {
@@ -113,10 +121,15 @@ fun EinkSettingsScreen(
     }
 
     LazyColumnMMD(
-        contentPadding = PaddingValues(16.dp),
+        contentPadding = PaddingValues(
+            top = WindowInsets.systemBars.asPaddingValues().calculateTopPadding() + 16.dp,
+            bottom = 16.dp,
+            start = 16.dp,
+            end = 16.dp
+        ),
         modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
     ) {
-        item {
+        item(key = "login") {
             EinkTwoLineRow(
                 title = "YouTube Login",
                 subtitle = if (isLoggedIn) "Logged in (Tap to logout)" else "Not logged in (Tap to login)",

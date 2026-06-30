@@ -24,7 +24,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Headphones
+import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Shuffle
+import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -43,6 +47,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
+import moe.rukamori.archivetune.eink.components.EinkNowPlayingButton
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -57,7 +62,7 @@ import com.mudita.mmd.components.text.TextMMD
 import moe.rukamori.archivetune.LocalDatabase
 import moe.rukamori.archivetune.LocalPlayerConnection
 import moe.rukamori.archivetune.db.entities.ArtistEntity
-import moe.rukamori.archivetune.eink.components.DashedDivider
+import com.paperapps.paperui.components.DashedDivider
 import moe.rukamori.archivetune.eink.components.EinkEmptyState
 import moe.rukamori.archivetune.eink.components.EinkSongRow
 import moe.rukamori.archivetune.eink.components.EinkTwoLineRow
@@ -94,7 +99,7 @@ private const val TAB_ONLINE = 1
  *  - Expandable artist description (online tab only)
  *  - Local library sections (songs + albums) and YouTube online sections
  */
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun EinkYouTubeArtistScreen(
     navController: NavController,
@@ -104,6 +109,7 @@ fun EinkYouTubeArtistScreen(
     val haptic = LocalHapticFeedback.current
     val playerConnection = LocalPlayerConnection.current ?: return
     val database = LocalDatabase.current
+    val coroutineScope = androidx.compose.runtime.rememberCoroutineScope()
 
     val artistPage = viewModel.artistPage
     val libraryArtist by viewModel.libraryArtist.collectAsStateWithLifecycle()
@@ -112,167 +118,57 @@ fun EinkYouTubeArtistScreen(
     val mediaMetadata by playerConnection.mediaMetadata.collectAsState()
 
     val hasLibraryContent = librarySongs.isNotEmpty() || libraryAlbums.isNotEmpty()
-    // Default to Library tab when artist has local content; Online otherwise.
-    var selectedTab by rememberSaveable {
-        mutableIntStateOf(if (librarySongs.isNotEmpty()) TAB_LIBRARY else TAB_ONLINE)
+
+    val tabOptions = remember { listOf("Library", "Online") }
+    val pagerState = androidx.compose.foundation.pager.rememberPagerState(
+        initialPage = if (hasLibraryContent) TAB_LIBRARY else TAB_ONLINE,
+        pageCount = { tabOptions.size }
+    )
+
+    // Load artist data if online page is visited
+    androidx.compose.runtime.LaunchedEffect(pagerState.currentPage) {
+        if (pagerState.currentPage == TAB_ONLINE && artistPage == null) {
+            viewModel.fetchArtistsFromYTM()
+        }
     }
 
     val artistName = artistPage?.artist?.title ?: libraryArtist?.artist?.name ?: "Artist"
     val isSubscribed = libraryArtist?.artist?.bookmarkedAt != null
 
-    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            // ── Tabs ─────────────────────────────────────────────────────────────────────────
-            // Always show tabs so the user can switch to online even if library is empty.
-            PrimaryTabRowMMD(selectedTabIndex = selectedTab) {
-                TabMMD(
-                    selected = selectedTab == TAB_LIBRARY,
-                    onClick = { selectedTab = TAB_LIBRARY },
-                    text = {
-                        TextMMD(
-                            text = "Library",
-                            fontSize = 16.sp,
-                            fontWeight = if (selectedTab == TAB_LIBRARY) FontWeight.Bold else FontWeight.Normal,
-                        )
-                    },
-                )
-                TabMMD(
-                    selected = selectedTab == TAB_ONLINE,
-                    onClick = {
-                        selectedTab = TAB_ONLINE
-                        if (artistPage == null) viewModel.fetchArtistsFromYTM()
-                    },
-                    text = {
-                        TextMMD(
-                            text = "Online",
-                            fontSize = 16.sp,
-                            fontWeight = if (selectedTab == TAB_ONLINE) FontWeight.Bold else FontWeight.Normal,
-                        )
-                    },
-                )
-            }
+    val canShuffle = if (pagerState.currentPage == TAB_LIBRARY) librarySongs.isNotEmpty()
+    else artistPage?.artist?.shuffleEndpoint != null
 
-            // ── Content ───────────────────────────────────────────────────────────────────────
+    Column(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+
+
+        com.paperapps.paperui.components.PanoramaHeader(
+            pagerState = pagerState,
+            titles = tabOptions,
+            coroutineScope = coroutineScope
+        )
+
+        com.paperapps.paperui.components.PanoramaPager(
+            state = pagerState,
+            modifier = Modifier.weight(1f)
+        ) { page ->
             LazyColumnMMD(contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp)) {
 
-            // ── Library tab ───────────────────────────────────────────────────────────────
-            if (selectedTab == TAB_LIBRARY) {
-                if (librarySongs.isNotEmpty()) {
-                    item(key = "local-songs-header") {
-                        TextMMD(
-                            text = "Songs",
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(bottom = 8.dp),
-                        )
-                    }
-                    itemsIndexed(
-                        items = librarySongs,
-                        key = { _, song -> "local_song_${song.id}" },
-                    ) { index, song ->
-                        EinkSongRow(
-                            song = song,
-                            isCurrentlyPlaying = song.id == mediaMetadata?.id,
-                            onClick = {
-                                if (song.id == mediaMetadata?.id) {
-                                    playerConnection.player.togglePlayPause()
-                                } else {
-                                    playerConnection.playQueue(
-                                        ListQueue(
-                                            title = artistName,
-                                            items = librarySongs.map { it.toMediaItem() },
-                                            startIndex = index,
-                                        )
-                                    )
-                                }
-                            },
-                            onLongClick = {
-                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            },
-                            dropdownContent = { dismiss ->
-                                EinkSongMenu(
-                                    originalSong = song,
-                                    navController = navController,
-                                    onDismiss = dismiss,
-                                )
-                            },
-                            showDivider = index != librarySongs.lastIndex || libraryAlbums.isNotEmpty(),
-                        )
-                    }
-                }
-
-                if (libraryAlbums.isNotEmpty()) {
-                    item(key = "local-albums-header") {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        TextMMD(
-                            text = "Albums",
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(bottom = 8.dp),
-                        )
-                    }
-                    itemsIndexed(
-                        items = libraryAlbums,
-                        key = { _, album -> "local_album_${album.id}" },
-                    ) { index, album ->
-                        EinkTwoLineRow(
-                            title = album.album.title,
-                            subtitle = albumSubtitle(album),
-                            onClick = { navController.navigate(einkAlbumDetailsRoute(album.id)) },
-                            showDivider = index != libraryAlbums.lastIndex,
-                        )
-                    }
-                }
-
-                if (!hasLibraryContent) {
-                    item(key = "local-empty") {
-                        EinkEmptyState(
-                            title = "Nothing in library",
-                            body = "Like or download this artist's songs to see them here.",
-                            modifier = Modifier.fillMaxSize(),
-                        )
-                    }
-                }
-
-            // ── Online tab ────────────────────────────────────────────────────────────────
-            } else {
-                // Expandable description
-                val description = artistPage?.description
-                if (!description.isNullOrBlank()) {
-                    item(key = "artist-description") {
-                        EinkExpandableDescription(description = description)
-                        Spacer(modifier = Modifier.height(8.dp))
-                    }
-                }
-
-                val excludedSections = listOf("live performances", "from your library", "featured on")
-                artistPage?.sections?.filterNot { section ->
-                    val title = section.title.lowercase()
-                    title in excludedSections || title.contains("playlist")
-                }?.forEach { section ->
-                    if (section.items.isEmpty()) return@forEach
-
-                    item(
-                        key = "yt_header_${section.title}_${section.items.firstOrNull()?.id.orEmpty()}",
-                    ) {
-                        TextMMD(
-                            text = section.title,
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(bottom = 8.dp),
-                        )
-                    }
-
-                    if (section.layout == ArtistSectionLayout.LIST &&
-                        section.items.all { it is SongItem }
-                    ) {
-                        val songItems = section.items.distinctBy { it.id }
+                // ── Library tab ───────────────────────────────────────────────────────────────
+                if (page == TAB_LIBRARY) {
+                    if (librarySongs.isNotEmpty()) {
+                        item(key = "local-songs-header") {
+                            TextMMD(
+                                text = "Songs",
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(bottom = 8.dp),
+                            )
+                        }
                         itemsIndexed(
-                            items = songItems,
-                            key = { _, item -> "yt_song_${item.id}" },
-                        ) { index, item ->
-                            val song = item as SongItem
-                            EinkArtistYouTubeSongRow(
+                            items = librarySongs,
+                            key = { _, song -> "local_song_${song.id}" },
+                        ) { index, song ->
+                            EinkSongRow(
                                 song = song,
                                 isCurrentlyPlaying = song.id == mediaMetadata?.id,
                                 onClick = {
@@ -280,9 +176,10 @@ fun EinkYouTubeArtistScreen(
                                         playerConnection.player.togglePlayPause()
                                     } else {
                                         playerConnection.playQueue(
-                                            YouTubeQueue(
-                                                WatchEndpoint(videoId = song.id),
-                                                song.toMediaMetadata(),
+                                            ListQueue(
+                                                title = artistName,
+                                                items = librarySongs.map { it.toMediaItem() },
+                                                startIndex = index,
                                             )
                                         )
                                     }
@@ -291,127 +188,234 @@ fun EinkYouTubeArtistScreen(
                                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                 },
                                 dropdownContent = { dismiss ->
-                                    EinkYouTubeSongMenu(
-                                        song = song,
+                                    EinkSongMenu(
+                                        originalSong = song,
                                         navController = navController,
                                         onDismiss = dismiss,
                                     )
                                 },
-                                showDivider = index != songItems.lastIndex,
+                                showDivider = index != librarySongs.lastIndex || libraryAlbums.isNotEmpty(),
                             )
                         }
-                    } else {
-                        val gridItems = section.items.distinctBy { it.id }
+                    }
+
+                    if (libraryAlbums.isNotEmpty()) {
+                        item(key = "local-albums-header") {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            TextMMD(
+                                text = "Albums",
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(bottom = 8.dp),
+                            )
+                        }
                         itemsIndexed(
-                            items = gridItems,
-                            key = { _, item ->
-                                val type = when (item) {
-                                    is SongItem -> "song"
-                                    is AlbumItem -> "album"
-                                    is ArtistItem -> "artist"
-                                    is PlaylistItem -> "playlist"
-                                    else -> "item"
-                                }
-                                "yt_${type}_${item.id}"
-                            },
-                        ) { index, item ->
-                            val title = when (item) {
-                                is SongItem -> item.title
-                                is AlbumItem -> item.title
-                                is ArtistItem -> item.title
-                                is PlaylistItem -> item.title
-                                else -> ""
-                            }
-                            val subtitle = when (item) {
-                                is AlbumItem -> buildString {
-                                    item.artists?.joinToString(", ") { it.name }
-                                        ?.takeIf { it.isNotBlank() }?.let { append(it) }
-                                    item.year?.let { y ->
-                                        if (isNotEmpty()) append(" • ")
-                                        append(y)
-                                    }
-                                }.takeIf { it.isNotBlank() }
-                                is ArtistItem -> item.subscriberCountText
-                                is PlaylistItem -> item.songCountText
-                                is SongItem -> item.artists.joinToString(", ") { it.name }
-                                    .takeIf { it.isNotBlank() }
-                                else -> null
-                            }
+                            items = libraryAlbums,
+                            key = { _, album -> "local_album_${album.id}" },
+                        ) { index, album ->
                             EinkTwoLineRow(
-                                title = title,
-                                subtitle = subtitle,
-                                onClick = {
-                                    when (item) {
-                                        is SongItem -> playerConnection.playQueue(
-                                            YouTubeQueue(
-                                                WatchEndpoint(videoId = item.id),
-                                                item.toMediaMetadata(),
-                                            )
-                                        )
-                                        is AlbumItem -> navController.navigate("album/${item.id}")
-                                        is ArtistItem -> navController.navigate(einkYouTubeArtistDetailsRoute(item.id))
-                                        is PlaylistItem -> navController.navigate("online_playlist/${item.id}")
-                                        else -> {}
-                                    }
-                                },
-                                showDivider = index != gridItems.lastIndex,
+                                title = album.album.title,
+                                subtitle = albumSubtitle(album),
+                                onClick = { navController.navigate(einkAlbumDetailsRoute(album.id)) },
+                                showDivider = index != libraryAlbums.lastIndex,
                             )
                         }
                     }
 
-                    item(key = "yt_spacer_${section.title}") {
-                        Spacer(modifier = Modifier.height(16.dp))
-                    }
-                }
-
-                if (artistPage?.sections.isNullOrEmpty()) {
-                    item(key = "yt-loading") {
-                        EinkEmptyState(
-                            title = "Loading…",
-                            body = "Fetching artist from YouTube Music.",
-                            modifier = Modifier.fillMaxSize(),
-                        )
-                    }
-                }
-            }
-
-            item(key = "bottom-spacer") { Spacer(modifier = Modifier.height(16.dp)) }
-        }
-    }
-
-    val canShuffle = if (selectedTab == TAB_LIBRARY) librarySongs.isNotEmpty()
-    else artistPage?.artist?.shuffleEndpoint != null
-
-    if (canShuffle) {
-        com.mudita.mmd.components.buttons.FloatingActionButtonMMD(
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(16.dp),
-            onClick = {
-                if (selectedTab == TAB_LIBRARY) {
-                    if (librarySongs.isNotEmpty()) {
-                        playerConnection.playQueue(
-                            ListQueue(
-                                title = artistName,
-                                items = librarySongs.shuffled().map { it.toMediaItem() },
+                    if (!hasLibraryContent) {
+                        item(key = "local-empty") {
+                            EinkEmptyState(
+                                title = "Nothing in library",
+                                body = "Like or download this artist's songs to see them here.",
+                                modifier = Modifier.fillMaxSize(),
                             )
-                        )
+                        }
                     }
+
+                // ── Online tab ────────────────────────────────────────────────────────────────
                 } else {
-                    artistPage?.artist?.shuffleEndpoint?.let {
-                        playerConnection.playQueue(YouTubeQueue(it))
+                    // Expandable description
+                    val description = artistPage?.description
+                    if (!description.isNullOrBlank()) {
+                        item(key = "artist-description") {
+                            EinkExpandableDescription(description = description)
+                            Spacer(modifier = Modifier.height(8.dp))
+                        }
+                    }
+
+                    val excludedSections = listOf("live performances", "from your library", "featured on")
+                    artistPage?.sections?.filterNot { section ->
+                        val title = section.title.lowercase()
+                        title in excludedSections || title.contains("playlist")
+                    }?.forEach { section ->
+                        if (section.items.isEmpty()) return@forEach
+
+                        item(
+                            key = "yt_header_${section.title}_${section.items.firstOrNull()?.id.orEmpty()}",
+                        ) {
+                            TextMMD(
+                                text = section.title,
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(bottom = 8.dp),
+                            )
+                        }
+
+                        if (section.layout == ArtistSectionLayout.LIST &&
+                            section.items.all { it is SongItem }
+                        ) {
+                            val songItems = section.items.distinctBy { it.id }
+                            itemsIndexed(
+                                items = songItems,
+                                key = { _, item -> "yt_song_${item.id}" },
+                            ) { index, item ->
+                                val song = item as SongItem
+                                EinkArtistYouTubeSongRow(
+                                    song = song,
+                                    isCurrentlyPlaying = song.id == mediaMetadata?.id,
+                                    onClick = {
+                                        if (song.id == mediaMetadata?.id) {
+                                            playerConnection.player.togglePlayPause()
+                                        } else {
+                                            playerConnection.playQueue(
+                                                YouTubeQueue(
+                                                    WatchEndpoint(videoId = song.id),
+                                                    song.toMediaMetadata(),
+                                                )
+                                            )
+                                        }
+                                    },
+                                    onLongClick = {
+                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    },
+                                    dropdownContent = { dismiss ->
+                                        EinkYouTubeSongMenu(
+                                            song = song,
+                                            navController = navController,
+                                            onDismiss = dismiss,
+                                        )
+                                    },
+                                    showDivider = index != songItems.lastIndex,
+                                )
+                            }
+                        } else {
+                            val gridItems = section.items.distinctBy { it.id }
+                            itemsIndexed(
+                                items = gridItems,
+                                key = { _, item ->
+                                    val type = when (item) {
+                                        is SongItem -> "song"
+                                        is AlbumItem -> "album"
+                                        is ArtistItem -> "artist"
+                                        is PlaylistItem -> "playlist"
+                                        else -> "item"
+                                    }
+                                    "yt_${type}_${item.id}"
+                                },
+                            ) { index, item ->
+                                val title = when (item) {
+                                    is SongItem -> item.title
+                                    is AlbumItem -> item.title
+                                    is ArtistItem -> item.title
+                                    is PlaylistItem -> item.title
+                                    else -> ""
+                                }
+                                val subtitle = when (item) {
+                                    is AlbumItem -> buildString {
+                                        item.artists?.joinToString(", ") { it.name }
+                                            ?.takeIf { it.isNotBlank() }?.let { append(it) }
+                                        item.year?.let { y ->
+                                            if (isNotEmpty()) append(" • ")
+                                            append(y)
+                                        }
+                                    }.takeIf { it.isNotBlank() }
+                                    is ArtistItem -> item.subscriberCountText
+                                    is PlaylistItem -> item.songCountText
+                                    is SongItem -> item.artists.joinToString(", ") { it.name }
+                                        .takeIf { it.isNotBlank() }
+                                    else -> null
+                                }
+                                EinkTwoLineRow(
+                                    title = title,
+                                    subtitle = subtitle,
+                                    onClick = {
+                                        when (item) {
+                                            is SongItem -> playerConnection.playQueue(
+                                                YouTubeQueue(
+                                                    WatchEndpoint(videoId = item.id),
+                                                    item.toMediaMetadata(),
+                                                )
+                                            )
+                                            is AlbumItem -> navController.navigate("album/${item.id}")
+                                            is ArtistItem -> navController.navigate(einkYouTubeArtistDetailsRoute(item.id))
+                                            is PlaylistItem -> navController.navigate("online_playlist/${item.id}")
+                                            else -> {}
+                                        }
+                                    },
+                                    showDivider = index != gridItems.lastIndex,
+                                )
+                            }
+                        }
+
+                        item(key = "yt_spacer_${section.title}") {
+                            Spacer(modifier = Modifier.height(16.dp))
+                        }
+                    }
+
+                    if (artistPage?.sections.isNullOrEmpty()) {
+                        item(key = "yt-loading") {
+                            EinkEmptyState(
+                                title = "Loading…",
+                                body = "Fetching artist from YouTube Music.",
+                                modifier = Modifier.fillMaxSize(),
+                            )
+                        }
                     }
                 }
-            },
-        ) {
-            Icon(
-                imageVector = Icons.Outlined.Shuffle,
-                contentDescription = "Shuffle",
-                modifier = Modifier.padding(16.dp),
-            )
+
+                item(key = "bottom-spacer") { Spacer(modifier = Modifier.height(16.dp)) }
+            }
         }
+
+        com.paperapps.paperui.components.ApplicationBar(
+            actions = listOf(
+                com.paperapps.paperui.components.AppbarAction(
+                    icon = Icons.Outlined.Search,
+                    label = "Search",
+                    onClick = { navController.navigate(moe.rukamori.archivetune.eink.EinkScreen.Search.route) }
+                ),
+                com.paperapps.paperui.components.AppbarAction(
+                    icon = Icons.Outlined.Shuffle,
+                    label = "Shuffle",
+                    onClick = { 
+                        if (pagerState.currentPage == TAB_LIBRARY) {
+                            if (librarySongs.isNotEmpty()) {
+                                playerConnection.playQueue(
+                                    ListQueue(
+                                        title = artistName,
+                                        items = librarySongs.shuffled().map { it.toMediaItem() },
+                                    )
+                                )
+                                navController.navigate(moe.rukamori.archivetune.eink.EinkScreen.NowPlaying.route)
+                            }
+                        } else {
+                            artistPage?.artist?.shuffleEndpoint?.let {
+                                playerConnection.playQueue(YouTubeQueue(it))
+                                navController.navigate(moe.rukamori.archivetune.eink.EinkScreen.NowPlaying.route)
+                            }
+                        }
+                    }
+                )
+            ),
+            menuItems = listOf(
+                com.paperapps.paperui.components.AppbarMenuItem(
+                    label = if (isSubscribed) "Unsubscribe" else "Subscribe",
+                    onClick = { /* TODO implement subscribe */ }
+                )
+            ),
+            leftSlot = { EinkNowPlayingButton(navController) }
+        )
     }
-}
 }
 
 // ── Private helpers ──────────────────────────────────────────────────────────────────────────────

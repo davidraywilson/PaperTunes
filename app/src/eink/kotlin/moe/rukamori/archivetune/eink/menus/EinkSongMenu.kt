@@ -38,7 +38,7 @@ import moe.rukamori.archivetune.LocalDownloadUtil
 import moe.rukamori.archivetune.LocalPlayerConnection
 import moe.rukamori.archivetune.db.entities.PlaylistSong
 import moe.rukamori.archivetune.db.entities.Song
-import moe.rukamori.archivetune.eink.components.DashedDivider
+import com.paperapps.paperui.components.DashedDivider
 import moe.rukamori.archivetune.eink.components.songSubtitle
 import moe.rukamori.archivetune.extensions.toMediaItem
 import moe.rukamori.archivetune.models.toMediaMetadata

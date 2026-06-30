@@ -12,6 +12,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.systemBars
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Cancel
 import androidx.compose.material.icons.outlined.Error
@@ -87,7 +90,12 @@ fun EinkDownloadsScreen(navController: NavController) {
     }
 
     LazyColumnMMD(
-        contentPadding = PaddingValues(16.dp),
+        contentPadding = PaddingValues(
+            top = WindowInsets.systemBars.asPaddingValues().calculateTopPadding() + 16.dp,
+            bottom = 16.dp,
+            start = 16.dp,
+            end = 16.dp
+        ),
         modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
     ) {
         items(

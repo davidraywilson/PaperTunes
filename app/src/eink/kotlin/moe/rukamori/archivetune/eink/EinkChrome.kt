@@ -38,7 +38,7 @@ import com.mudita.mmd.components.nav_bar.NavigationBarMMD
 import com.mudita.mmd.components.search_bar.SearchBarDefaultsMMD
 import com.mudita.mmd.components.text.TextMMD
 import com.mudita.mmd.components.top_app_bar.TopAppBarMMD
-import moe.rukamori.archivetune.eink.components.DashedDivider
+import com.paperapps.paperui.components.DashedDivider
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

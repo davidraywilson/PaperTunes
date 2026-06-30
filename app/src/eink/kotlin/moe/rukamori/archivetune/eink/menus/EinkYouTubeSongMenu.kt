@@ -22,7 +22,7 @@ import androidx.navigation.NavController
 import com.mudita.mmd.components.menus.DropdownMenuItemMMD
 import com.mudita.mmd.components.text.TextMMD
 import moe.rukamori.archivetune.LocalPlayerConnection
-import moe.rukamori.archivetune.eink.components.DashedDivider
+import com.paperapps.paperui.components.DashedDivider
 import moe.rukamori.archivetune.extensions.toMediaItem
 import moe.rukamori.archivetune.innertube.models.SongItem
 import moe.rukamori.archivetune.models.toMediaMetadata

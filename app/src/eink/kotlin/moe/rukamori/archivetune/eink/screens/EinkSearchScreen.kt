@@ -22,6 +22,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -40,6 +43,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -49,6 +53,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
+import moe.rukamori.archivetune.eink.components.EinkNowPlayingButton
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.mudita.mmd.components.lazy.LazyColumnMMD
@@ -58,7 +63,7 @@ import com.mudita.mmd.components.tabs.TabMMD
 import com.mudita.mmd.components.text.TextMMD
 import moe.rukamori.archivetune.LocalPlayerConnection
 import moe.rukamori.archivetune.eink.EinkScreen
-import moe.rukamori.archivetune.eink.components.DashedDivider
+import com.paperapps.paperui.components.DashedDivider
 import moe.rukamori.archivetune.eink.components.EinkEmptyState
 import moe.rukamori.archivetune.eink.components.EinkTwoLineRow
 import moe.rukamori.archivetune.eink.components.LocalEinkMenuState
@@ -74,7 +79,15 @@ import androidx.media3.exoplayer.offline.Download
 import androidx.compose.ui.res.painterResource
 import com.mudita.mmd.components.progress_indicator.CircularProgressIndicatorMMD
 import moe.rukamori.archivetune.LocalDownloadUtil
-
+import com.paperapps.paperui.components.PanoramaPager
+import com.paperapps.paperui.components.PanoramaHeader
+import com.paperapps.paperui.components.ApplicationBar
+import com.paperapps.paperui.components.AppbarAction
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.outlined.Clear
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import com.mudita.mmd.components.search_bar.SearchBarDefaultsMMD
 /**
  * Online YouTube Music search for the e-ink UI. A search field sits at the top; results
  * are split into Songs and Albums tabs (mirroring CalmMusic's SearchScreen). Songs play in
@@ -90,6 +103,8 @@ fun EinkSearchScreen(
     val menuState = LocalEinkMenuState.current
     val haptic = LocalHapticFeedback.current
     val playerConnection = LocalPlayerConnection.current ?: return
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val coroutineScope = rememberCoroutineScope()
 
     val mediaMetadata by playerConnection.mediaMetadata.collectAsState()
 
@@ -99,38 +114,67 @@ fun EinkSearchScreen(
     val isSearching = searchViewModel.isSearching
     val errorMessage = searchViewModel.errorMessage
     val hasSearched = searchViewModel.hasSearched
-    var selectedTab by searchViewModel::selectedTab
 
-    Column(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+    val titles = listOf("Songs", "Albums")
+    val pagerState = rememberPagerState(pageCount = { titles.size })
+
+    // Sync selected tab with pager
+    LaunchedEffect(pagerState.currentPage) {
+        searchViewModel.selectedTab = pagerState.currentPage
+    }
+    LaunchedEffect(searchViewModel.selectedTab) {
+        if (pagerState.currentPage != searchViewModel.selectedTab) {
+            pagerState.animateScrollToPage(searchViewModel.selectedTab)
+        }
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .padding(top = WindowInsets.systemBars.asPaddingValues().calculateTopPadding())
+    ) {
+        
+        // Search Box Header
+        SearchBarDefaultsMMD.InputField(
+            query = searchViewModel.query,
+            onQueryChange = searchViewModel::updateQuery,
+            onSearch = {
+                keyboardController?.hide()
+                searchViewModel.runSearch { keyboardController?.hide() }
+            },
+            expanded = true,
+            onExpandedChange = { },
+            placeholder = { TextMMD("Search YouTube Music") },
+            trailingIcon = {
+                Row {
+                    if (searchViewModel.query.isNotEmpty()) {
+                        IconButton(onClick = searchViewModel::clearSearch) {
+                            Icon(imageVector = Icons.Outlined.Clear, contentDescription = "Clear search")
+                        }
+                    }
+                    IconButton(
+                        onClick = {
+                            keyboardController?.hide()
+                            searchViewModel.runSearch { keyboardController?.hide() }
+                        }
+                    ) {
+                        Icon(imageVector = Icons.Outlined.Search, contentDescription = "Search")
+                    }
+                }
+            },
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)
+        )
 
         if (hasSearched) {
-            PrimaryTabRowMMD(selectedTabIndex = selectedTab) {
-                TabMMD(
-                    selected = selectedTab == 0,
-                    onClick = { selectedTab = 0 },
-                    text = {
-                        TextMMD(
-                            text = "Songs",
-                            fontSize = 16.sp,
-                            fontWeight = if (selectedTab == 0) FontWeight.Bold else FontWeight.Normal,
-                        )
-                    },
-                )
-                TabMMD(
-                    selected = selectedTab == 1,
-                    onClick = { selectedTab = 1 },
-                    text = {
-                        TextMMD(
-                            text = "Albums",
-                            fontSize = 16.sp,
-                            fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Normal,
-                        )
-                    },
-                )
-            }
+            PanoramaHeader(
+                pagerState = pagerState,
+                titles = titles,
+                coroutineScope = coroutineScope
+            )
         }
 
-        Box(modifier = Modifier.fillMaxSize()) {
+        Box(modifier = Modifier.weight(1f)) {
             when {
                 !hasSearched -> EinkEmptyState(
                     title = "Search YouTube Music",
@@ -151,44 +195,63 @@ fun EinkSearchScreen(
                     modifier = Modifier.fillMaxSize(),
                 )
 
-                selectedTab == 0 -> SongResults(
-                    songs = songs,
-                    currentMediaId = mediaMetadata?.id,
-                    onPlay = { index ->
-                        val song = songs[index]
-                        if (song.id == mediaMetadata?.id) {
-                            playerConnection.player.togglePlayPause()
-                        } else {
-                            playerConnection.playQueue(
-                                ListQueue(
-                                    title = submittedQuery,
-                                    items = songs.map { it.toMediaItem() },
-                                    startIndex = index,
-                                ),
-                            )
-                        }
-                        navController.navigate(moe.rukamori.archivetune.eink.EinkScreen.NowPlaying.route)
-                    },
-                    onLongClick = {
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    },
-                    dropdownContent = { song, dismiss ->
-                        EinkYouTubeSongMenu(
-                            song = song,
-                            navController = navController,
-                            onDismiss = dismiss,
+                else -> PanoramaPager(
+                    state = pagerState,
+                    modifier = Modifier.fillMaxSize()
+                ) { page ->
+                    if (page == 0) {
+                        SongResults(
+                            songs = songs,
+                            currentMediaId = mediaMetadata?.id,
+                            onPlay = { index ->
+                                val song = songs[index]
+                                if (song.id == mediaMetadata?.id) {
+                                    playerConnection.player.togglePlayPause()
+                                } else {
+                                    playerConnection.playQueue(
+                                        ListQueue(
+                                            title = submittedQuery,
+                                            items = songs.map { it.toMediaItem() },
+                                            startIndex = index,
+                                        ),
+                                    )
+                                }
+                                navController.navigate(moe.rukamori.archivetune.eink.EinkScreen.NowPlaying.route)
+                            },
+                            onLongClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            },
+                            dropdownContent = { song, dismiss ->
+                                EinkYouTubeSongMenu(
+                                    song = song,
+                                    navController = navController,
+                                    onDismiss = dismiss,
+                                )
+                            }
+                        )
+                    } else {
+                        AlbumResults(
+                            albums = albums,
+                            onClick = { album ->
+                                navController.navigate("${EinkScreen.AlbumDetails.route}/${album.id}")
+                            },
                         )
                     }
-                )
-
-                else -> AlbumResults(
-                    albums = albums,
-                    onClick = { album ->
-                        navController.navigate("${EinkScreen.AlbumDetails.route}/${album.id}")
-                    },
-                )
+                }
             }
         }
+        
+        ApplicationBar(
+            actions = listOf(
+                AppbarAction(
+                    icon = Icons.AutoMirrored.Filled.ArrowBack,
+                    label = "Back",
+                    onClick = { navController.navigateUp() }
+                )
+            ),
+            menuItems = emptyList(),
+            leftSlot = { EinkNowPlayingButton(navController) }
+        )
     }
 }
 

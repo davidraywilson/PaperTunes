@@ -6,6 +6,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,6 +16,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.LibraryAdd
@@ -27,6 +33,10 @@ import androidx.compose.material.icons.outlined.RepeatOne
 import androidx.compose.material.icons.outlined.Shuffle
 import androidx.compose.material.icons.outlined.SkipNext
 import androidx.compose.material.icons.outlined.SkipPrevious
+import androidx.compose.material.icons.outlined.Download
+import androidx.compose.material.icons.outlined.DownloadDone
+import androidx.compose.material.icons.outlined.Downloading
+import androidx.compose.material.icons.outlined.Headphones
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -40,6 +50,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -52,7 +63,10 @@ import androidx.navigation.NavController
 import com.mudita.mmd.components.buttons.ButtonMMD
 import com.mudita.mmd.components.slider.SliderMMD
 import com.mudita.mmd.components.progress_indicator.CircularProgressIndicatorMMD
+import com.mudita.mmd.components.lazy.LazyColumnMMD
 import kotlinx.coroutines.delay
+import com.mudita.mmd.components.text.TextMMD
+import com.paperapps.paperui.components.DashedDivider
 import moe.rukamori.archivetune.LocalPlayerConnection
 import moe.rukamori.archivetune.extensions.togglePlayPause
 import moe.rukamori.archivetune.utils.makeTimeString
@@ -63,7 +77,13 @@ import androidx.core.net.toUri
 import androidx.media3.exoplayer.offline.Download
 import androidx.media3.exoplayer.offline.DownloadRequest
 import androidx.media3.exoplayer.offline.DownloadService
+import com.paperapps.paperui.components.AppbarAction
+import com.paperapps.paperui.components.ApplicationBar
+import com.paperapps.paperui.components.PanoramaHeader
+import com.paperapps.paperui.components.PanoramaPager
 import moe.rukamori.archivetune.LocalDownloadUtil
+import moe.rukamori.archivetune.extensions.metadata
+import moe.rukamori.archivetune.models.MediaMetadata
 import moe.rukamori.archivetune.playback.ExoDownloadService
 
 @Composable
@@ -71,18 +91,25 @@ fun EinkNowPlayingScreen(navController: NavController) {
     val playerConnection = LocalPlayerConnection.current ?: return
     val player = playerConnection.player
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
 
     val mediaMetadata by playerConnection.mediaMetadata.collectAsState()
     val isPlaying by playerConnection.isPlaying.collectAsState()
     val shuffleEnabled by playerConnection.shuffleModeEnabled.collectAsState()
     val repeatMode by playerConnection.repeatMode.collectAsState()
     val download by LocalDownloadUtil.current.getDownload(mediaMetadata?.id ?: "").collectAsState(initial = null)
+    
+    val queueWindows by playerConnection.queueWindows.collectAsState()
+    val currentWindowIndex by playerConnection.currentWindowIndex.collectAsState()
 
     var position by remember { mutableLongStateOf(0L) }
     var duration by remember { mutableLongStateOf(0L) }
     var sliderPosition by remember { mutableFloatStateOf(0f) }
     var isSeeking by remember { mutableStateOf(false) }
     var showAddToPlaylistDialog by remember { mutableStateOf(false) }
+
+    val titles = listOf("Now Playing", "Coming Up")
+    val pagerState = rememberPagerState(pageCount = { titles.size })
 
     LaunchedEffect(playerConnection, isPlaying) {
         while (true) {
@@ -100,281 +127,261 @@ fun EinkNowPlayingScreen(navController: NavController) {
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.surface)
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null
-            ) {}
-            .padding(16.dp),
-        verticalArrangement = Arrangement.SpaceBetween,
-        horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        PanoramaHeader(
+            pagerState = pagerState,
+            titles = titles,
+            coroutineScope = coroutineScope
+        )
 
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
-                .padding(horizontal = 4.dp),
-            verticalArrangement = Arrangement.Bottom,
-        ) {
-            Text(
-                text = mediaMetadata?.title.orEmpty(),
-                fontSize = 42.sp,
-                fontWeight = FontWeight.Black,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
+        PanoramaPager(
+            state = pagerState,
+            modifier = Modifier.weight(1f)
+        ) { page ->
+            if (page == 0) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(bottom = 16.dp, start = 16.dp, end = 16.dp),
+                    verticalArrangement = Arrangement.SpaceBetween,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
 
-            Spacer(modifier = Modifier.height(8.dp))
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f)
+                            .padding(horizontal = 4.dp),
+                        verticalArrangement = Arrangement.Bottom,
+                    ) {
+                        Text(
+                            text = mediaMetadata?.title.orEmpty(),
+                            fontSize = 42.sp,
+                            fontWeight = FontWeight.Black,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
+                        )
 
-            Text(
-                text = mediaMetadata?.artists?.joinToString(", ") { it.name }.orEmpty(),
-                fontSize = 20.sp,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
+                        Spacer(modifier = Modifier.height(8.dp))
 
-            val albumName = mediaMetadata?.album?.title
-            if (!albumName.isNullOrBlank()) {
-                Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = mediaMetadata?.artists?.joinToString(", ") { it.name }.orEmpty(),
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
 
-                Text(
-                    text = albumName,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Medium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-        }
+                        val albumName = mediaMetadata?.album?.title
+                        if (!albumName.isNullOrBlank()) {
+                            Spacer(modifier = Modifier.height(4.dp))
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            SliderMMD(
-                modifier = Modifier.fillMaxWidth(),
-                value = sliderPosition.coerceIn(0f, 1f),
-                onValueChange = { value ->
-                    isSeeking = true
-                    sliderPosition = value
-                    if (duration > 0) {
-                        val newPosition = (value * duration).toLong().coerceIn(0L, duration)
-                        player.seekTo(newPosition)
-                    }
-                    isSeeking = false
-                },
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    text = makeTimeString(position),
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                Text(
-                    text = makeTimeString(duration),
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.SemiBold,
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 32.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            ButtonMMD(
-                onClick = { playerConnection.seekToPrevious() },
-                modifier = Modifier.size(72.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.secondary
-                )
-
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.SkipPrevious,
-                    modifier = Modifier.size(46.dp),
-                    contentDescription = "Previous Song",
-                    tint = MaterialTheme.colorScheme.onSecondary
-                )
-            }
-
-            IconButton(
-                onClick = { player.togglePlayPause() },
-                modifier = Modifier.size(72.dp)
-            ) {
-                Icon(
-                    imageVector = if (isPlaying) Icons.Outlined.Pause else Icons.Outlined.PlayArrow,
-                    contentDescription = if (isPlaying) "Pause" else "Play",
-                    modifier = Modifier.size(46.dp),
-                )
-            }
-
-            ButtonMMD(
-                onClick = { playerConnection.seekToNext() },
-                modifier = Modifier.size(72.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.secondary
-                )
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.SkipNext,
-                    modifier = Modifier.size(46.dp),
-                    contentDescription = "Next Song",
-                    tint = MaterialTheme.colorScheme.onSecondary
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Bottom row for secondary actions (e.g. shuffle, repeat, add to playlist / library)
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = { /* Add to library not implemented in Eink mode right now, just match visual */ }) {
-                Icon(
-                    imageVector = Icons.Outlined.LibraryAdd,
-                    contentDescription = "Add to library",
-                )
-            }
-
-            IconButton(onClick = { 
-                if (mediaMetadata != null) {
-                    showAddToPlaylistDialog = true
-                }
-            }) {
-                Icon(
-                    imageVector = Icons.Outlined.PlaylistAdd,
-                    contentDescription = "Add to playlist",
-                )
-            }
-
-            when (download?.state) {
-                Download.STATE_COMPLETED -> {
-                    IconButton(onClick = {
-                        mediaMetadata?.let { metadata ->
-                            DownloadService.sendRemoveDownload(
-                                context,
-                                ExoDownloadService::class.java,
-                                metadata.id,
-                                false,
+                            Text(
+                                text = albumName,
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Medium,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
                             )
                         }
-                    }) {
-                        Icon(
-                            painter = androidx.compose.ui.res.painterResource(id = moe.rukamori.archivetune.R.drawable.offline),
-                            contentDescription = "Downloaded",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
                     }
-                }
-                Download.STATE_QUEUED, Download.STATE_DOWNLOADING -> {
-                    IconButton(onClick = {
-                        mediaMetadata?.let { metadata ->
-                            DownloadService.sendRemoveDownload(
-                                context,
-                                ExoDownloadService::class.java,
-                                metadata.id,
-                                false,
-                            )
-                        }
-                    }) {
-                        CircularProgressIndicatorMMD(
-                            modifier = Modifier.size(24.dp),
-                        )
-                    }
-                }
-                else -> {
-                    IconButton(onClick = {
-                        mediaMetadata?.let { metadata ->
-                            val downloadRequest = DownloadRequest
-                                .Builder(metadata.id, metadata.id.toUri())
-                                .setCustomCacheKey(metadata.id)
-                                .setData((metadata.title ?: "").toByteArray())
-                                .build()
-                            DownloadService.sendAddDownload(
-                                context,
-                                ExoDownloadService::class.java,
-                                downloadRequest,
-                                false,
-                            )
-                        }
-                    }) {
-                        Icon(
-                            painter = androidx.compose.ui.res.painterResource(id = moe.rukamori.archivetune.R.drawable.download),
-                            contentDescription = "Download song",
-                        )
-                    }
-                }
-            }
 
-            IconButton(onClick = { player.shuffleModeEnabled = !player.shuffleModeEnabled }) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        imageVector = Icons.Outlined.Shuffle,
-                        contentDescription = "Shuffle queue",
-                    )
-                    if (shuffleEnabled) {
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Box(
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        SliderMMD(
+                            modifier = Modifier.fillMaxWidth(),
+                            value = sliderPosition.coerceIn(0f, 1f),
+                            onValueChange = { value ->
+                                isSeeking = true
+                                sliderPosition = value
+                                if (duration > 0) {
+                                    val newPosition = (value * duration).toLong().coerceIn(0L, duration)
+                                    player.seekTo(newPosition)
+                                }
+                                isSeeking = false
+                            },
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Row(
                             modifier = Modifier
-                                .size(4.dp)
-                                .background(
-                                    color = MaterialTheme.colorScheme.primary,
-                                    shape = CircleShape,
-                                ),
-                        )
+                                .fillMaxWidth()
+                                .padding(horizontal = 12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = makeTimeString(position),
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                            Text(
+                                text = makeTimeString(duration),
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 32.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        ButtonMMD(
+                            onClick = { playerConnection.seekToPrevious() },
+                            modifier = Modifier.size(72.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.secondary
+                            )
+
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.SkipPrevious,
+                                modifier = Modifier.size(46.dp),
+                                contentDescription = "Previous Song",
+                                tint = MaterialTheme.colorScheme.onSecondary
+                            )
+                        }
+
+                        IconButton(
+                            onClick = { player.togglePlayPause() },
+                            modifier = Modifier.size(72.dp)
+                        ) {
+                            Icon(
+                                imageVector = if (isPlaying) Icons.Outlined.Pause else Icons.Outlined.PlayArrow,
+                                contentDescription = if (isPlaying) "Pause" else "Play",
+                                modifier = Modifier.size(46.dp),
+                            )
+                        }
+
+                        ButtonMMD(
+                            onClick = { playerConnection.seekToNext() },
+                            modifier = Modifier.size(72.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.secondary
+                            )
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.SkipNext,
+                                modifier = Modifier.size(46.dp),
+                                contentDescription = "Next Song",
+                                tint = MaterialTheme.colorScheme.onSecondary
+                            )
+                        }
                     }
                 }
-            }
-
-            IconButton(onClick = {
-                player.repeatMode = when (player.repeatMode) {
-                    Player.REPEAT_MODE_OFF -> Player.REPEAT_MODE_ALL
-                    Player.REPEAT_MODE_ALL -> Player.REPEAT_MODE_ONE
-                    else -> Player.REPEAT_MODE_OFF
-                }
-            }) {
-                val (icon, description, isActive) = when (repeatMode) {
-                    Player.REPEAT_MODE_OFF -> Triple(Icons.Outlined.Repeat, "Repeat off", false)
-                    Player.REPEAT_MODE_ALL -> Triple(Icons.Outlined.Repeat, "Repeat queue", true)
-                    else -> Triple(Icons.Outlined.RepeatOne, "Repeat current song", true)
-                }
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = description,
-                    )
-                    if (isActive) {
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Box(
-                            modifier = Modifier
-                                .size(4.dp)
-                                .background(
-                                    color = MaterialTheme.colorScheme.primary,
-                                    shape = CircleShape,
-                                ),
-                        )
+            } else {
+                LazyColumnMMD(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(16.dp)
+                ) {
+                    itemsIndexed(queueWindows) { index, window ->
+                        val metadata = window.mediaItem.metadata
+                        if (metadata != null) {
+                            EinkQueueRow(
+                                metadata = metadata,
+                                isCurrentlyPlaying = index == currentWindowIndex,
+                                onClick = {
+                                    player.seekToDefaultPosition(index)
+                                    player.play()
+                                },
+                                showDivider = index != queueWindows.lastIndex,
+                            )
+                        }
                     }
                 }
             }
         }
+        
+        val downloadIcon = when (download?.state) {
+            Download.STATE_COMPLETED -> Icons.Outlined.DownloadDone
+            Download.STATE_QUEUED, Download.STATE_DOWNLOADING -> Icons.Outlined.Downloading
+            else -> Icons.Outlined.Download
+        }
+        
+        val downloadLabel = when (download?.state) {
+            Download.STATE_COMPLETED -> "Downloaded"
+            Download.STATE_QUEUED, Download.STATE_DOWNLOADING -> "Downloading"
+            else -> "Download"
+        }
+
+        ApplicationBar(
+            actions = listOf(
+                AppbarAction(
+                    icon = Icons.Outlined.Shuffle,
+                    label = "Shuffle",
+                    onClick = { player.shuffleModeEnabled = !player.shuffleModeEnabled }
+                ),
+                AppbarAction(
+                    icon = when (repeatMode) {
+                        Player.REPEAT_MODE_ALL -> Icons.Outlined.Repeat
+                        Player.REPEAT_MODE_ONE -> Icons.Outlined.RepeatOne
+                        else -> Icons.Outlined.Repeat
+                    },
+                    label = "Repeat",
+                    onClick = {
+                        player.repeatMode = when (player.repeatMode) {
+                            Player.REPEAT_MODE_OFF -> Player.REPEAT_MODE_ALL
+                            Player.REPEAT_MODE_ALL -> Player.REPEAT_MODE_ONE
+                            else -> Player.REPEAT_MODE_OFF
+                        }
+                    }
+                ),
+                AppbarAction(
+                    icon = downloadIcon,
+                    label = downloadLabel,
+                    onClick = {
+                        val state = download?.state
+                        if (state == Download.STATE_COMPLETED || state == Download.STATE_QUEUED || state == Download.STATE_DOWNLOADING) {
+                            mediaMetadata?.let { metadata ->
+                                DownloadService.sendRemoveDownload(
+                                    context,
+                                    ExoDownloadService::class.java,
+                                    metadata.id,
+                                    false,
+                                )
+                            }
+                        } else {
+                            mediaMetadata?.let { metadata ->
+                                val downloadRequest = DownloadRequest
+                                    .Builder(metadata.id, metadata.id.toUri())
+                                    .setCustomCacheKey(metadata.id)
+                                    .setData((metadata.title ?: "").toByteArray())
+                                    .build()
+                                DownloadService.sendAddDownload(
+                                    context,
+                                    ExoDownloadService::class.java,
+                                    downloadRequest,
+                                    false,
+                                )
+                            }
+                        }
+                    }
+                ),
+                AppbarAction(
+                    icon = Icons.Outlined.PlaylistAdd,
+                    label = "Playlist",
+                    onClick = {
+                        if (mediaMetadata != null) {
+                            showAddToPlaylistDialog = true
+                        }
+                    }
+                ),
+                AppbarAction(
+                    icon = Icons.AutoMirrored.Filled.ArrowBack,
+                    label = "Back",
+                    onClick = { navController.navigateUp() }
+                )
+            )
+        )
     }
 
     if (showAddToPlaylistDialog && mediaMetadata != null) {
@@ -382,5 +389,69 @@ fun EinkNowPlayingScreen(navController: NavController) {
             mediaMetadata = mediaMetadata!!,
             onDismiss = { showAddToPlaylistDialog = false }
         )
+    }
+}
+
+@Composable
+private fun EinkQueueRow(
+    metadata: MediaMetadata,
+    isCurrentlyPlaying: Boolean,
+    onClick: () -> Unit,
+    showDivider: Boolean = true,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(bottom = 8.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (isCurrentlyPlaying) {
+                Icon(
+                    imageVector = Icons.Outlined.Headphones,
+                    contentDescription = "Now playing",
+                    modifier = Modifier
+                        .size(24.dp)
+                        .padding(start = 4.dp),
+                )
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                TextMMD(
+                    text = metadata.title.orEmpty(),
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                val artist = metadata.artists.joinToString(", ") { it.name }
+                val album = metadata.album?.title?.takeIf { it.isNotBlank() }
+                val duration = metadata.duration.takeIf { it > 0 }?.let { makeTimeString(it * 1000L) }
+                val subtitle = buildString {
+                    if (artist.isNotBlank()) append(artist)
+                    if (!album.isNullOrBlank()) {
+                        if (isNotEmpty()) append(" • ")
+                        append(album)
+                    }
+                    if (!duration.isNullOrBlank()) {
+                        if (isNotEmpty()) append(" • ")
+                        append(duration)
+                    }
+                }
+                TextMMD(
+                    text = subtitle,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Normal,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(12.dp))
+        if (showDivider) DashedDivider(thickness = 1.dp)
     }
 }

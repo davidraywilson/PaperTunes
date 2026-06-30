@@ -57,6 +57,8 @@ include(":unison")
 include(":canvas")
 include(":shazamkit")
 include(":spotifycore")
+include(":paperui")
+project(":paperui").projectDir = file("../paperui/paperui")
 
 // Use a local copy of NewPipe Extractor by uncommenting the lines below.
 // We assume, that ArchiveTune and NewPipe Extractor have the same parent directory.

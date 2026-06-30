@@ -18,7 +18,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Shuffle
+import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -36,6 +39,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import moe.rukamori.archivetune.eink.components.EinkNowPlayingButton
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -129,6 +133,7 @@ fun EinkAlbumsScreen(
     }
 }
 
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun EinkArtistDetailsScreen(
     navController: NavController,
@@ -139,6 +144,7 @@ fun EinkArtistDetailsScreen(
     val menuState = LocalEinkMenuState.current
     val haptic = LocalHapticFeedback.current
     val playerConnection = LocalPlayerConnection.current ?: return
+    val coroutineScope = androidx.compose.runtime.rememberCoroutineScope()
 
     val songs by songsViewModel.songs.collectAsState()
     val artist by songsViewModel.artist.collectAsState()
@@ -146,41 +152,36 @@ fun EinkArtistDetailsScreen(
     val mediaMetadata by playerConnection.mediaMetadata.collectAsState()
 
     val artistName = artist?.artist?.name.orEmpty()
-    var selectedTab by rememberSaveable { mutableIntStateOf(0) }
     val tabOptions = remember { listOf("Songs", "Albums") }
+    val pagerState = androidx.compose.foundation.pager.rememberPagerState(pageCount = { tabOptions.size })
 
-    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            if (artistName.isNotBlank()) {
-                TextMMD(
-                    text = artistName,
-                    fontSize = 26.sp,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
-                )
-            }
+    Column(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
 
-            PrimaryTabRowMMD(selectedTabIndex = selectedTab) {
-                tabOptions.forEachIndexed { index, title ->
-                    TabMMD(
-                        selected = selectedTab == index,
-                        onClick = { selectedTab = index },
-                        text = {
-                            TextMMD(
-                                text = title,
-                                fontSize = 16.sp,
-                                fontWeight = if (selectedTab == index) FontWeight.Bold else FontWeight.Normal,
-                            )
-                        },
-                    )
-                }
-            }
 
-            if (selectedTab == 0) {
+        if (artistName.isNotBlank()) {
+            TextMMD(
+                text = artistName,
+                fontSize = 26.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
+            )
+        }
+
+        com.paperapps.paperui.components.PanoramaHeader(
+            pagerState = pagerState,
+            titles = tabOptions,
+            coroutineScope = coroutineScope
+        )
+
+        com.paperapps.paperui.components.PanoramaPager(
+            state = pagerState,
+            modifier = Modifier.weight(1f)
+        ) { page ->
+            if (page == 0) {
                 if (songs.isEmpty()) {
                     EinkEmptyState(
                         title = "No songs",
@@ -249,29 +250,36 @@ fun EinkArtistDetailsScreen(
             }
         }
 
-        if (selectedTab == 0 && songs.isNotEmpty()) {
-            FloatingActionButtonMMD(
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(16.dp),
-                onClick = {
-                    playerConnection.playQueue(
-                        ListQueue(
-                            title = artistName.ifBlank { "Artist" },
-                            items = songs.shuffled().map { it.toMediaItem() },
-                        ),
-                    )
-                },
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.Shuffle,
-                    contentDescription = "Shuffle artist songs",
+        com.paperapps.paperui.components.ApplicationBar(
+            actions = listOf(
+                com.paperapps.paperui.components.AppbarAction(
+                    icon = Icons.Outlined.Search,
+                    label = "Search",
+                    onClick = { navController.navigate(moe.rukamori.archivetune.eink.EinkScreen.Search.route) }
+                ),
+                com.paperapps.paperui.components.AppbarAction(
+                    icon = Icons.Outlined.Shuffle,
+                    label = "Shuffle",
+                    onClick = { 
+                        if (songs.isNotEmpty()) {
+                            playerConnection.playQueue(
+                                ListQueue(
+                                    title = artistName.ifBlank { "Artist" },
+                                    items = songs.shuffled().map { it.toMediaItem() },
+                                ),
+                            )
+                            navController.navigate(moe.rukamori.archivetune.eink.EinkScreen.NowPlaying.route)
+                        }
+                    }
                 )
-            }
-        }
+            ),
+            menuItems = emptyList(),
+            leftSlot = { EinkNowPlayingButton(navController) }
+        )
     }
 }
 
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun EinkAlbumDetailsScreen(
     navController: NavController,
@@ -291,10 +299,16 @@ fun EinkAlbumDetailsScreen(
     val songs = album?.songs.orEmpty()
     val albumTitle = album?.album?.title.orEmpty()
 
-    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+    val tabOptions = remember { listOf("Songs", "Details") }
+    val pagerState = androidx.compose.foundation.pager.rememberPagerState(pageCount = { tabOptions.size })
+    val coroutineScope = androidx.compose.runtime.rememberCoroutineScope()
+
+    Column(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+
+
         when {
             uiState is AlbumUiState.Loading -> {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(color = MaterialTheme.colorScheme.onBackground)
                 }
             }
@@ -302,95 +316,181 @@ fun EinkAlbumDetailsScreen(
                 EinkEmptyState(
                     title = "Error",
                     body = "Failed to fetch album details.",
-                    modifier = Modifier.fillMaxSize(),
-                )
-            }
-            uiState is AlbumUiState.Empty || (uiState is AlbumUiState.Content && songs.isEmpty()) -> {
-                EinkEmptyState(
-                    title = albumTitle.ifBlank { "Album" },
-                    body = "No songs in this album yet.",
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier.weight(1f),
                 )
             }
             else -> {
-                LazyColumnMMD(contentPadding = PaddingValues(16.dp)) {
-                itemsIndexed(
-                    items = songs,
-                    key = { _, song -> song.id },
-                ) { index, song ->
-                    EinkSongRow(
-                        song = song,
-                        isCurrentlyPlaying = song.id == mediaMetadata?.id,
-                        trackNumber = index + 1,
-                        onClick = {
-                            if (song.id == mediaMetadata?.id) {
-                                playerConnection.player.togglePlayPause()
-                            } else {
+                com.paperapps.paperui.components.PanoramaHeader(
+                    pagerState = pagerState,
+                    titles = tabOptions,
+                    coroutineScope = coroutineScope
+                )
+
+                Box(modifier = Modifier.weight(1f)) {
+                    com.paperapps.paperui.components.PanoramaPager(
+                        state = pagerState,
+                        modifier = Modifier.fillMaxSize()
+                    ) { page ->
+                        if (page == 0) {
+                            Column(modifier = Modifier.fillMaxSize()) {
+                                if (albumTitle.isNotBlank()) {
+                                    TextMMD(
+                                        text = albumTitle,
+                                        fontSize = 26.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        maxLines = 2,
+                                        overflow = TextOverflow.Ellipsis,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
+                                    )
+                                }
+                                
+                                if (uiState is AlbumUiState.Empty || (uiState is AlbumUiState.Content && songs.isEmpty())) {
+                                    EinkEmptyState(
+                                        title = albumTitle.ifBlank { "Album" },
+                                        body = "No songs in this album yet.",
+                                        modifier = Modifier.fillMaxSize(),
+                                    )
+                                } else {
+                                    LazyColumnMMD(
+                                        contentPadding = PaddingValues(16.dp),
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        itemsIndexed(
+                                            items = songs,
+                                            key = { _, song -> song.id },
+                                        ) { index, song ->
+                                            EinkSongRow(
+                                                song = song,
+                                                isCurrentlyPlaying = song.id == mediaMetadata?.id,
+                                                trackNumber = index + 1,
+                                                onClick = {
+                                                    if (song.id == mediaMetadata?.id) {
+                                                        playerConnection.player.togglePlayPause()
+                                                    } else {
+                                                        playerConnection.playQueue(
+                                                            ListQueue(
+                                                                title = albumTitle.ifBlank { "Album" },
+                                                                items = songs.map { it.toMediaItem() },
+                                                                startIndex = index,
+                                                            ),
+                                                        )
+                                                    }
+                                                },
+                                                onLongClick = {
+                                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                                },
+                                                dropdownContent = { dismiss ->
+                                                    EinkSongMenu(
+                                                        originalSong = song,
+                                                        navController = navController,
+                                                        onDismiss = dismiss,
+                                                    )
+                                                },
+                                                showDivider = index != songs.lastIndex,
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        } else {
+                            LazyColumnMMD(contentPadding = PaddingValues(16.dp)) {
+                                if (album != null) {
+                                    item(key = "album_info") {
+                                        Column(modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)) {
+                                            TextMMD(
+                                                text = "Album Information",
+                                                fontSize = 20.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                modifier = Modifier.padding(bottom = 8.dp)
+                                            )
+                                            if (album.artists.isNotEmpty()) {
+                                                val artistsText = album.artists.joinToString { it.name }
+                                                TextMMD(
+                                                    text = "Artist(s): $artistsText",
+                                                    fontSize = 16.sp,
+                                                    modifier = Modifier.padding(bottom = 4.dp)
+                                                )
+                                            }
+                                            if (album.album.year != null && album.album.year != 0) {
+                                                TextMMD(
+                                                    text = "Released: ${album.album.year}",
+                                                    fontSize = 16.sp,
+                                                    modifier = Modifier.padding(bottom = 4.dp)
+                                                )
+                                            }
+                                            val numTracks = album.songs.size.takeIf { it > 0 } ?: album.album.songCount
+                                            if (numTracks > 0) {
+                                                TextMMD(
+                                                    text = "Tracks: $numTracks",
+                                                    fontSize = 16.sp,
+                                                    modifier = Modifier.padding(bottom = 4.dp)
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+
+                                if (otherVersions.isNotEmpty()) {
+                                    item(key = "other_versions_header") {
+                                        TextMMD(
+                                            text = "Other Versions",
+                                            fontSize = 20.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            modifier = Modifier.padding(top = 8.dp, bottom = 8.dp)
+                                        )
+                                    }
+                                    itemsIndexed(
+                                        items = otherVersions,
+                                        key = { _, version -> "other_version_${version.id}" },
+                                    ) { index, version ->
+                                        EinkTwoLineRow(
+                                            title = version.title,
+                                            subtitle = version.year?.toString() ?: "",
+                                            onClick = { navController.navigate(einkAlbumDetailsRoute(version.id)) },
+                                            showDivider = index != otherVersions.lastIndex,
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    if (songs.isNotEmpty()) {
+                        FloatingActionButtonMMD(
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .padding(16.dp),
+                            onClick = {
                                 playerConnection.playQueue(
                                     ListQueue(
                                         title = albumTitle.ifBlank { "Album" },
-                                        items = songs.map { it.toMediaItem() },
-                                        startIndex = index,
+                                        items = songs.shuffled().map { it.toMediaItem() },
                                     ),
                                 )
-                            }
-                        },
-                        onLongClick = {
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        },
-                        dropdownContent = { dismiss ->
-                            EinkSongMenu(
-                                originalSong = song,
-                                navController = navController,
-                                onDismiss = dismiss,
+                            },
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Shuffle,
+                                contentDescription = "Shuffle album",
                             )
-                        },
-                        showDivider = index != songs.lastIndex || otherVersions.isNotEmpty(),
-                    )
-                }
-                
-                if (otherVersions.isNotEmpty()) {
-                    item(key = "other-versions-header") {
-                        TextMMD(
-                            text = "Other versions",
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(top = 24.dp, bottom = 8.dp),
-                        )
-                    }
-                    itemsIndexed(
-                        items = otherVersions,
-                        key = { _, version -> "other_version_${version.id}" },
-                    ) { index, version ->
-                        EinkTwoLineRow(
-                            title = version.title,
-                            subtitle = version.year.toString(),
-                            onClick = { navController.navigate(einkAlbumDetailsRoute(version.id)) },
-                            showDivider = index != otherVersions.lastIndex,
-                        )
+                        }
                     }
                 }
-            }
-
-            FloatingActionButtonMMD(
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(16.dp),
-                onClick = {
-                    playerConnection.playQueue(
-                        ListQueue(
-                            title = albumTitle.ifBlank { "Album" },
-                            items = songs.shuffled().map { it.toMediaItem() },
-                        ),
-                    )
-                },
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.Shuffle,
-                    contentDescription = "Shuffle album",
-                )
             }
         }
+
+        com.paperapps.paperui.components.ApplicationBar(
+            actions = listOf(
+                com.paperapps.paperui.components.AppbarAction(
+                    icon = Icons.AutoMirrored.Outlined.ArrowBack,
+                    label = "Back",
+                    onClick = { navController.navigateUp() }
+                )
+            ),
+            menuItems = emptyList(),
+            leftSlot = { moe.rukamori.archivetune.eink.components.EinkNowPlayingButton(navController) }
+        )
     }
-}
 }

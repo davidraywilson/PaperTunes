@@ -7,6 +7,9 @@
 
 package moe.rukamori.archivetune.eink.screens
 
+import moe.rukamori.archivetune.eink.einkPlaylistEditRoute
+import moe.rukamori.archivetune.eink.AutoDownloadPlaylistsKey
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -26,11 +29,23 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Sort
+import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.ArrowDownward
+import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.ArrowUpward
+import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Shuffle
+import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -52,6 +67,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import moe.rukamori.archivetune.eink.components.EinkNowPlayingButton
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
@@ -60,6 +76,7 @@ import com.mudita.mmd.components.buttons.FloatingActionButtonMMD
 import com.mudita.mmd.components.buttons.OutlinedButtonMMD
 import com.mudita.mmd.components.bottom_sheet.ModalBottomSheetMMD
 import com.mudita.mmd.components.lazy.LazyColumnMMD
+import com.mudita.mmd.components.menus.DropdownMenuItemMMD
 import com.mudita.mmd.components.text.TextMMD
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -74,7 +91,7 @@ import moe.rukamori.archivetune.constants.PlaylistSortType
 import moe.rukamori.archivetune.constants.PlaylistSortTypeKey
 import moe.rukamori.archivetune.eink.einkPlaylistAddSongsRoute
 import moe.rukamori.archivetune.eink.einkPlaylistDetailsRoute
-import moe.rukamori.archivetune.eink.components.DashedDivider
+import com.paperapps.paperui.components.DashedDivider
 import moe.rukamori.archivetune.eink.components.EinkEmptyState
 import moe.rukamori.archivetune.eink.components.EinkSelectableRow
 import moe.rukamori.archivetune.eink.components.EinkSongRow
@@ -111,6 +128,8 @@ fun EinkPlaylistsScreen(
     onDeleteConfirmed: () -> Unit = {},
     onCancelDelete: () -> Unit = {},
     selectedIds: Set<String> = emptySet(),
+    showSortSheet: Boolean = false,
+    onDismissSortSheet: () -> Unit = {},
     viewModel: LibraryPlaylistsViewModel = hiltViewModel(),
 ) {
     val database = LocalDatabase.current
@@ -118,7 +137,6 @@ fun EinkPlaylistsScreen(
     val playlists by viewModel.allPlaylists.collectAsState()
 
     var showCreateDialog by remember { mutableStateOf(false) }
-    var showSortSheet by remember { mutableStateOf(false) }
 
     val (sortType, onSortTypeChange) = rememberEnumPreference(
         PlaylistSortTypeKey,
@@ -181,7 +199,7 @@ fun EinkPlaylistsScreen(
 
     if (showSortSheet) {
         ModalBottomSheetMMD(
-            onDismissRequest = { showSortSheet = false },
+            onDismissRequest = onDismissSortSheet,
             containerColor = androidx.compose.ui.graphics.Color.White
         ) {
             Column(
@@ -200,7 +218,7 @@ fun EinkPlaylistsScreen(
                         fontWeight = FontWeight.Bold,
                     )
                     IconButton(
-                        onClick = { showSortSheet = false },
+                        onClick = onDismissSortSheet,
                         modifier = Modifier.size(32.dp)
                     ) {
                         Icon(
@@ -221,7 +239,7 @@ fun EinkPlaylistsScreen(
                         subtitle = if (sortType == PlaylistSortType.CREATE_DATE) "Selected" else "",
                         onClick = {
                             onSortTypeChange(PlaylistSortType.CREATE_DATE)
-                            showSortSheet = false
+                            onDismissSortSheet()
                         }
                     )
                 }
@@ -231,7 +249,7 @@ fun EinkPlaylistsScreen(
                         subtitle = if (sortType == PlaylistSortType.NAME) "Selected" else "",
                         onClick = {
                             onSortTypeChange(PlaylistSortType.NAME)
-                            showSortSheet = false
+                            onDismissSortSheet()
                         }
                     )
                 }
@@ -241,7 +259,7 @@ fun EinkPlaylistsScreen(
                         subtitle = if (sortType == PlaylistSortType.LAST_UPDATED) "Selected" else "",
                         onClick = {
                             onSortTypeChange(PlaylistSortType.LAST_UPDATED)
-                            showSortSheet = false
+                            onDismissSortSheet()
                         }
                     )
                 }
@@ -251,7 +269,7 @@ fun EinkPlaylistsScreen(
                         subtitle = if (sortType == PlaylistSortType.SONG_COUNT) "Selected" else "",
                         onClick = {
                             onSortTypeChange(PlaylistSortType.SONG_COUNT)
-                            showSortSheet = false
+                            onDismissSortSheet()
                         }
                     )
                 }
@@ -261,7 +279,7 @@ fun EinkPlaylistsScreen(
                         subtitle = if (sortType == PlaylistSortType.CUSTOM) "Selected" else "",
                         onClick = {
                             onSortTypeChange(PlaylistSortType.CUSTOM)
-                            showSortSheet = false
+                            onDismissSortSheet()
                         }
                     )
                 }
@@ -299,44 +317,10 @@ fun EinkPlaylistsScreen(
                         fontSize = 22.sp,
                         fontWeight = FontWeight.SemiBold,
                     )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    ButtonMMD(onClick = { showCreateDialog = true }) {
-                        TextMMD(text = "New playlist")
-                    }
                 }
             }
         } else {
             Column(modifier = Modifier.fillMaxSize()) {
-                if (!isInEditMode) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
-                        horizontalArrangement = Arrangement.End,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .clip(androidx.compose.foundation.shape.RoundedCornerShape(8.dp))
-                                .clickable { showSortSheet = true }
-                                .padding(8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Icon(Icons.AutoMirrored.Rounded.Sort, contentDescription = "Sort")
-                            TextMMD(
-                                text = when(sortType) {
-                                    PlaylistSortType.CREATE_DATE -> "Date created"
-                                    PlaylistSortType.NAME -> "Name"
-                                    PlaylistSortType.SONG_COUNT -> "Song count"
-                                    PlaylistSortType.LAST_UPDATED -> "Last updated"
-                                    PlaylistSortType.CUSTOM -> "Custom"
-                                } + if (sortDescending) " ↓" else " ↑",
-                                fontSize = 16.sp
-                            )
-                        }
-                    }
-                }
                 LazyColumnMMD(
                     modifier = Modifier.weight(1f),
                     contentPadding = PaddingValues(16.dp),
@@ -392,17 +376,11 @@ fun EinkPlaylistsScreen(
     }
 }
 
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun EinkPlaylistDetailsScreen(
     navController: NavController,
     playlistId: String,
-    showRenameDialog: Boolean = false,
-    onRenameDialogDismiss: () -> Unit = {},
-    showDeleteSheet: Boolean = false,
-    onDeleteSheetDismiss: () -> Unit = {},
-    isInEditMode: Boolean = false,
-    onSelectionChanged: (Set<String>) -> Unit = {},
-    selectedIds: Set<String> = emptySet(),
     viewModel: LocalPlaylistViewModel = hiltViewModel(),
 ) {
     val database = LocalDatabase.current
@@ -417,11 +395,31 @@ fun EinkPlaylistDetailsScreen(
 
     val playlistName = playlist?.playlist?.name ?: "Playlist"
 
+    var showRenameDialog by remember { mutableStateOf(false) }
+    var showDeleteSheet by remember { mutableStateOf(false) }
+    
+    val (autoDownloadPlaylists, onAutoDownloadPlaylistsChange) = rememberPreference(
+        AutoDownloadPlaylistsKey,
+        emptySet()
+    )
+    val isPlaylistAutoDownloadEnabled = autoDownloadPlaylists.contains(playlistId)
+    val onPlaylistAutoDownloadToggle = {
+        val newSet = autoDownloadPlaylists.toMutableSet()
+        if (isPlaylistAutoDownloadEnabled) {
+            newSet.remove(playlistId)
+        } else {
+            newSet.add(playlistId)
+        }
+        onAutoDownloadPlaylistsChange(newSet)
+    }
+
+    
+    val pagerState = androidx.compose.foundation.pager.rememberPagerState(pageCount = { 1 })
     if (showRenameDialog) {
         playlist?.let { current ->
             EinkEditPlaylistDialog(
                 initialName = current.playlist.name,
-                onDismiss = onRenameDialogDismiss,
+                onDismiss = { showRenameDialog = false },
                 onSave = { name ->
                     database.query {
                         update(
@@ -434,127 +432,83 @@ fun EinkPlaylistDetailsScreen(
                     coroutineScope.launch(Dispatchers.IO) {
                         current.playlist.browseId?.let { runCatching { YouTube.renamePlaylist(it, name) } }
                     }
-                    onRenameDialogDismiss()
+                    showRenameDialog = false
                 },
             )
         }
     }
 
     if (showDeleteSheet) {
-        if (isInEditMode) {
-            // Delete selected songs
-            val toDelete = songs.filter { selectedIds.contains(it.map.id.toString()) } // Note: using map.id? It's Long. Just using song.id. Wait.
-            ModalBottomSheetMMD(onDismissRequest = onDeleteSheetDismiss) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(24.dp),
-                ) {
-                    TextMMD(
-                        text = "Remove ${toDelete.size} songs?",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                    )
-                    Spacer(modifier = Modifier.height(24.dp))
-                    Row(modifier = Modifier.fillMaxWidth()) {
-                        OutlinedButtonMMD(
-                            onClick = onDeleteSheetDismiss,
-                            modifier = Modifier.weight(1f),
-                        ) {
-                            TextMMD(text = "Cancel")
-                        }
-                        Spacer(modifier = Modifier.width(8.dp))
-                        ButtonMMD(
-                            onClick = {
-                                toDelete.forEach { map ->
-                                    removeSong(database, coroutineScope, map.map)
-                                }
-                                onDeleteSheetDismiss()
-                            },
-                            modifier = Modifier.weight(1f),
-                        ) {
-                            TextMMD(text = "Remove")
-                        }
+        // Delete Playlist
+        ModalBottomSheetMMD(onDismissRequest = { showDeleteSheet = false }) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp),
+            ) {
+                TextMMD(
+                    text = "Delete \"$playlistName\"?",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                )
+                Spacer(modifier = Modifier.height(24.dp))
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    OutlinedButtonMMD(
+                        onClick = { showDeleteSheet = false },
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        TextMMD(text = "Cancel")
                     }
-                }
-            }
-        } else {
-            // Delete Playlist
-            ModalBottomSheetMMD(onDismissRequest = onDeleteSheetDismiss) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(24.dp),
-                ) {
-                    TextMMD(
-                        text = "Delete \"$playlistName\"?",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                    )
-                    Spacer(modifier = Modifier.height(24.dp))
-                    Row(modifier = Modifier.fillMaxWidth()) {
-                        OutlinedButtonMMD(
-                            onClick = onDeleteSheetDismiss,
-                            modifier = Modifier.weight(1f),
-                        ) {
-                            TextMMD(text = "Cancel")
-                        }
-                        Spacer(modifier = Modifier.width(8.dp))
-                        ButtonMMD(
-                            onClick = {
-                                val current = playlist
-                                database.query { current?.let { delete(it.playlist) } }
-                                coroutineScope.launch(Dispatchers.IO) {
-                                    current?.playlist?.browseId?.let { runCatching { YouTube.deletePlaylist(it) } }
-                                }
-                                onDeleteSheetDismiss()
-                                navController.popBackStack()
-                            },
-                            modifier = Modifier.weight(1f),
-                        ) {
-                            TextMMD(text = "Delete")
-                        }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    ButtonMMD(
+                        onClick = {
+                            val current = playlist
+                            database.query { current?.let { delete(it.playlist) } }
+                            coroutineScope.launch(Dispatchers.IO) {
+                                current?.playlist?.browseId?.let { runCatching { YouTube.deletePlaylist(it) } }
+                            }
+                            showDeleteSheet = false
+                            navController.popBackStack()
+                        },
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        TextMMD(text = "Delete")
                     }
                 }
             }
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            if (songs.isEmpty()) {
-                EinkEmptyState(
-                    title = "No songs in this playlist",
-                    body = "Use Add songs to put tracks from your library here.",
-                    modifier = Modifier.fillMaxSize(),
-                )
-            } else {
-                LazyColumnMMD(
-                    modifier = Modifier.weight(1f),
-                    contentPadding = PaddingValues(16.dp),
-                ) {
-                    itemsIndexed(
-                        items = songs,
-                        key = { _, playlistSong -> playlistSong.map.id },
-                    ) { index, playlistSong ->
-                        val song = playlistSong.song
-                        if (isInEditMode) {
-                            EinkSelectableRow(
-                                title = song.song.title,
-                                subtitle = songSubtitle(song),
-                                checked = selectedIds.contains(playlistSong.map.id.toString()),
-                                onCheckedChange = { checked ->
-                                    val newSelection = selectedIds.toMutableSet()
-                                    if (checked) {
-                                        newSelection.add(playlistSong.map.id.toString())
-                                    } else {
-                                        newSelection.remove(playlistSong.map.id.toString())
-                                    }
-                                    onSelectionChanged(newSelection)
-                                },
-                                showDivider = index != songs.lastIndex,
-                            )
-                        } else {
+    Column(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+
+
+        com.paperapps.paperui.components.PanoramaHeader(
+            pagerState = pagerState,
+            titles = listOf(playlistName),
+            coroutineScope = coroutineScope
+        )
+
+        com.paperapps.paperui.components.PanoramaPager(
+            state = pagerState,
+            modifier = Modifier.weight(1f)
+        ) {
+            Column(modifier = Modifier.fillMaxSize()) {
+                if (songs.isEmpty()) {
+                    EinkEmptyState(
+                        title = "No songs in this playlist",
+                        body = "Use Add songs to put tracks from your library here.",
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                } else {
+                    LazyColumnMMD(
+                        modifier = Modifier.weight(1f),
+                        contentPadding = PaddingValues(16.dp),
+                    ) {
+                        itemsIndexed(
+                            items = songs,
+                            key = { _, playlistSong -> playlistSong.map.id },
+                        ) { index, playlistSong ->
+                            val song = playlistSong.song
                             EinkSongRow(
                                 song = song,
                                 isCurrentlyPlaying = song.id == mediaMetadata?.id,
@@ -591,16 +545,16 @@ fun EinkPlaylistDetailsScreen(
                 }
             }
         }
-
-        if (songs.isNotEmpty() && !isInEditMode) {
-            Column(
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                horizontalAlignment = Alignment.End,
-            ) {
-                FloatingActionButtonMMD(
+        com.paperapps.paperui.components.ApplicationBar(
+            actions = listOf(
+                com.paperapps.paperui.components.AppbarAction(
+                    icon = Icons.Outlined.Search,
+                    label = "Search",
+                    onClick = { navController.navigate(moe.rukamori.archivetune.eink.EinkScreen.Search.route) }
+                ),
+                com.paperapps.paperui.components.AppbarAction(
+                    icon = Icons.Outlined.Shuffle,
+                    label = "Shuffle",
                     onClick = {
                         playerConnection.playQueue(
                             ListQueue(
@@ -609,23 +563,39 @@ fun EinkPlaylistDetailsScreen(
                             ),
                         )
                         navController.navigate(moe.rukamori.archivetune.eink.EinkScreen.NowPlaying.route)
-                    },
-                ) {
-                    Icon(
-                        imageVector = Icons.Outlined.Shuffle,
-                        contentDescription = "Shuffle playlist",
-                    )
-                }
-                FloatingActionButtonMMD(
-                    onClick = { navController.navigate(einkPlaylistAddSongsRoute(playlistId)) },
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.Add,
-                        contentDescription = "Add songs",
-                    )
-                }
-            }
-        }
+                    }
+                ),
+                com.paperapps.paperui.components.AppbarAction(
+                    icon = Icons.Outlined.Edit,
+                    label = "Edit",
+                    onClick = { navController.navigate(einkPlaylistEditRoute(playlistId)) }
+                ),
+                com.paperapps.paperui.components.AppbarAction(
+                    icon = Icons.Filled.Add,
+                    label = "Add",
+                    onClick = { navController.navigate(einkPlaylistAddSongsRoute(playlistId)) }
+                ),
+            ),
+            menuItems = listOf(
+                com.paperapps.paperui.components.AppbarMenuItem(
+                    label = "Rename",
+                    onClick = { showRenameDialog = true }
+                ),
+                com.paperapps.paperui.components.AppbarMenuItem(
+                    label = "Delete",
+                    onClick = { showDeleteSheet = true }
+                ),
+                com.paperapps.paperui.components.AppbarMenuItem(
+                    label = "Download",
+                    onClick = { /* Implement download if needed */ }
+                ),
+                com.paperapps.paperui.components.AppbarMenuItem(
+                    label = if (isPlaylistAutoDownloadEnabled) "Auto-download: ON" else "Auto-download: OFF",
+                    onClick = onPlaylistAutoDownloadToggle
+                ),
+            ),
+            leftSlot = { EinkNowPlayingButton(navController) }
+        )
     }
 }
 

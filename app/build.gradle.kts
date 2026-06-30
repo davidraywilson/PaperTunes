@@ -31,10 +31,10 @@ android {
 
     defaultConfig {
     applicationId = "moe.rukamori.archivetune"
-        minSdk = 26
+        minSdk = 28
         targetSdk = 37
-        versionCode = 146
-        versionName = "13.5.10"
+        versionCode = 150
+        versionName = "13.5.14"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
@@ -305,6 +305,7 @@ dependencies {
     implementation(project(":canvas"))
     implementation(project(":shazamkit"))
     implementation(project(":spotifycore"))
+    implementation(project(":paperui"))
     implementation("com.materialkolor:material-kolor:5.0.0-alpha07")
 
     implementation(libs.ktor.client.core)

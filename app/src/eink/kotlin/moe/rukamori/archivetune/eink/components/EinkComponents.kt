@@ -7,6 +7,8 @@
 
 package moe.rukamori.archivetune.eink.components
 
+import com.paperapps.paperui.components.DashedDivider
+
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
@@ -59,31 +61,6 @@ import moe.rukamori.archivetune.utils.makeTimeString
  * Dashed divider used between list rows. Ported from CalmTunes' DashedDivider so the
  * e-ink list aesthetic matches the reference design exactly.
  */
-@Composable
-fun DashedDivider(
-    modifier: Modifier = Modifier,
-    color: Color = Color.Black,
-    thickness: Dp = 1.dp,
-    dashWidth: Dp = 2.dp,
-    dashGap: Dp = 2.dp,
-) {
-    Canvas(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(thickness),
-    ) {
-        drawLine(
-            color = color,
-            start = Offset(0f, size.height / 2),
-            end = Offset(size.width, size.height / 2),
-            strokeWidth = thickness.toPx(),
-            pathEffect = PathEffect.dashPathEffect(
-                floatArrayOf(dashWidth.toPx(), dashGap.toPx()),
-                0f,
-            ),
-        )
-    }
-}
 
 /** Builds the "Artist • Album • Duration" subtitle used by song rows. */
 fun songSubtitle(song: Song): String {

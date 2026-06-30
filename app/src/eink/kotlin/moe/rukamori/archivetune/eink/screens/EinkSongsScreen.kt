@@ -38,9 +38,14 @@ import androidx.media3.exoplayer.offline.Download
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.mudita.mmd.components.buttons.FloatingActionButtonMMD
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.filled.Done
 import com.mudita.mmd.components.lazy.LazyColumnMMD
-import com.mudita.mmd.components.tabs.PrimaryTabRowMMD
-import com.mudita.mmd.components.tabs.TabMMD
+import com.mudita.mmd.components.chips.FilterChipDefaultsMMD
+import com.mudita.mmd.components.chips.FilterChipMMD
 import com.mudita.mmd.components.text.TextMMD
 import moe.rukamori.archivetune.LocalDownloadUtil
 import moe.rukamori.archivetune.LocalPlayerConnection
@@ -86,48 +91,54 @@ fun EinkSongsScreen(
     }
 
     Column(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-        PrimaryTabRowMMD(
-            selectedTabIndex = selectedTab,
-            modifier = Modifier.fillMaxWidth()
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp)
         ) {
-            TabMMD(
-                selected = selectedTab == 0,
+            FilterChipMMD(
                 onClick = { selectedTab = 0 },
-                text = {
-                    TextMMD(
-                        text = "All",
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        fontSize = 14.sp,
-                        fontWeight = if (selectedTab == 0) FontWeight.Bold else FontWeight.Normal
-                    )
-                }
+                label = { TextMMD("All", fontWeight = if (selectedTab == 0) FontWeight.Bold else FontWeight.Normal, fontSize = 14.sp) },
+                selected = selectedTab == 0,
+                leadingIcon = if (selectedTab == 0) {
+                    {
+                        Icon(
+                            imageVector = androidx.compose.material.icons.Icons.Filled.Done,
+                            contentDescription = "Done icon",
+                            modifier = Modifier.size(com.mudita.mmd.components.chips.FilterChipDefaultsMMD.IconSize)
+                        )
+                    }
+                } else null
             )
-            TabMMD(
-                selected = selectedTab == 1,
+            androidx.compose.foundation.layout.Spacer(modifier = Modifier.width(8.dp))
+            FilterChipMMD(
                 onClick = { selectedTab = 1 },
-                text = {
-                    TextMMD(
-                        text = "Local",
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        fontSize = 14.sp,
-                        fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Normal
-                    )
-                }
+                label = { TextMMD("Local", fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Normal, fontSize = 14.sp) },
+                selected = selectedTab == 1,
+                leadingIcon = if (selectedTab == 1) {
+                    {
+                        Icon(
+                            imageVector = androidx.compose.material.icons.Icons.Filled.Done,
+                            contentDescription = "Done icon",
+                            modifier = Modifier.size(com.mudita.mmd.components.chips.FilterChipDefaultsMMD.IconSize)
+                        )
+                    }
+                } else null
             )
-            TabMMD(
-                selected = selectedTab == 2,
+            androidx.compose.foundation.layout.Spacer(modifier = Modifier.width(8.dp))
+            FilterChipMMD(
                 onClick = { selectedTab = 2 },
-                text = {
-                    TextMMD(
-                        text = "Downloaded",
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        fontSize = 14.sp,
-                        fontWeight = if (selectedTab == 2) FontWeight.Bold else FontWeight.Normal
-                    )
-                }
+                label = { TextMMD("Downloaded", fontWeight = if (selectedTab == 2) FontWeight.Bold else FontWeight.Normal, fontSize = 14.sp) },
+                selected = selectedTab == 2,
+                leadingIcon = if (selectedTab == 2) {
+                    {
+                        Icon(
+                            imageVector = androidx.compose.material.icons.Icons.Filled.Done,
+                            contentDescription = "Done icon",
+                            modifier = Modifier.size(com.mudita.mmd.components.chips.FilterChipDefaultsMMD.IconSize)
+                        )
+                    }
+                } else null
             )
         }
 

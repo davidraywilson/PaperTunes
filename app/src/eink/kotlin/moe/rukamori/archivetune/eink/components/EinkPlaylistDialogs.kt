@@ -7,6 +7,8 @@
 
 package moe.rukamori.archivetune.eink.components
 
+import com.paperapps.paperui.components.DashedDivider
+
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
