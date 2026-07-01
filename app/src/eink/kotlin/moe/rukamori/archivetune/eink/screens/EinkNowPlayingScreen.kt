@@ -1,5 +1,6 @@
 package moe.rukamori.archivetune.eink.screens
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -54,10 +55,13 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlin.math.roundToInt
+import kotlin.random.Random
 import androidx.media3.common.Player
 import androidx.navigation.NavController
 import com.mudita.mmd.components.buttons.ButtonMMD
@@ -146,6 +150,13 @@ fun EinkNowPlayingScreen(navController: NavController) {
                     verticalArrangement = Arrangement.SpaceBetween,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
+                    EinkVisualizer(
+                        isPlaying = isPlaying,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(32.dp)
+                            .padding(vertical = 4.dp)
+                    )
 
                     Column(
                         modifier = Modifier
@@ -281,7 +292,12 @@ fun EinkNowPlayingScreen(navController: NavController) {
             } else {
                 LazyColumnMMD(
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(16.dp)
+                    contentPadding = PaddingValues(
+                        start = 16.dp,
+                        top = 0.dp,
+                        end = 16.dp,
+                        bottom = 16.dp
+                    ),
                 ) {
                     itemsIndexed(queueWindows) { index, window ->
                         val metadata = window.mediaItem.metadata
@@ -453,5 +469,77 @@ private fun EinkQueueRow(
         }
         Spacer(modifier = Modifier.height(12.dp))
         if (showDivider) DashedDivider(thickness = 1.dp)
+    }
+}
+
+@Composable
+fun EinkVisualizer(
+    isPlaying: Boolean,
+    modifier: Modifier = Modifier,
+    barCount: Int = 32,
+    maxBlocksPerBar: Int = 8
+) {
+    val targetAmplitudes = remember { FloatArray(barCount) { 0.1f } }
+    val currentAmplitudes = remember { FloatArray(barCount) { 0.1f } }
+    
+    var tick by remember { mutableLongStateOf(0L) }
+    
+    LaunchedEffect(isPlaying) {
+        if (isPlaying) {
+            while (true) {
+                for (i in 0 until barCount) {
+                    if (Random.nextFloat() < 0.5f || targetAmplitudes[i] <= 0.1f) {
+                        targetAmplitudes[i] = Random.nextFloat()
+                    }
+                    currentAmplitudes[i] += (targetAmplitudes[i] - currentAmplitudes[i]) * 0.6f
+                }
+                tick = System.currentTimeMillis()
+                delay(200)
+            }
+        } else {
+            while (currentAmplitudes.any { it > 0.15f }) {
+                for (i in 0 until barCount) {
+                    currentAmplitudes[i] = (currentAmplitudes[i] * 0.5f).coerceAtLeast(0.1f)
+                }
+                tick = System.currentTimeMillis()
+                delay(200)
+            }
+            for (i in 0 until barCount) {
+                currentAmplitudes[i] = 0.1f
+            }
+            tick = System.currentTimeMillis()
+        }
+    }
+    
+    val color = MaterialTheme.colorScheme.onSurface
+    Canvas(modifier = modifier) {
+        val t = tick 
+        val width = size.width
+        val height = size.height
+        
+        val barSpacing = 2.dp.toPx()
+        val blockSpacing = 1.dp.toPx()
+        
+        val totalBarWidth = (width - barSpacing * (barCount - 1)) / barCount
+        val barWidth = totalBarWidth.coerceAtLeast(1f)
+        
+        val totalBlockHeight = (height - blockSpacing * (maxBlocksPerBar - 1)) / maxBlocksPerBar
+        val blockHeight = totalBlockHeight.coerceAtLeast(1f)
+        
+        for (i in 0 until barCount) {
+            val amplitude = currentAmplitudes[i]
+            val blocksToShow = (amplitude * maxBlocksPerBar).roundToInt().coerceIn(1, maxBlocksPerBar)
+            
+            val x = i * (barWidth + barSpacing)
+            
+            for (b in 0 until blocksToShow) {
+                val y = b * (blockHeight + blockSpacing)
+                drawRect(
+                    color = color,
+                    topLeft = Offset(x, y),
+                    size = androidx.compose.ui.geometry.Size(barWidth, blockHeight)
+                )
+            }
+        }
     }
 }
