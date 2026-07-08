@@ -56,7 +56,7 @@ import androidx.compose.ui.unit.dp
 import moe.rukamori.archivetune.eink.components.EinkNowPlayingButton
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.mudita.mmd.components.lazy.LazyColumnMMD
+import androidx.compose.foundation.lazy.LazyColumn
 import com.mudita.mmd.components.menus.DropdownMenuMMD
 import com.mudita.mmd.components.tabs.PrimaryTabRowMMD
 import com.mudita.mmd.components.tabs.TabMMD
@@ -132,9 +132,21 @@ fun EinkSearchScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .padding(top = WindowInsets.systemBars.asPaddingValues().calculateTopPadding())
+            .then(
+                if (!hasSearched) Modifier.padding(top = WindowInsets.systemBars.asPaddingValues().calculateTopPadding())
+                else Modifier
+            )
     ) {
         
+        if (hasSearched) {
+            PanoramaHeader(
+                pagerState = pagerState,
+                titles = titles,
+                coroutineScope = coroutineScope,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+
         // Search Box Header
         SearchBarDefaultsMMD.InputField(
             query = searchViewModel.query,
@@ -165,14 +177,6 @@ fun EinkSearchScreen(
             },
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)
         )
-
-        if (hasSearched) {
-            PanoramaHeader(
-                pagerState = pagerState,
-                titles = titles,
-                coroutineScope = coroutineScope
-            )
-        }
 
         Box(modifier = Modifier.weight(1f)) {
             when {
@@ -272,7 +276,7 @@ private fun SongResults(
         )
         return
     }
-    LazyColumnMMD(contentPadding = PaddingValues(16.dp)) {
+    LazyColumn(contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp)) {
         itemsIndexed(
             items = songs,
             key = { _, song -> song.id },
@@ -304,7 +308,7 @@ private fun AlbumResults(
         )
         return
     }
-    LazyColumnMMD(contentPadding = PaddingValues(16.dp)) {
+    LazyColumn(contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp)) {
         itemsIndexed(
             items = albums,
             key = { _, album -> album.id },

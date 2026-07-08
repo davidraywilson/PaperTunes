@@ -46,7 +46,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.mudita.mmd.components.buttons.FloatingActionButtonMMD
-import com.mudita.mmd.components.lazy.LazyColumnMMD
+import androidx.compose.foundation.lazy.LazyColumn
 import com.mudita.mmd.components.tabs.PrimaryTabRowMMD
 import com.mudita.mmd.components.tabs.TabMMD
 import com.mudita.mmd.components.text.TextMMD
@@ -66,13 +66,15 @@ import moe.rukamori.archivetune.eink.menus.EinkSongMenu
 import moe.rukamori.archivetune.viewmodels.AlbumViewModel
 import moe.rukamori.archivetune.viewmodels.ArtistAlbumsViewModel
 import moe.rukamori.archivetune.viewmodels.ArtistSongsViewModel
-import moe.rukamori.archivetune.viewmodels.LibraryAlbumsViewModel
-import moe.rukamori.archivetune.viewmodels.LibraryArtistsViewModel
+import moe.rukamori.archivetune.eink.viewmodels.EinkLocalAlbumsViewModel // CUSTOM: E-Ink Local Artists/Albums
+import moe.rukamori.archivetune.eink.viewmodels.EinkLocalArtistsViewModel // CUSTOM: E-Ink Local Artists/Albums
+import moe.rukamori.archivetune.eink.einkYouTubeArtistDetailsRoute
+import androidx.compose.material.icons.outlined.CheckCircle
 
 @Composable
 fun EinkArtistsScreen(
     navController: NavController,
-    viewModel: LibraryArtistsViewModel = hiltViewModel(),
+    viewModel: EinkLocalArtistsViewModel = hiltViewModel(), // CUSTOM: E-Ink Local Artists/Albums
 ) {
     val artists by viewModel.allArtists.collectAsState()
 
@@ -84,7 +86,7 @@ fun EinkArtistsScreen(
                 modifier = Modifier.fillMaxSize(),
             )
         } else {
-            LazyColumnMMD(contentPadding = PaddingValues(16.dp)) {
+            LazyColumn(contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp)) {
                 itemsIndexed(
                     items = artists,
                     key = { _, artist -> artist.id },
@@ -92,8 +94,15 @@ fun EinkArtistsScreen(
                     EinkTwoLineRow(
                         title = artist.artist.name,
                         subtitle = artistSubtitle(artist),
-                        onClick = { navController.navigate(einkArtistDetailsRoute(artist.id)) },
+                        onClick = {
+                            if (artist.artist.channelId != null) {
+                                navController.navigate(einkYouTubeArtistDetailsRoute(artist.artist.channelId!!))
+                            } else {
+                                navController.navigate(einkArtistDetailsRoute(artist.id))
+                            }
+                        },
                         showDivider = index != artists.lastIndex,
+                        subtitleTrailingIcon = if (artist.artist.channelId != null) Icons.Outlined.CheckCircle else null,
                     )
                 }
             }
@@ -104,7 +113,7 @@ fun EinkArtistsScreen(
 @Composable
 fun EinkAlbumsScreen(
     navController: NavController,
-    viewModel: LibraryAlbumsViewModel = hiltViewModel(),
+    viewModel: EinkLocalAlbumsViewModel = hiltViewModel(), // CUSTOM: E-Ink Local Artists/Albums
 ) {
     val albums by viewModel.allAlbums.collectAsState()
 
@@ -116,7 +125,7 @@ fun EinkAlbumsScreen(
                 modifier = Modifier.fillMaxSize(),
             )
         } else {
-            LazyColumnMMD(contentPadding = PaddingValues(16.dp)) {
+            LazyColumn(contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp)) {
                 itemsIndexed(
                     items = albums,
                     key = { _, album -> album.id },
@@ -158,6 +167,13 @@ fun EinkArtistDetailsScreen(
     Column(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
 
 
+        com.paperapps.paperui.components.PanoramaHeader(
+            pagerState = pagerState,
+            titles = tabOptions,
+            coroutineScope = coroutineScope,
+            modifier = Modifier.fillMaxWidth()
+        )
+
         if (artistName.isNotBlank()) {
             TextMMD(
                 text = artistName,
@@ -171,12 +187,6 @@ fun EinkArtistDetailsScreen(
             )
         }
 
-        com.paperapps.paperui.components.PanoramaHeader(
-            pagerState = pagerState,
-            titles = tabOptions,
-            coroutineScope = coroutineScope
-        )
-
         com.paperapps.paperui.components.PanoramaPager(
             state = pagerState,
             modifier = Modifier.weight(1f)
@@ -189,7 +199,7 @@ fun EinkArtistDetailsScreen(
                         modifier = Modifier.fillMaxSize(),
                     )
                 } else {
-                    LazyColumnMMD(contentPadding = PaddingValues(16.dp)) {
+                    LazyColumn(contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp)) {
                         itemsIndexed(
                             items = songs,
                             key = { _, song -> song.id },
@@ -233,7 +243,7 @@ fun EinkArtistDetailsScreen(
                         modifier = Modifier.fillMaxSize(),
                     )
                 } else {
-                    LazyColumnMMD(contentPadding = PaddingValues(16.dp)) {
+                    LazyColumn(contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp)) {
                         itemsIndexed(
                             items = albums,
                             key = { _, album -> album.id },
@@ -323,7 +333,8 @@ fun EinkAlbumDetailsScreen(
                 com.paperapps.paperui.components.PanoramaHeader(
                     pagerState = pagerState,
                     titles = tabOptions,
-                    coroutineScope = coroutineScope
+                    coroutineScope = coroutineScope,
+                    modifier = Modifier.fillMaxWidth()
                 )
 
                 Box(modifier = Modifier.weight(1f)) {
@@ -353,8 +364,8 @@ fun EinkAlbumDetailsScreen(
                                         modifier = Modifier.fillMaxSize(),
                                     )
                                 } else {
-                                    LazyColumnMMD(
-                                        contentPadding = PaddingValues(16.dp),
+                                    LazyColumn(
+                                        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp),
                                         modifier = Modifier.weight(1f)
                                     ) {
                                         itemsIndexed(
@@ -395,7 +406,7 @@ fun EinkAlbumDetailsScreen(
                                 }
                             }
                         } else {
-                            LazyColumnMMD(contentPadding = PaddingValues(16.dp)) {
+                            LazyColumn(contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp)) {
                                 if (album != null) {
                                     item(key = "album_info") {
                                         Column(modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)) {

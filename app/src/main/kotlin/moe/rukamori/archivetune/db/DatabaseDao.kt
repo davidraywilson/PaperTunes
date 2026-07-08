@@ -79,19 +79,19 @@ import java.util.Locale
 @Dao
 interface DatabaseDao {
     @Transaction
-    @Query("SELECT * FROM song WHERE inLibrary IS NOT NULL ORDER BY rowId")
+    @Query("SELECT * FROM (SELECT * FROM song ORDER BY isLocal DESC) AS song WHERE (inLibrary IS NOT NULL OR isLocal = 1) GROUP BY title COLLATE NOCASE ORDER BY id /* CUSTOM: E-Ink Unify Songs */")
     fun songsByRowIdAsc(): Flow<List<Song>>
 
     @Transaction
-    @Query("SELECT * FROM song WHERE inLibrary IS NOT NULL ORDER BY inLibrary")
+    @Query("SELECT * FROM (SELECT * FROM song ORDER BY isLocal DESC) AS song WHERE (inLibrary IS NOT NULL OR isLocal = 1) GROUP BY title COLLATE NOCASE ORDER BY inLibrary /* CUSTOM: E-Ink Unify Songs */")
     fun songsByCreateDateAsc(): Flow<List<Song>>
 
     @Transaction
-    @Query("SELECT * FROM song WHERE inLibrary IS NOT NULL ORDER BY title")
+    @Query("SELECT * FROM (SELECT * FROM song ORDER BY isLocal DESC) AS song WHERE (inLibrary IS NOT NULL OR isLocal = 1) GROUP BY title COLLATE NOCASE ORDER BY title /* CUSTOM: E-Ink Unify Songs */")
     fun songsByNameAsc(): Flow<List<Song>>
 
     @Transaction
-    @Query("SELECT * FROM song WHERE inLibrary IS NOT NULL ORDER BY totalPlayTime")
+    @Query("SELECT * FROM (SELECT * FROM song ORDER BY isLocal DESC) AS song WHERE (inLibrary IS NOT NULL OR isLocal = 1) GROUP BY title COLLATE NOCASE ORDER BY totalPlayTime /* CUSTOM: E-Ink Unify Songs */")
     fun songsByPlayTimeAsc(): Flow<List<Song>>
 
     fun songs(
@@ -148,9 +148,10 @@ interface DatabaseDao {
     @Query(
         """
         SELECT song.*
-        FROM song
+        FROM (SELECT * FROM song ORDER BY isLocal DESC) AS song
         LEFT JOIN set_video_id ON set_video_id.videoId = song.id
-        WHERE song.inLibrary IS NOT NULL AND set_video_id.setVideoId IS NULL
+        WHERE (song.inLibrary IS NOT NULL OR song.isLocal = 1) AND set_video_id.setVideoId IS NULL
+        GROUP BY song.title COLLATE NOCASE /* CUSTOM: E-Ink Unify Songs */
         ORDER BY song.id
         """,
     )
@@ -160,9 +161,10 @@ interface DatabaseDao {
     @Query(
         """
         SELECT song.*
-        FROM song
+        FROM (SELECT * FROM song ORDER BY isLocal DESC) AS song
         LEFT JOIN set_video_id ON set_video_id.videoId = song.id
-        WHERE song.inLibrary IS NOT NULL AND set_video_id.setVideoId IS NULL
+        WHERE (song.inLibrary IS NOT NULL OR song.isLocal = 1) AND set_video_id.setVideoId IS NULL
+        GROUP BY song.title COLLATE NOCASE /* CUSTOM: E-Ink Unify Songs */
         ORDER BY inLibrary
         """,
     )
@@ -172,9 +174,10 @@ interface DatabaseDao {
     @Query(
         """
         SELECT song.*
-        FROM song
+        FROM (SELECT * FROM song ORDER BY isLocal DESC) AS song
         LEFT JOIN set_video_id ON set_video_id.videoId = song.id
-        WHERE song.inLibrary IS NOT NULL AND set_video_id.setVideoId IS NULL
+        WHERE (song.inLibrary IS NOT NULL OR song.isLocal = 1) AND set_video_id.setVideoId IS NULL
+        GROUP BY song.title COLLATE NOCASE /* CUSTOM: E-Ink Unify Songs */
         ORDER BY title
         """,
     )
@@ -184,28 +187,29 @@ interface DatabaseDao {
     @Query(
         """
         SELECT song.*
-        FROM song
+        FROM (SELECT * FROM song ORDER BY isLocal DESC) AS song
         LEFT JOIN set_video_id ON set_video_id.videoId = song.id
-        WHERE song.inLibrary IS NOT NULL AND set_video_id.setVideoId IS NULL
+        WHERE (song.inLibrary IS NOT NULL OR song.isLocal = 1) AND set_video_id.setVideoId IS NULL
+        GROUP BY song.title COLLATE NOCASE /* CUSTOM: E-Ink Unify Songs */
         ORDER BY totalPlayTime
         """,
     )
     fun songsByPlayTimeAscNoVideo(): Flow<List<Song>>
 
     @Transaction
-    @Query("SELECT * FROM song WHERE liked ORDER BY rowId")
+    @Query("SELECT * FROM (SELECT * FROM song ORDER BY isLocal DESC) AS song WHERE (liked OR isLocal = 1) GROUP BY title COLLATE NOCASE ORDER BY id /* CUSTOM: E-Ink Unify Songs */")
     fun likedSongsByRowIdAsc(): Flow<List<Song>>
 
     @Transaction
-    @Query("SELECT * FROM song WHERE liked ORDER BY likedDate, rowId")
+    @Query("SELECT * FROM (SELECT * FROM song ORDER BY isLocal DESC) AS song WHERE (liked OR isLocal = 1) GROUP BY title COLLATE NOCASE ORDER BY likedDate, id /* CUSTOM: E-Ink Unify Songs */")
     fun likedSongsByCreateDateAsc(): Flow<List<Song>>
 
     @Transaction
-    @Query("SELECT * FROM song WHERE liked ORDER BY title")
+    @Query("SELECT * FROM (SELECT * FROM song ORDER BY isLocal DESC) AS song WHERE (liked OR isLocal = 1) GROUP BY title COLLATE NOCASE ORDER BY title /* CUSTOM: E-Ink Unify Songs */")
     fun likedSongsByNameAsc(): Flow<List<Song>>
 
     @Transaction
-    @Query("SELECT * FROM song WHERE liked ORDER BY totalPlayTime")
+    @Query("SELECT * FROM (SELECT * FROM song ORDER BY isLocal DESC) AS song WHERE (liked OR isLocal = 1) GROUP BY title COLLATE NOCASE ORDER BY totalPlayTime /* CUSTOM: E-Ink Unify Songs */")
     fun likedSongsByPlayTimeAsc(): Flow<List<Song>>
 
     fun likedSongs(
@@ -262,10 +266,11 @@ interface DatabaseDao {
     @Query(
         """
         SELECT song.*
-        FROM song
+        FROM (SELECT * FROM song ORDER BY isLocal DESC) AS song
         LEFT JOIN set_video_id ON set_video_id.videoId = song.id
-        WHERE liked AND set_video_id.setVideoId IS NULL
-        ORDER BY song.rowid
+        WHERE (liked OR isLocal = 1) AND set_video_id.setVideoId IS NULL
+        GROUP BY song.title COLLATE NOCASE /* CUSTOM: E-Ink Unify Songs */
+        ORDER BY song.id
         """,
     )
     fun likedSongsByRowIdAscNoVideo(): Flow<List<Song>>
@@ -274,10 +279,11 @@ interface DatabaseDao {
     @Query(
         """
         SELECT song.*
-        FROM song
+        FROM (SELECT * FROM song ORDER BY isLocal DESC) AS song
         LEFT JOIN set_video_id ON set_video_id.videoId = song.id
-        WHERE liked AND set_video_id.setVideoId IS NULL
-        ORDER BY likedDate, song.rowid
+        WHERE (liked OR isLocal = 1) AND set_video_id.setVideoId IS NULL
+        GROUP BY song.title COLLATE NOCASE /* CUSTOM: E-Ink Unify Songs */
+        ORDER BY likedDate, song.id
         """,
     )
     fun likedSongsByCreateDateAscNoVideo(): Flow<List<Song>>
@@ -286,9 +292,10 @@ interface DatabaseDao {
     @Query(
         """
         SELECT song.*
-        FROM song
+        FROM (SELECT * FROM song ORDER BY isLocal DESC) AS song
         LEFT JOIN set_video_id ON set_video_id.videoId = song.id
-        WHERE liked AND set_video_id.setVideoId IS NULL
+        WHERE (liked OR isLocal = 1) AND set_video_id.setVideoId IS NULL
+        GROUP BY song.title COLLATE NOCASE /* CUSTOM: E-Ink Unify Songs */
         ORDER BY title
         """,
     )
@@ -298,9 +305,10 @@ interface DatabaseDao {
     @Query(
         """
         SELECT song.*
-        FROM song
+        FROM (SELECT * FROM song ORDER BY isLocal DESC) AS song
         LEFT JOIN set_video_id ON set_video_id.videoId = song.id
-        WHERE liked AND set_video_id.setVideoId IS NULL
+        WHERE (liked OR isLocal = 1) AND set_video_id.setVideoId IS NULL
+        GROUP BY song.title COLLATE NOCASE /* CUSTOM: E-Ink Unify Songs */
         ORDER BY totalPlayTime
         """,
     )
@@ -311,7 +319,7 @@ interface DatabaseDao {
     fun likedSongsCount(): Flow<Int>
 
     @Transaction
-    @Query("SELECT song.* FROM song JOIN song_album_map ON song.id = song_album_map.songId WHERE song_album_map.albumId = :albumId")
+    @Query("SELECT song.* FROM (SELECT * FROM song ORDER BY isLocal DESC) AS song JOIN song_album_map ON song.id = song_album_map.songId WHERE song_album_map.albumId IN (SELECT id FROM album WHERE title COLLATE NOCASE = (SELECT title FROM album WHERE id = :albumId) COLLATE NOCASE) /* CUSTOM: E-Ink Deduplication */ GROUP BY song.title COLLATE NOCASE")
     fun albumSongs(albumId: String): Flow<List<Song>>
 
     @Transaction
@@ -320,19 +328,19 @@ interface DatabaseDao {
 
     @Transaction
     @Query(
-        "SELECT song.* FROM song_artist_map JOIN song ON song_artist_map.songId = song.id WHERE artistId = :artistId AND inLibrary IS NOT NULL ORDER BY inLibrary",
+        "SELECT song.* FROM song_artist_map JOIN (SELECT * FROM song ORDER BY isLocal DESC) AS song ON song_artist_map.songId = song.id WHERE artistId IN (SELECT id FROM artist WHERE name COLLATE NOCASE = (SELECT name FROM artist WHERE id = :artistId) COLLATE NOCASE) /* CUSTOM: E-Ink Unify Artist */ AND (inLibrary IS NOT NULL OR isLocal = 1) GROUP BY song.title COLLATE NOCASE ORDER BY inLibrary",
     )
     fun artistSongsByCreateDateAsc(artistId: String): Flow<List<Song>>
 
     @Transaction
     @Query(
-        "SELECT song.* FROM song_artist_map JOIN song ON song_artist_map.songId = song.id WHERE artistId = :artistId AND inLibrary IS NOT NULL ORDER BY title",
+        "SELECT song.* FROM song_artist_map JOIN (SELECT * FROM song ORDER BY isLocal DESC) AS song ON song_artist_map.songId = song.id WHERE artistId IN (SELECT id FROM artist WHERE name COLLATE NOCASE = (SELECT name FROM artist WHERE id = :artistId) COLLATE NOCASE) /* CUSTOM: E-Ink Unify Artist */ AND (inLibrary IS NOT NULL OR isLocal = 1) GROUP BY song.title COLLATE NOCASE ORDER BY title",
     )
     fun artistSongsByNameAsc(artistId: String): Flow<List<Song>>
 
     @Transaction
     @Query(
-        "SELECT song.* FROM song_artist_map JOIN song ON song_artist_map.songId = song.id WHERE artistId = :artistId AND inLibrary IS NOT NULL ORDER BY totalPlayTime",
+        "SELECT song.* FROM song_artist_map JOIN (SELECT * FROM song ORDER BY isLocal DESC) AS song ON song_artist_map.songId = song.id WHERE artistId IN (SELECT id FROM artist WHERE name COLLATE NOCASE = (SELECT name FROM artist WHERE id = :artistId) COLLATE NOCASE) /* CUSTOM: E-Ink Unify Artist */ AND (inLibrary IS NOT NULL OR isLocal = 1) GROUP BY song.title COLLATE NOCASE ORDER BY totalPlayTime",
     )
     fun artistSongsByPlayTimeAsc(artistId: String): Flow<List<Song>>
 
@@ -360,7 +368,7 @@ interface DatabaseDao {
 
     @Transaction
     @Query(
-        "SELECT song.* FROM song_artist_map JOIN song ON song_artist_map.songId = song.id WHERE artistId = :artistId AND inLibrary IS NOT NULL LIMIT :previewSize",
+        "SELECT song.* FROM song_artist_map JOIN (SELECT * FROM song ORDER BY isLocal DESC) AS song ON song_artist_map.songId = song.id WHERE artistId IN (SELECT id FROM artist WHERE name COLLATE NOCASE = (SELECT name FROM artist WHERE id = :artistId) COLLATE NOCASE) /* CUSTOM: E-Ink Unify Artist */ AND (inLibrary IS NOT NULL OR isLocal = 1) GROUP BY song.title COLLATE NOCASE LIMIT :previewSize",
     )
     fun artistSongsPreview(
         artistId: String,
@@ -577,11 +585,11 @@ interface DatabaseDao {
     @Query(
         """
         SELECT album.*, count(song.dateDownload) downloadCount
-        FROM album_artist_map 
-            JOIN album ON album_artist_map.albumId = album.id
+        FROM album_artist_map
+            JOIN (SELECT * FROM album ORDER BY isLocal ASC) AS album ON album_artist_map.albumId = album.id
             JOIN song ON album_artist_map.albumId = song.albumId
-        WHERE artistId = :artistId
-        GROUP BY album.id
+        WHERE artistId IN (SELECT id FROM artist WHERE name COLLATE NOCASE = (SELECT name FROM artist WHERE id = :artistId) COLLATE NOCASE) /* CUSTOM: E-Ink Unify Artist */
+        GROUP BY album.title COLLATE NOCASE
         LIMIT :previewSize
     """,
     )
@@ -744,21 +752,21 @@ interface DatabaseDao {
     @Transaction
     @SuppressWarnings(RoomWarnings.QUERY_MISMATCH)
     @Query(
-        "SELECT *, (SELECT COUNT(1) FROM song_artist_map JOIN song ON song_artist_map.songId = song.id WHERE artistId = artist.id AND song.inLibrary IS NOT NULL) AS songCount FROM artist WHERE songCount > 0 ORDER BY rowId",
+        "SELECT *, (SELECT COUNT(1) FROM song_artist_map JOIN song ON song_artist_map.songId = song.id WHERE song_artist_map.artistId = artist.id AND song.inLibrary IS NOT NULL) AS songCount FROM (SELECT * FROM artist ORDER BY isLocal ASC) AS artist WHERE songCount > 0 /* CUSTOM: E-Ink Deduplication */ GROUP BY artist.name COLLATE NOCASE ORDER BY artist.id",
     )
     fun artistsByCreateDateAsc(): Flow<List<Artist>>
 
     @Transaction
     @SuppressWarnings(RoomWarnings.QUERY_MISMATCH)
     @Query(
-        "SELECT *, (SELECT COUNT(1) FROM song_artist_map JOIN song ON song_artist_map.songId = song.id WHERE artistId = artist.id AND song.inLibrary IS NOT NULL) AS songCount FROM artist WHERE songCount > 0 ORDER BY name",
+        "SELECT *, (SELECT COUNT(1) FROM song_artist_map JOIN song ON song_artist_map.songId = song.id WHERE song_artist_map.artistId = artist.id AND song.inLibrary IS NOT NULL) AS songCount FROM (SELECT * FROM artist ORDER BY isLocal ASC) AS artist WHERE songCount > 0 /* CUSTOM: E-Ink Deduplication */ GROUP BY artist.name COLLATE NOCASE ORDER BY name",
     )
     fun artistsByNameAsc(): Flow<List<Artist>>
 
     @Transaction
     @SuppressWarnings(RoomWarnings.QUERY_MISMATCH)
     @Query(
-        "SELECT *, (SELECT COUNT(1) FROM song_artist_map JOIN song ON song_artist_map.songId = song.id WHERE artistId = artist.id AND song.inLibrary IS NOT NULL) AS songCount FROM artist WHERE songCount > 0 ORDER BY songCount",
+        "SELECT *, (SELECT COUNT(1) FROM song_artist_map JOIN song ON song_artist_map.songId = song.id WHERE song_artist_map.artistId = artist.id AND song.inLibrary IS NOT NULL) AS songCount FROM (SELECT * FROM artist ORDER BY isLocal ASC) AS artist WHERE songCount > 0 /* CUSTOM: E-Ink Deduplication */ GROUP BY artist.name COLLATE NOCASE ORDER BY songCount",
     )
     fun artistsBySongCountAsc(): Flow<List<Artist>>
 
@@ -788,21 +796,21 @@ interface DatabaseDao {
     @Transaction
     @SuppressWarnings(RoomWarnings.QUERY_MISMATCH)
     @Query(
-        "SELECT *, (SELECT COUNT(1) FROM song_artist_map JOIN song ON song_artist_map.songId = song.id WHERE artistId = artist.id AND song.inLibrary IS NOT NULL) AS songCount FROM artist WHERE bookmarkedAt IS NOT NULL ORDER BY bookmarkedAt",
+        "SELECT *, (SELECT COUNT(1) FROM song_artist_map JOIN song ON song_artist_map.songId = song.id WHERE song_artist_map.artistId = artist.id AND song.inLibrary IS NOT NULL) AS songCount FROM artist WHERE bookmarkedAt IS NOT NULL ORDER BY bookmarkedAt",
     )
     fun artistsBookmarkedByCreateDateAsc(): Flow<List<Artist>>
 
     @Transaction
     @SuppressWarnings(RoomWarnings.QUERY_MISMATCH)
     @Query(
-        "SELECT *, (SELECT COUNT(1) FROM song_artist_map JOIN song ON song_artist_map.songId = song.id WHERE artistId = artist.id AND song.inLibrary IS NOT NULL) AS songCount FROM artist WHERE bookmarkedAt IS NOT NULL ORDER BY name",
+        "SELECT *, (SELECT COUNT(1) FROM song_artist_map JOIN song ON song_artist_map.songId = song.id WHERE song_artist_map.artistId = artist.id AND song.inLibrary IS NOT NULL) AS songCount FROM artist WHERE bookmarkedAt IS NOT NULL ORDER BY name",
     )
     fun artistsBookmarkedByNameAsc(): Flow<List<Artist>>
 
     @Transaction
     @SuppressWarnings(RoomWarnings.QUERY_MISMATCH)
     @Query(
-        "SELECT *, (SELECT COUNT(1) FROM song_artist_map JOIN song ON song_artist_map.songId = song.id WHERE artistId = artist.id AND song.inLibrary IS NOT NULL) AS songCount FROM artist WHERE bookmarkedAt IS NOT NULL ORDER BY songCount",
+        "SELECT *, (SELECT COUNT(1) FROM song_artist_map JOIN song ON song_artist_map.songId = song.id WHERE song_artist_map.artistId = artist.id AND song.inLibrary IS NOT NULL) AS songCount FROM artist WHERE bookmarkedAt IS NOT NULL ORDER BY songCount",
     )
     fun artistsBookmarkedBySongCountAsc(): Flow<List<Artist>>
 
@@ -828,6 +836,38 @@ interface DatabaseDao {
     """,
     )
     fun artistsBookmarkedByPlayTimeAsc(): Flow<List<Artist>>
+
+    // CUSTOM: E-Ink Local Artists/Albums — queries for local-file-derived artists only
+    @Transaction
+    @SuppressWarnings(RoomWarnings.QUERY_MISMATCH)
+    @Query(
+        "SELECT *, (SELECT COUNT(1) FROM song_artist_map JOIN song ON song_artist_map.songId = song.id WHERE song_artist_map.artistId = artist.id AND (song.inLibrary IS NOT NULL OR song.isLocal = 1)) AS songCount FROM artist WHERE isLocal = 1 ORDER BY artist.id /* CUSTOM: E-Ink Local Artists/Albums */",
+    )
+    fun localArtistsByCreateDateAsc(): Flow<List<Artist>>
+
+    @Transaction
+    @SuppressWarnings(RoomWarnings.QUERY_MISMATCH)
+    @Query(
+        "SELECT *, (SELECT COUNT(1) FROM song_artist_map JOIN song ON song_artist_map.songId = song.id WHERE song_artist_map.artistId = artist.id AND (song.inLibrary IS NOT NULL OR song.isLocal = 1)) AS songCount FROM artist WHERE isLocal = 1 ORDER BY name COLLATE NOCASE /* CUSTOM: E-Ink Local Artists/Albums */",
+    )
+    fun localArtistsByNameAsc(): Flow<List<Artist>>
+
+    @Transaction
+    @SuppressWarnings(RoomWarnings.QUERY_MISMATCH)
+    @Query(
+        "SELECT *, (SELECT COUNT(1) FROM song_artist_map JOIN song ON song_artist_map.songId = song.id WHERE song_artist_map.artistId = artist.id AND (song.inLibrary IS NOT NULL OR song.isLocal = 1)) AS songCount FROM artist WHERE isLocal = 1 ORDER BY songCount /* CUSTOM: E-Ink Local Artists/Albums */",
+    )
+    fun localArtistsBySongCountAsc(): Flow<List<Artist>>
+
+    fun localArtists(
+        sortType: ArtistSortType,
+        descending: Boolean,
+    ) = when (sortType) { // CUSTOM: E-Ink Local Artists/Albums
+        ArtistSortType.CREATE_DATE -> localArtistsByCreateDateAsc()
+        ArtistSortType.NAME -> localArtistsByNameAsc()
+        ArtistSortType.SONG_COUNT -> localArtistsBySongCountAsc()
+        ArtistSortType.PLAY_TIME -> localArtistsByNameAsc() // no play-time variant needed, fall back to name
+    }.map { it.reversed(descending) }
 
     fun artists(
         sortType: ArtistSortType,
@@ -859,42 +899,42 @@ interface DatabaseDao {
 
     @SuppressWarnings(RoomWarnings.QUERY_MISMATCH)
     @Query(
-        "SELECT *, (SELECT COUNT(1) FROM song_artist_map JOIN song ON song_artist_map.songId = song.id WHERE artistId = artist.id AND song.inLibrary IS NOT NULL) AS songCount FROM artist WHERE id = :id",
+        "SELECT *, (SELECT COUNT(1) FROM song_artist_map JOIN song ON song_artist_map.songId = song.id WHERE song_artist_map.artistId = artist.id AND song.inLibrary IS NOT NULL) AS songCount FROM artist WHERE id = :id",
     )
     fun artist(id: String): Flow<Artist?>
 
     @Transaction
     @SuppressWarnings(RoomWarnings.QUERY_MISMATCH)
     @Query(
-        "SELECT * FROM album WHERE EXISTS(SELECT * FROM song WHERE song.albumId = album.id AND song.inLibrary IS NOT NULL) ORDER BY rowId",
+        "SELECT * FROM (SELECT * FROM album ORDER BY isLocal ASC) AS album WHERE EXISTS(SELECT 1 FROM song_album_map JOIN song ON song_album_map.songId = song.id WHERE song_album_map.albumId = album.id AND (song.inLibrary IS NOT NULL OR song.isLocal = 1)) /* CUSTOM: E-Ink Deduplication */ GROUP BY album.title COLLATE NOCASE ORDER BY album.id",
     )
     fun albumsByCreateDateAsc(): Flow<List<Album>>
 
     @Transaction
     @SuppressWarnings(RoomWarnings.QUERY_MISMATCH)
     @Query(
-        "SELECT * FROM album WHERE EXISTS(SELECT * FROM song WHERE song.albumId = album.id AND song.inLibrary IS NOT NULL) ORDER BY title",
+        "SELECT * FROM (SELECT * FROM album ORDER BY isLocal ASC) AS album WHERE EXISTS(SELECT 1 FROM song_album_map JOIN song ON song_album_map.songId = song.id WHERE song_album_map.albumId = album.id AND (song.inLibrary IS NOT NULL OR song.isLocal = 1)) /* CUSTOM: E-Ink Deduplication */ GROUP BY album.title COLLATE NOCASE ORDER BY title",
     )
     fun albumsByNameAsc(): Flow<List<Album>>
 
     @Transaction
     @SuppressWarnings(RoomWarnings.QUERY_MISMATCH)
     @Query(
-        "SELECT * FROM album WHERE EXISTS(SELECT * FROM song WHERE song.albumId = album.id AND song.inLibrary IS NOT NULL) ORDER BY year",
+        "SELECT * FROM (SELECT * FROM album ORDER BY isLocal ASC) AS album WHERE EXISTS(SELECT 1 FROM song_album_map JOIN song ON song_album_map.songId = song.id WHERE song_album_map.albumId = album.id AND (song.inLibrary IS NOT NULL OR song.isLocal = 1)) /* CUSTOM: E-Ink Deduplication */ GROUP BY album.title COLLATE NOCASE ORDER BY year",
     )
     fun albumsByYearAsc(): Flow<List<Album>>
 
     @Transaction
     @SuppressWarnings(RoomWarnings.QUERY_MISMATCH)
     @Query(
-        "SELECT * FROM album WHERE EXISTS(SELECT * FROM song WHERE song.albumId = album.id AND song.inLibrary IS NOT NULL) ORDER BY songCount",
+        "SELECT * FROM (SELECT * FROM album ORDER BY isLocal ASC) AS album WHERE EXISTS(SELECT 1 FROM song_album_map JOIN song ON song_album_map.songId = song.id WHERE song_album_map.albumId = album.id AND (song.inLibrary IS NOT NULL OR song.isLocal = 1)) /* CUSTOM: E-Ink Deduplication */ GROUP BY album.title COLLATE NOCASE ORDER BY songCount",
     )
     fun albumsBySongCountAsc(): Flow<List<Album>>
 
     @Transaction
     @SuppressWarnings(RoomWarnings.QUERY_MISMATCH)
     @Query(
-        "SELECT * FROM album WHERE EXISTS(SELECT * FROM song WHERE song.albumId = album.id AND song.inLibrary IS NOT NULL) ORDER BY duration",
+        "SELECT * FROM (SELECT * FROM album ORDER BY isLocal ASC) AS album WHERE EXISTS(SELECT 1 FROM song_album_map JOIN song ON song_album_map.songId = song.id WHERE song_album_map.albumId = album.id AND (song.inLibrary IS NOT NULL OR song.isLocal = 1)) /* CUSTOM: E-Ink Deduplication */ GROUP BY album.title COLLATE NOCASE ORDER BY duration",
     )
     fun albumsByLengthAsc(): Flow<List<Album>>
 
@@ -907,7 +947,7 @@ interface DatabaseDao {
                  JOIN song
                       ON song.albumId = album.id
         WHERE EXISTS(SELECT * FROM song WHERE song.albumId = album.id AND song.inLibrary IS NOT NULL)
-        GROUP BY album.id
+        /* CUSTOM: E-Ink Deduplication */ GROUP BY album.title COLLATE NOCASE
         ORDER BY SUM(song.totalPlayTime)
     """,
     )
@@ -947,11 +987,50 @@ interface DatabaseDao {
                  JOIN song
                       ON song.albumId = album.id
         WHERE bookmarkedAt IS NOT NULL
-        GROUP BY album.id
+        /* CUSTOM: E-Ink Deduplication */ GROUP BY album.title COLLATE NOCASE
         ORDER BY SUM(song.totalPlayTime)
     """,
     )
     fun albumsLikedByPlayTimeAsc(): Flow<List<Album>>
+
+    // CUSTOM: E-Ink Local Artists/Albums — queries for local-file-derived albums only
+    @Transaction
+    @SuppressWarnings(RoomWarnings.QUERY_MISMATCH)
+    @Query("SELECT * FROM album WHERE isLocal = 1 ORDER BY rowId /* CUSTOM: E-Ink Local Artists/Albums */")
+    fun localAlbumsByCreateDateAsc(): Flow<List<Album>>
+
+    @Transaction
+    @SuppressWarnings(RoomWarnings.QUERY_MISMATCH)
+    @Query("SELECT * FROM album WHERE isLocal = 1 ORDER BY title COLLATE NOCASE /* CUSTOM: E-Ink Local Artists/Albums */")
+    fun localAlbumsByNameAsc(): Flow<List<Album>>
+
+    @Transaction
+    @SuppressWarnings(RoomWarnings.QUERY_MISMATCH)
+    @Query("SELECT * FROM album WHERE isLocal = 1 ORDER BY year /* CUSTOM: E-Ink Local Artists/Albums */")
+    fun localAlbumsByYearAsc(): Flow<List<Album>>
+
+    @Transaction
+    @SuppressWarnings(RoomWarnings.QUERY_MISMATCH)
+    @Query("SELECT * FROM album WHERE isLocal = 1 ORDER BY songCount /* CUSTOM: E-Ink Local Artists/Albums */")
+    fun localAlbumsBySongCountAsc(): Flow<List<Album>>
+
+    @Transaction
+    @SuppressWarnings(RoomWarnings.QUERY_MISMATCH)
+    @Query("SELECT * FROM album WHERE isLocal = 1 ORDER BY duration /* CUSTOM: E-Ink Local Artists/Albums */")
+    fun localAlbumsByLengthAsc(): Flow<List<Album>>
+
+    fun localAlbums(
+        sortType: AlbumSortType,
+        descending: Boolean,
+    ) = when (sortType) { // CUSTOM: E-Ink Local Artists/Albums
+        AlbumSortType.CREATE_DATE -> localAlbumsByCreateDateAsc()
+        AlbumSortType.NAME -> localAlbumsByNameAsc()
+        AlbumSortType.ARTIST -> localAlbumsByNameAsc()
+        AlbumSortType.YEAR -> localAlbumsByYearAsc()
+        AlbumSortType.SONG_COUNT -> localAlbumsBySongCountAsc()
+        AlbumSortType.LENGTH -> localAlbumsByLengthAsc()
+        AlbumSortType.PLAY_TIME -> localAlbumsByCreateDateAsc()
+    }.map { it.reversed(descending) }
 
     fun albums(
         sortType: AlbumSortType,
@@ -1309,7 +1388,7 @@ interface DatabaseDao {
     @Transaction
     @SuppressWarnings(RoomWarnings.QUERY_MISMATCH)
     @Query(
-        "SELECT *, (SELECT COUNT(1) FROM song_artist_map JOIN song ON song_artist_map.songId = song.id WHERE artistId = artist.id AND song.inLibrary IS NOT NULL) AS songCount FROM artist WHERE name LIKE '%' || :query || '%' AND songCount > 0 LIMIT :previewSize",
+        "SELECT *, (SELECT COUNT(1) FROM song_artist_map JOIN song ON song_artist_map.songId = song.id WHERE song_artist_map.artistId = artist.id AND song.inLibrary IS NOT NULL) AS songCount FROM artist WHERE name LIKE '%' || :query || '%' AND songCount > 0 LIMIT :previewSize",
     )
     fun searchArtists(
         query: String,
@@ -1317,7 +1396,7 @@ interface DatabaseDao {
     ): Flow<List<Artist>>
 
     @Query(
-        "SELECT COUNT(1) FROM artist WHERE name LIKE '%' || :query || '%' AND EXISTS(SELECT 1 FROM song_artist_map JOIN song ON song_artist_map.songId = song.id WHERE artistId = artist.id AND song.inLibrary IS NOT NULL)",
+        "SELECT COUNT(1) FROM artist WHERE name LIKE '%' || :query || '%' AND EXISTS(SELECT 1 FROM song_artist_map JOIN song ON song_artist_map.songId = song.id WHERE song_artist_map.artistId = artist.id AND song.inLibrary IS NOT NULL)",
     )
     suspend fun searchArtistsCount(query: String): Int
 

@@ -3,6 +3,7 @@ package moe.rukamori.archivetune.eink.screens
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import com.paperapps.paperui.components.PanoramaPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -42,7 +43,8 @@ fun EinkHomeScreen(
         PanoramaHeader(
             pagerState = pagerState,
             titles = titles,
-            coroutineScope = coroutineScope
+            coroutineScope = coroutineScope,
+            modifier = Modifier.fillMaxWidth()
         )
 
         PanoramaPager(

@@ -32,7 +32,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.mudita.mmd.components.lazy.LazyColumnMMD
+import androidx.compose.foundation.lazy.LazyColumn
 import kotlinx.coroutines.launch
 import moe.rukamori.archivetune.App.Companion.forgetAccount
 import moe.rukamori.archivetune.LocalSyncUtils
@@ -55,7 +55,7 @@ import moe.rukamori.archivetune.viewmodels.LocalSongsViewModel
 
 @Composable
 fun EinkMoreScreen(navController: NavController) {
-    LazyColumnMMD(
+    LazyColumn(
         contentPadding = PaddingValues(
             top = WindowInsets.systemBars.asPaddingValues().calculateTopPadding() + 16.dp,
             bottom = 16.dp,
@@ -120,7 +120,7 @@ fun EinkSettingsScreen(
         }
     }
 
-    LazyColumnMMD(
+    LazyColumn(
         contentPadding = PaddingValues(
             top = WindowInsets.systemBars.asPaddingValues().calculateTopPadding() + 16.dp,
             bottom = 16.dp,
@@ -149,7 +149,15 @@ fun EinkSettingsScreen(
             val scanSubtitle = when {
                 scanState.isScanning -> "Scanning device for audio files..."
                 scanState.errorMessage != null -> "Scan failed: ${scanState.errorMessage}"
-                scanState.lastSummary != null -> "Last scan: Found ${scanState.lastSummary?.scannedSongs} new songs"
+                scanState.lastSummary != null -> {
+                    val summary = scanState.lastSummary!!
+                    val enrichedStr = if (summary.enrichedArtists.isNotEmpty()) {
+                        " Enriched: " + summary.enrichedArtists.joinToString(", ")
+                    } else {
+                        ""
+                    }
+                    "Last scan: Found ${summary.scannedSongs} new songs.$enrichedStr"
+                }
                 !hasStoragePermission -> "Tap to grant permission and scan"
                 else -> "Scan device for local audio files"
             }

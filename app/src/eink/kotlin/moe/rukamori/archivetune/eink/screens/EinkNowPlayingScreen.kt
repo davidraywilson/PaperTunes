@@ -67,7 +67,7 @@ import androidx.navigation.NavController
 import com.mudita.mmd.components.buttons.ButtonMMD
 import com.mudita.mmd.components.slider.SliderMMD
 import com.mudita.mmd.components.progress_indicator.CircularProgressIndicatorMMD
-import com.mudita.mmd.components.lazy.LazyColumnMMD
+import androidx.compose.foundation.lazy.LazyColumn
 import kotlinx.coroutines.delay
 import com.mudita.mmd.components.text.TextMMD
 import com.paperapps.paperui.components.DashedDivider
@@ -135,7 +135,8 @@ fun EinkNowPlayingScreen(navController: NavController) {
         PanoramaHeader(
             pagerState = pagerState,
             titles = titles,
-            coroutineScope = coroutineScope
+            coroutineScope = coroutineScope,
+            modifier = Modifier.fillMaxWidth()
         )
 
         PanoramaPager(
@@ -290,7 +291,7 @@ fun EinkNowPlayingScreen(navController: NavController) {
                     }
                 }
             } else {
-                LazyColumnMMD(
+                LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(
                         start = 16.dp,
@@ -334,6 +335,7 @@ fun EinkNowPlayingScreen(navController: NavController) {
                 AppbarAction(
                     icon = Icons.Outlined.Shuffle,
                     label = "Shuffle",
+                    isActive = shuffleEnabled,
                     onClick = { player.shuffleModeEnabled = !player.shuffleModeEnabled }
                 ),
                 AppbarAction(
@@ -343,6 +345,7 @@ fun EinkNowPlayingScreen(navController: NavController) {
                         else -> Icons.Outlined.Repeat
                     },
                     label = "Repeat",
+                    isActive = repeatMode != Player.REPEAT_MODE_OFF,
                     onClick = {
                         player.repeatMode = when (player.repeatMode) {
                             Player.REPEAT_MODE_OFF -> Player.REPEAT_MODE_ALL

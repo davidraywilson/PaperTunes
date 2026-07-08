@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.media3.exoplayer.offline.Download
 import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import com.mudita.mmd.components.checkbox.CheckboxMMD
 import com.mudita.mmd.components.menus.DropdownMenuMMD
@@ -212,6 +213,7 @@ fun EinkTwoLineRow(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     showDivider: Boolean = true,
+    subtitleTrailingIcon: ImageVector? = null,
 ) {
     Column(
         modifier = modifier
@@ -228,13 +230,23 @@ fun EinkTwoLineRow(
         )
         if (!subtitle.isNullOrBlank()) {
             Spacer(modifier = Modifier.height(4.dp))
-            TextMMD(
-                text = subtitle,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Normal,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                TextMMD(
+                    text = subtitle,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Normal,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                if (subtitleTrailingIcon != null) {
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Icon(
+                        imageVector = subtitleTrailingIcon,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                    )
+                }
+            }
         }
         Spacer(modifier = Modifier.height(12.dp))
         if (showDivider) DashedDivider(thickness = 1.dp)

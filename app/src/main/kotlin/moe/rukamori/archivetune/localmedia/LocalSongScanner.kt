@@ -29,6 +29,10 @@ import moe.rukamori.archivetune.db.entities.Song
 import moe.rukamori.archivetune.db.entities.SongAlbumMap
 import moe.rukamori.archivetune.db.entities.SongArtistMap
 import moe.rukamori.archivetune.db.entities.SongEntity
+import moe.rukamori.archivetune.innertube.YouTube
+import moe.rukamori.archivetune.innertube.models.AlbumItem
+import moe.rukamori.archivetune.innertube.models.ArtistItem
+import moe.rukamori.archivetune.innertube.models.YTItem
 import moe.rukamori.archivetune.lyrics.LyricsUtils
 import timber.log.Timber
 import java.io.File
@@ -81,6 +85,7 @@ data class LocalSongScanConfig(
 data class LocalSongScanSummary(
     val scannedSongs: Int,
     val removedSongs: Int,
+    val enrichedArtists: List<String> = emptyList(),
 )
 
 class LocalSongScanner
@@ -92,11 +97,13 @@ class LocalSongScanner
         suspend fun scanDevice(scanConfig: LocalSongScanConfig = LocalSongScanConfig()): LocalSongScanSummary =
             withContext(Dispatchers.IO) {
                 val snapshot = queryTracks(scanConfig)
+                var removedCount = 0
                 database.withTransaction {
                     val existingLocalIds = localSongIds()
                     val scannedIds = snapshot.tracks.map(LocalTrackRecord::id)
                     val scannedIdSet = scannedIds.toSet()
                     val removedIds = existingLocalIds.filterNot(scannedIdSet::contains)
+                    removedCount = removedIds.size
 
                     if (scannedIds.isEmpty()) {
                         clearLocalSongs()
@@ -116,7 +123,7 @@ class LocalSongScanner
                                 id = artist.id,
                                 name = artist.name,
                                 thumbnailUrl = existingArtist?.thumbnailUrl,
-                                channelId = null,
+                                channelId = existingArtist?.channelId, // PRESV
                                 lastUpdateTime = existingArtist?.lastUpdateTime ?: LocalDateTime.now(),
                                 bookmarkedAt = existingArtist?.bookmarkedAt,
                                 isLocal = true,
@@ -129,10 +136,10 @@ class LocalSongScanner
                         upsert(
                             AlbumEntity(
                                 id = album.id,
-                                playlistId = null,
+                                playlistId = existingAlbum?.playlistId, // PRESV
                                 title = album.title,
                                 year = album.year ?: existingAlbum?.year,
-                                thumbnailUrl = album.thumbnailUrl,
+                                thumbnailUrl = album.thumbnailUrl ?: existingAlbum?.thumbnailUrl,
                                 themeColor = existingAlbum?.themeColor,
                                 songCount = album.songCount,
                                 duration = album.duration,
@@ -226,12 +233,65 @@ class LocalSongScanner
                     pruneLocalArtists()
                     pruneFormats()
                     prunePlayCounts()
-
-                    LocalSongScanSummary(
-                        scannedSongs = snapshot.tracks.size,
-                        removedSongs = removedIds.size,
-                    )
+                } // End of transaction
+                
+                val enrichedArtists = mutableListOf<String>()
+                val existingLocalArtists = loadArtists(snapshot.artists.map { it.id })
+                
+                snapshot.artists.forEach { artistRecord ->
+                    val artistEntity = existingLocalArtists[artistRecord.id]
+                    if (artistEntity != null && artistEntity.channelId == null) {
+                        try {
+                            val ytResult = YouTube.search(artistEntity.name, YouTube.SearchFilter.FILTER_ARTIST)
+                                .getOrNull()?.items
+                                ?.filterIsInstance<ArtistItem>()
+                                ?.firstOrNull { it.title.equals(artistEntity.name, ignoreCase = true) }
+                            
+                            if (ytResult != null) {
+                                val updatedArtist = artistEntity.copy(
+                                    channelId = ytResult.channelId ?: ytResult.id,
+                                    thumbnailUrl = ytResult.thumbnail
+                                )
+                                database.query { update(updatedArtist) }
+                                enrichedArtists.add(artistEntity.name)
+                            }
+                        } catch (e: Exception) {
+                            if (e is CancellationException) throw e
+                            Timber.w(e, "Failed to enrich artist ${artistEntity.name}")
+                        }
+                    }
                 }
+                
+                val existingLocalAlbums = loadAlbums(snapshot.albums.map { it.id })
+                snapshot.albums.forEach { albumRecord ->
+                    val albumEntity = existingLocalAlbums[albumRecord.id]
+                    if (albumEntity != null && albumEntity.playlistId == null) {
+                        try {
+                            val ytResult = YouTube.search(albumEntity.title, YouTube.SearchFilter.FILTER_ALBUM)
+                                .getOrNull()?.items
+                                ?.filterIsInstance<AlbumItem>()
+                                ?.firstOrNull { it.title.equals(albumEntity.title, ignoreCase = true) }
+                                
+                            if (ytResult != null) {
+                                val updatedAlbum = albumEntity.copy(
+                                    playlistId = ytResult.playlistId,
+                                    thumbnailUrl = ytResult.thumbnail
+                                )
+                                database.query { update(updatedAlbum) }
+                                // Not tracking enriched albums for now, only artists
+                            }
+                        } catch (e: Exception) {
+                            if (e is CancellationException) throw e
+                            Timber.w(e, "Failed to enrich album ${albumEntity.title}")
+                        }
+                    }
+                }
+
+                LocalSongScanSummary(
+                    scannedSongs = snapshot.tracks.size,
+                    removedSongs = removedCount,
+                    enrichedArtists = enrichedArtists
+                )
             }
 
         private suspend fun loadSongs(ids: List<String>): Map<String, Song> =

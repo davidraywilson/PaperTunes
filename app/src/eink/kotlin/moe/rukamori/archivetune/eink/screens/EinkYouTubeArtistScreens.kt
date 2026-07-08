@@ -41,6 +41,12 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import coil3.compose.AsyncImage
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
@@ -54,7 +60,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.mudita.mmd.components.buttons.ButtonMMD
 import com.mudita.mmd.components.buttons.OutlinedButtonMMD
-import com.mudita.mmd.components.lazy.LazyColumnMMD
+import androidx.compose.foundation.lazy.LazyColumn
 import com.mudita.mmd.components.menus.DropdownMenuMMD
 import com.mudita.mmd.components.tabs.PrimaryTabRowMMD
 import com.mudita.mmd.components.tabs.TabMMD
@@ -85,8 +91,9 @@ import moe.rukamori.archivetune.playback.queues.ListQueue
 import moe.rukamori.archivetune.playback.queues.YouTubeQueue
 import moe.rukamori.archivetune.viewmodels.ArtistViewModel
 
-private const val TAB_LIBRARY = 0
+private const val TAB_LOCAL = 0
 private const val TAB_ONLINE = 1
+private const val TAB_DETAILS = 2
 
 /**
  * E-ink version of the YouTube Music artist detail page.
@@ -119,15 +126,15 @@ fun EinkYouTubeArtistScreen(
 
     val hasLibraryContent = librarySongs.isNotEmpty() || libraryAlbums.isNotEmpty()
 
-    val tabOptions = remember { listOf("Library", "Online") }
+    val tabOptions = remember { listOf("Local", "Online", "Details") }
     val pagerState = androidx.compose.foundation.pager.rememberPagerState(
-        initialPage = if (hasLibraryContent) TAB_LIBRARY else TAB_ONLINE,
+        initialPage = if (hasLibraryContent) TAB_LOCAL else TAB_ONLINE,
         pageCount = { tabOptions.size }
     )
 
     // Load artist data if online page is visited
     androidx.compose.runtime.LaunchedEffect(pagerState.currentPage) {
-        if (pagerState.currentPage == TAB_ONLINE && artistPage == null) {
+        if ((pagerState.currentPage == TAB_ONLINE || pagerState.currentPage == TAB_DETAILS) && artistPage == null) {
             viewModel.fetchArtistsFromYTM()
         }
     }
@@ -135,26 +142,49 @@ fun EinkYouTubeArtistScreen(
     val artistName = artistPage?.artist?.title ?: libraryArtist?.artist?.name ?: "Artist"
     val isSubscribed = libraryArtist?.artist?.bookmarkedAt != null
 
-    val canShuffle = if (pagerState.currentPage == TAB_LIBRARY) librarySongs.isNotEmpty()
+    val canShuffle = if (pagerState.currentPage == TAB_LOCAL) librarySongs.isNotEmpty()
     else artistPage?.artist?.shuffleEndpoint != null
 
-    Column(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+    var hasHandledInitialTab by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
 
+    androidx.compose.runtime.LaunchedEffect(hasLibraryContent) {
+        if (!hasHandledInitialTab && hasLibraryContent) {
+            pagerState.scrollToPage(TAB_LOCAL)
+            hasHandledInitialTab = true
+        }
+    }
+
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        kotlinx.coroutines.delay(500)
+        hasHandledInitialTab = true
+    }
+
+    Column(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
 
         com.paperapps.paperui.components.PanoramaHeader(
             pagerState = pagerState,
             titles = tabOptions,
-            coroutineScope = coroutineScope
+            coroutineScope = coroutineScope,
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        TextMMD(
+            text = artistName,
+            fontSize = 32.sp,
+            fontWeight = FontWeight.Bold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 8.dp)
         )
 
         com.paperapps.paperui.components.PanoramaPager(
             state = pagerState,
             modifier = Modifier.weight(1f)
         ) { page ->
-            LazyColumnMMD(contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp)) {
+            LazyColumn(contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp)) {
 
-                // ── Library tab ───────────────────────────────────────────────────────────────
-                if (page == TAB_LIBRARY) {
+                // ── Local tab ─────────────────────────────────────────────────────────────────
+                if (page == TAB_LOCAL) {
                     if (librarySongs.isNotEmpty()) {
                         item(key = "local-songs-header") {
                             TextMMD(
@@ -233,17 +263,8 @@ fun EinkYouTubeArtistScreen(
                     }
 
                 // ── Online tab ────────────────────────────────────────────────────────────────
-                } else {
-                    // Expandable description
-                    val description = artistPage?.description
-                    if (!description.isNullOrBlank()) {
-                        item(key = "artist-description") {
-                            EinkExpandableDescription(description = description)
-                            Spacer(modifier = Modifier.height(8.dp))
-                        }
-                    }
-
-                    val excludedSections = listOf("live performances", "from your library", "featured on")
+                } else if (page == TAB_ONLINE) {
+                    val excludedSections = listOf("live performances", "from your library", "featured on", "fans might also like")
                     artistPage?.sections?.filterNot { section ->
                         val title = section.title.lowercase()
                         title in excludedSections || title.contains("playlist")
@@ -371,6 +392,67 @@ fun EinkYouTubeArtistScreen(
                             )
                         }
                     }
+                // ── Details tab ───────────────────────────────────────────────────────────────
+                } else if (page == TAB_DETAILS) {
+                    val imageUrl = artistPage?.artist?.thumbnail ?: libraryArtist?.artist?.thumbnailUrl
+                    if (imageUrl != null) {
+                        item(key = "artist-image") {
+                            AsyncImage(
+                                model = imageUrl,
+                                contentDescription = artistName,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .aspectRatio(1f)
+                                    .padding(bottom = 16.dp)
+                                    .clip(RoundedCornerShape(8.dp)),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
+                    }
+
+                    val description = artistPage?.description
+                    if (!description.isNullOrBlank()) {
+                        item(key = "artist-description") {
+                            EinkExpandableDescription(description = description)
+                            Spacer(modifier = Modifier.height(16.dp))
+                        }
+                    }
+
+                    val fansMightLike = artistPage?.sections?.find { it.title.lowercase() == "fans might also like" }
+                    if (fansMightLike != null && fansMightLike.items.isNotEmpty()) {
+                        item(key = "yt_header_fans") {
+                            TextMMD(
+                                text = fansMightLike.title,
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(bottom = 8.dp),
+                            )
+                        }
+                        
+                        val gridItems = fansMightLike.items.distinctBy { it.id }
+                        itemsIndexed(
+                            items = gridItems,
+                            key = { _, item -> "yt_artist_${item.id}" },
+                        ) { index, item ->
+                            val artist = item as? ArtistItem ?: return@itemsIndexed
+                            EinkTwoLineRow(
+                                title = artist.title,
+                                subtitle = artist.subscriberCountText,
+                                onClick = { navController.navigate(einkYouTubeArtistDetailsRoute(artist.id)) },
+                                showDivider = index != gridItems.lastIndex,
+                            )
+                        }
+                    }
+
+                    if (description.isNullOrBlank() && fansMightLike == null && imageUrl == null) {
+                        item(key = "details-empty") {
+                            EinkEmptyState(
+                                title = "No Details",
+                                body = "No details found for this artist.",
+                                modifier = Modifier.fillMaxSize(),
+                            )
+                        }
+                    }
                 }
 
                 item(key = "bottom-spacer") { Spacer(modifier = Modifier.height(16.dp)) }
@@ -388,7 +470,7 @@ fun EinkYouTubeArtistScreen(
                     icon = Icons.Outlined.Shuffle,
                     label = "Shuffle",
                     onClick = { 
-                        if (pagerState.currentPage == TAB_LIBRARY) {
+                        if (pagerState.currentPage == TAB_LOCAL) {
                             if (librarySongs.isNotEmpty()) {
                                 playerConnection.playQueue(
                                     ListQueue(

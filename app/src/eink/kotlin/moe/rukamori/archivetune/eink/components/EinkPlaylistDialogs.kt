@@ -49,17 +49,13 @@ import moe.rukamori.archivetune.innertube.YouTube
 import moe.rukamori.archivetune.utils.rememberPreference
 import java.time.LocalDateTime
 import java.util.logging.Logger
-// For TextField, we use a basic string field. Since we might not have TextFieldMMD, we can use BasicTextField
-// or standard Material3 TextField styled for E-ink. Let's use Material3 OutlinedTextField, which is okay, 
-// but wait, Eink components avoid standard Material3 when possible.
-// Actually, let's use standard MMD components if available, but if not we can use BasicTextField.
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import com.mudita.mmd.components.lazy.LazyColumnMMD
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.collectAsState
 import androidx.compose.foundation.layout.heightIn
@@ -347,7 +343,7 @@ fun EinkAddToPlaylistDialog(
                 TextMMD(text = "You have not created any playlist yet...", fontSize = 16.sp)
                 Spacer(modifier = Modifier.height(8.dp))
             } else {
-                LazyColumnMMD(
+                LazyColumn(
                     modifier = Modifier.heightIn(max = 400.dp)
                 ) {
                     items(availablePlaylists) { playlist ->
