@@ -18,6 +18,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import moe.rukamori.archivetune.constants.AlbumSortType
@@ -43,6 +44,19 @@ class EinkLocalArtistsViewModel
         val allArtists =
             database
                 .localArtists(ArtistSortType.NAME, false)
+                .map { artists ->
+                    val seenNames = mutableSetOf<String>()
+                    val regex = Regex("(?i)\\s+(feat\\.|ft\\.|featuring)\\s+.*\$")
+                    artists.filter { artistItem ->
+                        val baseName = artistItem.artist.name.replace(regex, "").trim()
+                        if (seenNames.contains(baseName.lowercase())) {
+                            false
+                        } else {
+                            seenNames.add(baseName.lowercase())
+                            true
+                        }
+                    }
+                }
                 .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
 

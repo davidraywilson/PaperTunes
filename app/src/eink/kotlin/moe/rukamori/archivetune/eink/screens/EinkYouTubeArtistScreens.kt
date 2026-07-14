@@ -74,6 +74,7 @@ import moe.rukamori.archivetune.eink.components.EinkSongRow
 import moe.rukamori.archivetune.eink.components.EinkTwoLineRow
 import moe.rukamori.archivetune.eink.components.albumSubtitle
 import moe.rukamori.archivetune.eink.einkAlbumDetailsRoute
+import moe.rukamori.archivetune.eink.einkPlaylistDetailsRoute
 import moe.rukamori.archivetune.eink.einkYouTubeArtistDetailsRoute
 import moe.rukamori.archivetune.eink.menus.EinkSongMenu
 import moe.rukamori.archivetune.eink.menus.EinkYouTubeSongMenu
@@ -367,9 +368,9 @@ fun EinkYouTubeArtistScreen(
                                                     item.toMediaMetadata(),
                                                 )
                                             )
-                                            is AlbumItem -> navController.navigate("album/${item.id}")
+                                            is AlbumItem -> navController.navigate(einkAlbumDetailsRoute(item.id))
                                             is ArtistItem -> navController.navigate(einkYouTubeArtistDetailsRoute(item.id))
-                                            is PlaylistItem -> navController.navigate("online_playlist/${item.id}")
+                                            is PlaylistItem -> navController.navigate(einkPlaylistDetailsRoute(item.id))
                                             else -> {}
                                         }
                                     },

@@ -7,6 +7,10 @@
 
 package moe.rukamori.archivetune.ui.screens.artist
 
+import android.content.Context
+import android.net.Uri
+import android.widget.Toast
+import moe.rukamori.archivetune.utils.reportException
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -30,6 +34,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
@@ -81,6 +86,7 @@ fun ArtistItemsScreen(
 ) {
     val menuState = LocalMenuState.current
     val haptic = LocalHapticFeedback.current
+    val context = LocalContext.current
     val playerConnection = LocalPlayerConnection.current ?: return
     val isPlaying by playerConnection.isPlaying.collectAsStateWithLifecycle()
     val mediaMetadata by playerConnection.mediaMetadata.collectAsStateWithLifecycle()
@@ -208,15 +214,30 @@ fun ArtistItemsScreen(
                                     }
 
                                     is AlbumItem -> {
-                                        navController.navigate("album/${item.id}")
+                                        try {
+                                            navController.navigate("album/${Uri.encode(item.id)}")
+                                        } catch (e: Exception) {
+                                            reportException(e)
+                                            Toast.makeText(context, "Error navigating: ${e.message}", Toast.LENGTH_SHORT).show()
+                                        }
                                     }
 
                                     is ArtistItem -> {
-                                        navController.navigate("artist/${item.id}")
+                                        try {
+                                            navController.navigate("artist/${Uri.encode(item.id)}")
+                                        } catch (e: Exception) {
+                                            reportException(e)
+                                            Toast.makeText(context, "Error navigating: ${e.message}", Toast.LENGTH_SHORT).show()
+                                        }
                                     }
 
                                     is PlaylistItem -> {
-                                        navController.navigate("online_playlist/${item.id}")
+                                        try {
+                                            navController.navigate("online_playlist/${Uri.encode(item.id)}")
+                                        } catch (e: Exception) {
+                                            reportException(e)
+                                            Toast.makeText(context, "Error navigating: ${e.message}", Toast.LENGTH_SHORT).show()
+                                        }
                                     }
                                 }
                             },
@@ -270,15 +291,30 @@ fun ArtistItemsScreen(
                                         }
 
                                         is AlbumItem -> {
-                                            navController.navigate("album/${item.id}")
+                                            try {
+                                                navController.navigate("album/${Uri.encode(item.id)}")
+                                            } catch (e: Exception) {
+                                                reportException(e)
+                                                Toast.makeText(context, "Error navigating: ${e.message}", Toast.LENGTH_SHORT).show()
+                                            }
                                         }
 
                                         is ArtistItem -> {
-                                            navController.navigate("artist/${item.id}")
+                                            try {
+                                                navController.navigate("artist/${Uri.encode(item.id)}")
+                                            } catch (e: Exception) {
+                                                reportException(e)
+                                                Toast.makeText(context, "Error navigating: ${e.message}", Toast.LENGTH_SHORT).show()
+                                            }
                                         }
 
                                         is PlaylistItem -> {
-                                            navController.navigate("online_playlist/${item.id}")
+                                            try {
+                                                navController.navigate("online_playlist/${Uri.encode(item.id)}")
+                                            } catch (e: Exception) {
+                                                reportException(e)
+                                                Toast.makeText(context, "Error navigating: ${e.message}", Toast.LENGTH_SHORT).show()
+                                            }
                                         }
                                     }
                                 },

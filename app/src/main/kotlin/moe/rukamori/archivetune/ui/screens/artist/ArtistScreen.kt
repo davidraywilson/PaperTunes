@@ -14,6 +14,7 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import moe.rukamori.archivetune.utils.reportException
 import android.widget.Toast
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -916,7 +917,12 @@ fun ArtistScreen(
                                             Modifier
                                                 .combinedClickable(
                                                     onClick = {
-                                                        navController.navigate("album/${album.id}")
+                                                        try {
+                                                            navController.navigate("album/${Uri.encode(album.id)}")
+                                                        } catch (e: Exception) {
+                                                            reportException(e)
+                                                            Toast.makeText(context, "Error navigating: ${e.message}", Toast.LENGTH_SHORT).show()
+                                                        }
                                                     },
                                                     onLongClick = {
                                                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -1057,27 +1063,47 @@ fun ArtistScreen(
                                                 Modifier
                                                     .combinedClickable(
                                                         onClick = {
-                                                            when (item) {
-                                                                is SongItem -> {
-                                                                    playerConnection.playQueue(
-                                                                        YouTubeQueue(
-                                                                            WatchEndpoint(videoId = item.id),
-                                                                            item.toMediaMetadata(),
-                                                                        ),
-                                                                    )
+                                                            try {
+                                                                when (item) {
+                                                                    is SongItem -> {
+                                                                        playerConnection.playQueue(
+                                                                            YouTubeQueue(
+                                                                                WatchEndpoint(videoId = item.id),
+                                                                                item.toMediaMetadata(),
+                                                                            ),
+                                                                        )
+                                                                    }
+                                                                    
+                                                                    is AlbumItem -> {
+                                                                        try {
+                                                                            navController.navigate("album/${Uri.encode(item.id)}")
+                                                                        } catch (e: Exception) {
+                                                                            reportException(e)
+                                                                            Toast.makeText(context, "Error navigating: ${e.message}", Toast.LENGTH_SHORT).show()
+                                                                        }
+                                                                    }
+                                                                    
+                                                                    is ArtistItem -> {
+                                                                        try {
+                                                                            navController.navigate("artist/${Uri.encode(item.id)}")
+                                                                        } catch (e: Exception) {
+                                                                            reportException(e)
+                                                                            Toast.makeText(context, "Error navigating: ${e.message}", Toast.LENGTH_SHORT).show()
+                                                                        }
+                                                                    }
+                                                                    
+                                                                    is PlaylistItem -> {
+                                                                        try {
+                                                                            navController.navigate("online_playlist/${Uri.encode(item.id)}")
+                                                                        } catch (e: Exception) {
+                                                                            reportException(e)
+                                                                            Toast.makeText(context, "Error navigating: ${e.message}", Toast.LENGTH_SHORT).show()
+                                                                        }
+                                                                    }
                                                                 }
-
-                                                                is AlbumItem -> {
-                                                                    navController.navigate("album/${item.id}")
-                                                                }
-
-                                                                is ArtistItem -> {
-                                                                    navController.navigate("artist/${item.id}")
-                                                                }
-
-                                                                is PlaylistItem -> {
-                                                                    navController.navigate("online_playlist/${item.id}")
-                                                                }
+                                                            } catch (e: Exception) {
+                                                                reportException(e)
+                                                                Toast.makeText(context, "Error navigating: ${e.message}", Toast.LENGTH_SHORT).show()
                                                             }
                                                         },
                                                         onLongClick = {

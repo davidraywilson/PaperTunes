@@ -1499,7 +1499,11 @@ fun YouTubeGridItem(
                         YouTube
                             .album(item.id)
                             .onSuccess { albumPage ->
-                                database.transaction { insert(albumPage) }
+                                try {
+                                    database.transaction { insert(albumPage) }
+                                } catch (e: Exception) {
+                                    reportException(e)
+                                }
                                 albumWithSongs = database.albumWithSongs(item.id).first()
                             }.onFailure { reportException(it) }
                     }

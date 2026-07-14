@@ -9,6 +9,11 @@
 
 package moe.rukamori.archivetune.ui.screens
 
+import android.content.Context
+import android.net.Uri
+import android.widget.Toast
+import moe.rukamori.archivetune.utils.reportException
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -84,6 +89,7 @@ fun YouTubeBrowseScreen(
     viewModel: YouTubeBrowseViewModel = hiltViewModel(),
 ) {
     val menuState = LocalMenuState.current
+    val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
     val playerConnection = LocalPlayerConnection.current ?: return
     val isPlaying by playerConnection.isPlaying.collectAsState()
@@ -218,11 +224,16 @@ fun YouTubeBrowseScreen(
                                             Modifier
                                                 .combinedClickable(
                                                     onClick = {
-                                                        when (item) {
-                                                            is AlbumItem -> navController.navigate("album/${item.id}")
-                                                            is ArtistItem -> navController.navigate("artist/${item.id}")
-                                                            is PlaylistItem -> navController.navigate("online_playlist/${item.id}")
-                                                            else -> item
+                                                        try {
+                                                            when (item) {
+                                                                is AlbumItem -> navController.navigate("album/${Uri.encode(item.id)}")
+                                                                is ArtistItem -> navController.navigate("artist/${Uri.encode(item.id)}")
+                                                                is PlaylistItem -> navController.navigate("online_playlist/${Uri.encode(item.id)}")
+                                                                else -> item
+                                                            }
+                                                        } catch (e: Exception) {
+                                                            reportException(e)
+                                                            Toast.makeText(context, "Error navigating: ${e.message}", Toast.LENGTH_SHORT).show()
                                                         }
                                                     },
                                                     onLongClick = {
