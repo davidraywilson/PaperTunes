@@ -33,8 +33,8 @@ android {
     applicationId = "moe.rukamori.archivetune"
         minSdk = 28
         targetSdk = 37
-        versionCode = 179
-        versionName = "13.5.43"
+        versionCode = 184
+        versionName = "13.5.48"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true

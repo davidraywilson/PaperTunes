@@ -60,7 +60,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.mudita.mmd.components.buttons.ButtonMMD
 import com.mudita.mmd.components.buttons.OutlinedButtonMMD
-import androidx.compose.foundation.lazy.LazyColumn
+import com.paperapps.paperui.components.PaperLazyColumn
 import com.mudita.mmd.components.menus.DropdownMenuMMD
 import com.mudita.mmd.components.tabs.PrimaryTabRowMMD
 import com.mudita.mmd.components.tabs.TabMMD
@@ -174,7 +174,7 @@ fun EinkYouTubeArtistScreen(
             state = pagerState,
             modifier = Modifier.weight(1f)
         ) { page ->
-            LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(end = 16.dp)) {
+            PaperLazyColumn(modifier = Modifier.fillMaxSize().padding(end = 16.dp)) {
 
                 // ── Local tab ─────────────────────────────────────────────────────────────────
                 if (page == TAB_LOCAL) {

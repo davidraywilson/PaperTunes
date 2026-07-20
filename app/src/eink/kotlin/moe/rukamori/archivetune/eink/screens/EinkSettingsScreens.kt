@@ -31,8 +31,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.padding
 import androidx.navigation.NavController
-import androidx.compose.foundation.lazy.LazyColumn
+import com.paperapps.paperui.components.PaperLazyColumn
 import kotlinx.coroutines.launch
 import moe.rukamori.archivetune.App.Companion.forgetAccount
 import moe.rukamori.archivetune.LocalSyncUtils
@@ -55,14 +56,16 @@ import moe.rukamori.archivetune.viewmodels.LocalSongsViewModel
 
 @Composable
 fun EinkMoreScreen(navController: NavController) {
-    LazyColumn(
-        contentPadding = PaddingValues(
-            top = WindowInsets.systemBars.asPaddingValues().calculateTopPadding() + 16.dp,
-            bottom = 16.dp,
-            start = 16.dp,
-            end = 16.dp
-        ),
-        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
+    PaperLazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .padding(
+                top = WindowInsets.systemBars.asPaddingValues().calculateTopPadding() + 16.dp,
+                bottom = 16.dp,
+                start = 16.dp,
+                end = 16.dp,
+            ),
     ) {
         item {
             EinkTwoLineRow(
@@ -120,14 +123,16 @@ fun EinkSettingsScreen(
         }
     }
 
-    LazyColumn(
-        contentPadding = PaddingValues(
-            top = WindowInsets.systemBars.asPaddingValues().calculateTopPadding() + 16.dp,
-            bottom = 16.dp,
-            start = 16.dp,
-            end = 16.dp
-        ),
-        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
+    PaperLazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .padding(
+                top = WindowInsets.systemBars.asPaddingValues().calculateTopPadding() + 16.dp,
+                bottom = 16.dp,
+                start = 16.dp,
+                end = 16.dp,
+            ),
     ) {
         item(key = "login") {
             EinkTwoLineRow(

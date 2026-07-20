@@ -76,6 +76,7 @@ import com.mudita.mmd.components.buttons.FloatingActionButtonMMD
 import com.mudita.mmd.components.buttons.OutlinedButtonMMD
 import com.mudita.mmd.components.bottom_sheet.ModalBottomSheetMMD
 import androidx.compose.foundation.lazy.LazyColumn
+import com.paperapps.paperui.components.PaperLazyColumn
 import com.mudita.mmd.components.menus.DropdownMenuItemMMD
 import com.mudita.mmd.components.text.TextMMD
 import kotlinx.coroutines.CoroutineScope
@@ -321,9 +322,9 @@ fun EinkPlaylistsScreen(
             }
         } else {
             Column(modifier = Modifier.fillMaxSize()) {
-                LazyColumn(
-                    modifier = Modifier.weight(1f),
-                    contentPadding = PaddingValues(end = 16.dp),
+                PaperLazyColumn(
+                    modifier = Modifier.weight(1f).fillMaxWidth().padding(end = 16.dp),
+                    refreshKey = playlists,
                 ) {
                     itemsIndexed(
                         items = playlists,
@@ -502,9 +503,9 @@ fun EinkPlaylistDetailsScreen(
                         modifier = Modifier.fillMaxSize(),
                     )
                 } else {
-                    LazyColumn(
-                        modifier = Modifier.weight(1f),
-                        contentPadding = PaddingValues(end = 16.dp),
+                    PaperLazyColumn(
+                        modifier = Modifier.weight(1f).fillMaxWidth().padding(end = 16.dp),
+                        refreshKey = songs,
                     ) {
                         itemsIndexed(
                             items = songs,
@@ -622,9 +623,9 @@ fun EinkPlaylistEditScreen(
                     modifier = Modifier.fillMaxSize(),
                 )
             } else {
-                LazyColumn(
-                    modifier = Modifier.weight(1f),
-                    contentPadding = PaddingValues(end = 16.dp),
+                PaperLazyColumn(
+                    modifier = Modifier.weight(1f).fillMaxWidth().padding(end = 16.dp),
+                    refreshKey = songs,
                 ) {
                     itemsIndexed(
                         items = songs,
@@ -711,9 +712,9 @@ fun EinkPlaylistAddSongsScreen(
                     modifier = Modifier.fillMaxSize(),
                 )
             } else {
-                LazyColumn(
-                    modifier = Modifier.weight(1f),
-                    contentPadding = PaddingValues(end = 16.dp),
+                PaperLazyColumn(
+                    modifier = Modifier.weight(1f).fillMaxWidth().padding(end = 16.dp),
+                    refreshKey = songs,
                 ) {
                     itemsIndexed(
                         items = songs,

@@ -65,9 +65,8 @@ import kotlin.random.Random
 import androidx.media3.common.Player
 import androidx.navigation.NavController
 import com.mudita.mmd.components.buttons.ButtonMMD
-import com.mudita.mmd.components.slider.SliderMMD
 import com.mudita.mmd.components.progress_indicator.CircularProgressIndicatorMMD
-import androidx.compose.foundation.lazy.LazyColumn
+import com.paperapps.paperui.components.PaperLazyColumn
 import kotlinx.coroutines.delay
 import com.mudita.mmd.components.text.TextMMD
 import com.paperapps.paperui.components.DashedDivider
@@ -85,6 +84,7 @@ import com.paperapps.paperui.components.AppbarAction
 import com.paperapps.paperui.components.ApplicationBar
 import com.paperapps.paperui.components.PanoramaHeader
 import com.paperapps.paperui.components.PanoramaPager
+import com.paperapps.paperui.components.PaperProgressBar
 import moe.rukamori.archivetune.LocalDownloadUtil
 import moe.rukamori.archivetune.extensions.metadata
 import moe.rukamori.archivetune.models.MediaMetadata
@@ -109,7 +109,6 @@ fun EinkNowPlayingScreen(navController: NavController) {
     var position by remember { mutableLongStateOf(0L) }
     var duration by remember { mutableLongStateOf(0L) }
     var sliderPosition by remember { mutableFloatStateOf(0f) }
-    var isSeeking by remember { mutableStateOf(false) }
     var showAddToPlaylistDialog by remember { mutableStateOf(false) }
 
     val titles = listOf("Now Playing", "Coming Up")
@@ -120,9 +119,7 @@ fun EinkNowPlayingScreen(navController: NavController) {
             position = player.currentPosition.coerceAtLeast(0L)
             duration = player.duration.takeIf { it > 0L }
                 ?: ((mediaMetadata?.duration ?: 0) * 1000L)
-            if (!isSeeking) {
-                sliderPosition = if (duration > 0L) position.toFloat() / duration else 0f
-            }
+            sliderPosition = if (duration > 0L) position.toFloat() / duration else 0f
             delay(500)
         }
     }
@@ -168,7 +165,8 @@ fun EinkNowPlayingScreen(navController: NavController) {
                         Text(
                             text = mediaMetadata?.title.orEmpty(),
                             fontSize = 42.sp,
-                            fontWeight = FontWeight.Black,
+                            fontWeight = FontWeight.Bold,
+                            lineHeight = 48.sp,
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis
                         )
@@ -202,18 +200,16 @@ fun EinkNowPlayingScreen(navController: NavController) {
                     Column(
                         modifier = Modifier.fillMaxWidth(),
                     ) {
-                        SliderMMD(
+                        PaperProgressBar(
+                            progress = sliderPosition.coerceIn(0f, 1f),
                             modifier = Modifier.fillMaxWidth(),
-                            value = sliderPosition.coerceIn(0f, 1f),
-                            onValueChange = { value ->
-                                isSeeking = true
+                            onProgressChange = { value ->
                                 sliderPosition = value
                                 if (duration > 0) {
                                     val newPosition = (value * duration).toLong().coerceIn(0L, duration)
                                     player.seekTo(newPosition)
                                 }
-                                isSeeking = false
-                            },
+                            }
                         )
 
                         Spacer(modifier = Modifier.height(8.dp))
@@ -246,19 +242,14 @@ fun EinkNowPlayingScreen(navController: NavController) {
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        ButtonMMD(
+                        IconButton(
                             onClick = { playerConnection.seekToPrevious() },
-                            modifier = Modifier.size(72.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.secondary
-                            )
-
+                            modifier = Modifier.size(72.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Outlined.SkipPrevious,
-                                modifier = Modifier.size(46.dp),
                                 contentDescription = "Previous Song",
-                                tint = MaterialTheme.colorScheme.onSecondary
+                                modifier = Modifier.size(46.dp),
                             )
                         }
 
@@ -273,26 +264,22 @@ fun EinkNowPlayingScreen(navController: NavController) {
                             )
                         }
 
-                        ButtonMMD(
+                        IconButton(
                             onClick = { playerConnection.seekToNext() },
-                            modifier = Modifier.size(72.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.secondary
-                            )
+                            modifier = Modifier.size(72.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Outlined.SkipNext,
-                                modifier = Modifier.size(46.dp),
                                 contentDescription = "Next Song",
-                                tint = MaterialTheme.colorScheme.onSecondary
+                                modifier = Modifier.size(46.dp),
                             )
                         }
                     }
                 }
             } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(end = 16.dp),
+                PaperLazyColumn(
+                    modifier = Modifier.fillMaxSize().padding(end = 16.dp),
+                    refreshKey = queueWindows,
                 ) {
                     itemsIndexed(queueWindows) { index, window ->
                         val metadata = window.mediaItem.metadata

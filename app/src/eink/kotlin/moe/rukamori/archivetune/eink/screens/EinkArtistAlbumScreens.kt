@@ -46,7 +46,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.mudita.mmd.components.buttons.FloatingActionButtonMMD
-import androidx.compose.foundation.lazy.LazyColumn
+import com.paperapps.paperui.components.PaperLazyColumn
 import com.mudita.mmd.components.tabs.PrimaryTabRowMMD
 import com.mudita.mmd.components.tabs.TabMMD
 import com.mudita.mmd.components.text.TextMMD
@@ -86,7 +86,7 @@ fun EinkArtistsScreen(
                 modifier = Modifier.fillMaxSize(),
             )
         } else {
-            LazyColumn(contentPadding = PaddingValues(end = 16.dp)) {
+            PaperLazyColumn(modifier = Modifier.fillMaxSize().padding(end = 16.dp), refreshKey = artists) {
                 itemsIndexed(
                     items = artists,
                     key = { _, artist -> artist.id },
@@ -125,7 +125,7 @@ fun EinkAlbumsScreen(
                 modifier = Modifier.fillMaxSize(),
             )
         } else {
-            LazyColumn(contentPadding = PaddingValues(end = 16.dp)) {
+            PaperLazyColumn(modifier = Modifier.fillMaxSize().padding(end = 16.dp), refreshKey = albums) {
                 itemsIndexed(
                     items = albums,
                     key = { _, album -> album.id },
@@ -187,7 +187,7 @@ fun EinkArtistDetailsScreen(
                         modifier = Modifier.fillMaxSize(),
                     )
                 } else {
-                    LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(end = 16.dp)) {
+                    PaperLazyColumn(modifier = Modifier.fillMaxSize().padding(end = 16.dp), refreshKey = songs) {
                         itemsIndexed(
                             items = songs,
                             key = { _, song -> song.id },
@@ -231,7 +231,7 @@ fun EinkArtistDetailsScreen(
                         modifier = Modifier.fillMaxSize(),
                     )
                 } else {
-                    LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(end = 16.dp)) {
+                    PaperLazyColumn(modifier = Modifier.fillMaxSize().padding(end = 16.dp), refreshKey = albums) {
                         itemsIndexed(
                             items = albums,
                             key = { _, album -> album.id },
@@ -341,9 +341,9 @@ fun EinkAlbumDetailsScreen(
                                         modifier = Modifier.fillMaxSize(),
                                     )
                                 } else {
-                                    LazyColumn(
-                                        contentPadding = PaddingValues(end = 16.dp),
-                                        modifier = Modifier.weight(1f)
+                                    PaperLazyColumn(
+                                        modifier = Modifier.weight(1f).fillMaxWidth().padding(end = 16.dp),
+                                        refreshKey = songs,
                                     ) {
                                         itemsIndexed(
                                             items = songs,
@@ -383,7 +383,7 @@ fun EinkAlbumDetailsScreen(
                                 }
                             }
                         } else {
-                            LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(end = 16.dp)) {
+                            PaperLazyColumn(modifier = Modifier.fillMaxSize().padding(end = 16.dp), refreshKey = album) {
                                 if (album != null) {
                                     item(key = "album_info") {
                                         Column(modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)) {

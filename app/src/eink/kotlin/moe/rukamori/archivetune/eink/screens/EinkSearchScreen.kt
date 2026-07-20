@@ -56,7 +56,7 @@ import androidx.compose.ui.unit.dp
 import moe.rukamori.archivetune.eink.components.EinkNowPlayingButton
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import androidx.compose.foundation.lazy.LazyColumn
+import com.paperapps.paperui.components.PaperLazyColumn
 import com.mudita.mmd.components.menus.DropdownMenuMMD
 import com.mudita.mmd.components.tabs.PrimaryTabRowMMD
 import com.mudita.mmd.components.tabs.TabMMD
@@ -276,7 +276,7 @@ private fun SongResults(
         )
         return
     }
-    LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(end = 16.dp)) {
+    PaperLazyColumn(modifier = Modifier.fillMaxSize().padding(end = 16.dp), refreshKey = songs) {
         itemsIndexed(
             items = songs,
             key = { _, song -> song.id },
@@ -308,7 +308,7 @@ private fun AlbumResults(
         )
         return
     }
-    LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(end = 16.dp)) {
+    PaperLazyColumn(modifier = Modifier.fillMaxSize().padding(end = 16.dp), refreshKey = albums) {
         itemsIndexed(
             items = albums,
             key = { _, album -> album.id },

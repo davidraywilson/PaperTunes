@@ -40,7 +40,7 @@ import androidx.compose.ui.unit.sp
 import androidx.media3.exoplayer.offline.Download
 import androidx.media3.exoplayer.offline.DownloadService
 import androidx.navigation.NavController
-import androidx.compose.foundation.lazy.LazyColumn
+import com.paperapps.paperui.components.PaperLazyColumn
 import com.mudita.mmd.components.progress_indicator.CircularProgressIndicatorMMD
 import kotlinx.coroutines.delay
 import moe.rukamori.archivetune.LocalDownloadUtil
@@ -89,14 +89,17 @@ fun EinkDownloadsScreen(navController: NavController) {
         return
     }
 
-    LazyColumn(
-        contentPadding = PaddingValues(
-            top = WindowInsets.systemBars.asPaddingValues().calculateTopPadding() + 16.dp,
-            bottom = 16.dp,
-            start = 16.dp,
-            end = 16.dp
-        ),
-        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
+    PaperLazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .padding(
+                top = WindowInsets.systemBars.asPaddingValues().calculateTopPadding() + 16.dp,
+                bottom = 16.dp,
+                start = 16.dp,
+                end = 16.dp,
+            ),
+        refreshKey = queuedDownloads,
     ) {
         items(
             count = queuedDownloads.size,

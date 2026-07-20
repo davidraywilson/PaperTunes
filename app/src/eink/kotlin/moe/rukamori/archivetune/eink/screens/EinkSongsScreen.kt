@@ -43,7 +43,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.filled.Done
-import androidx.compose.foundation.lazy.LazyColumn
+import com.paperapps.paperui.components.PaperLazyColumn
 import com.mudita.mmd.components.chips.FilterChipDefaultsMMD
 import com.mudita.mmd.components.chips.FilterChipMMD
 import com.mudita.mmd.components.text.TextMMD
@@ -160,7 +160,7 @@ fun EinkSongsScreen(
                     modifier = Modifier.fillMaxSize(),
                 )
             } else {
-                LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(end = 16.dp)) {
+                PaperLazyColumn(modifier = Modifier.fillMaxSize().padding(end = 16.dp), refreshKey = displaySongs) {
                     itemsIndexed(
                         items = displaySongs,
                         key = { _, song -> song.id },
