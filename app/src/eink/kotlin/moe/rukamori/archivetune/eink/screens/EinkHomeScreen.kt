@@ -44,7 +44,8 @@ fun EinkHomeScreen(
             pagerState = pagerState,
             titles = titles,
             coroutineScope = coroutineScope,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            screenTitle = "PaperTunes"
         )
 
         PanoramaPager(

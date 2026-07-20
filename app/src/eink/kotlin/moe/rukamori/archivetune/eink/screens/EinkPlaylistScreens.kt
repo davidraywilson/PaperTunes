@@ -323,7 +323,7 @@ fun EinkPlaylistsScreen(
             Column(modifier = Modifier.fillMaxSize()) {
                 LazyColumn(
                     modifier = Modifier.weight(1f),
-                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp),
+                    contentPadding = PaddingValues(end = 16.dp),
                 ) {
                     itemsIndexed(
                         items = playlists,
@@ -484,7 +484,8 @@ fun EinkPlaylistDetailsScreen(
 
         com.paperapps.paperui.components.PanoramaHeader(
             pagerState = pagerState,
-            titles = listOf(playlistName),
+            titles = listOf("Songs"),
+            screenTitle = playlistName,
             coroutineScope = coroutineScope,
             modifier = Modifier.fillMaxWidth()
         )
@@ -503,7 +504,7 @@ fun EinkPlaylistDetailsScreen(
                 } else {
                     LazyColumn(
                         modifier = Modifier.weight(1f),
-                        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp),
+                        contentPadding = PaddingValues(end = 16.dp),
                     ) {
                         itemsIndexed(
                             items = songs,
@@ -623,7 +624,7 @@ fun EinkPlaylistEditScreen(
             } else {
                 LazyColumn(
                     modifier = Modifier.weight(1f),
-                    contentPadding = PaddingValues(16.dp),
+                    contentPadding = PaddingValues(end = 16.dp),
                 ) {
                     itemsIndexed(
                         items = songs,
@@ -712,7 +713,7 @@ fun EinkPlaylistAddSongsScreen(
             } else {
                 LazyColumn(
                     modifier = Modifier.weight(1f),
-                    contentPadding = PaddingValues(16.dp),
+                    contentPadding = PaddingValues(end = 16.dp),
                 ) {
                     itemsIndexed(
                         items = songs,

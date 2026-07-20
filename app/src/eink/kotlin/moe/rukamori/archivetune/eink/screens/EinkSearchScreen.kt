@@ -276,7 +276,7 @@ private fun SongResults(
         )
         return
     }
-    LazyColumn(contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp)) {
+    LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(end = 16.dp)) {
         itemsIndexed(
             items = songs,
             key = { _, song -> song.id },
@@ -308,7 +308,7 @@ private fun AlbumResults(
         )
         return
     }
-    LazyColumn(contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp)) {
+    LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(end = 16.dp)) {
         itemsIndexed(
             items = albums,
             key = { _, album -> album.id },

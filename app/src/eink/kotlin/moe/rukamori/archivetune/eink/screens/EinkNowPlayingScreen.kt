@@ -146,8 +146,7 @@ fun EinkNowPlayingScreen(navController: NavController) {
             if (page == 0) {
                 Column(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .padding(bottom = 16.dp, start = 16.dp, end = 16.dp),
+                        .fillMaxSize().padding(end = 16.dp),
                     verticalArrangement = Arrangement.SpaceBetween,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
@@ -293,12 +292,7 @@ fun EinkNowPlayingScreen(navController: NavController) {
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(
-                        start = 16.dp,
-                        top = 0.dp,
-                        end = 16.dp,
-                        bottom = 16.dp
-                    ),
+                    contentPadding = PaddingValues(end = 16.dp),
                 ) {
                     itemsIndexed(queueWindows) { index, window ->
                         val metadata = window.mediaItem.metadata

@@ -821,8 +821,24 @@ class SyncUtils
                 onProgress(0, remoteIds.size)
                 database.withTransaction {
                     if (!isSyncStillEnabled(gen)) return@withTransaction
+                    
+                    val localMaps = try {
+                        database.playlistSongMaps(playlistId, 0).filter {
+                            database.getSongByIdBlocking(it.songId)?.song?.isLocal == true
+                        }
+                    } catch (e: Exception) {
+                        Timber.w("syncPlaylist: Failed to fetch local songs to preserve", e)
+                        emptyList()
+                    }
+
                     database.clearPlaylist(playlistId)
                     var completedSongs = 0
+                    
+                    localMaps.forEachIndexed { idx, map ->
+                        database.insert(map.copy(id = 0, position = idx))
+                    }
+                    val offset = localMaps.size
+
                     songs.forEachIndexed { idx, song ->
                         if (!isSyncStillEnabled(gen)) return@withTransaction
                         val songId = song.id ?: return@forEachIndexed
@@ -833,7 +849,7 @@ class SyncUtils
                             PlaylistSongMap(
                                 songId = songId,
                                 playlistId = playlistId,
-                                position = idx,
+                                position = offset + idx,
                                 setVideoId = song.setVideoId,
                             ),
                         )

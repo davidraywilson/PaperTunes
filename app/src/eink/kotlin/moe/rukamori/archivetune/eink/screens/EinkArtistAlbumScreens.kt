@@ -86,7 +86,7 @@ fun EinkArtistsScreen(
                 modifier = Modifier.fillMaxSize(),
             )
         } else {
-            LazyColumn(contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp)) {
+            LazyColumn(contentPadding = PaddingValues(end = 16.dp)) {
                 itemsIndexed(
                     items = artists,
                     key = { _, artist -> artist.id },
@@ -125,7 +125,7 @@ fun EinkAlbumsScreen(
                 modifier = Modifier.fillMaxSize(),
             )
         } else {
-            LazyColumn(contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp)) {
+            LazyColumn(contentPadding = PaddingValues(end = 16.dp)) {
                 itemsIndexed(
                     items = albums,
                     key = { _, album -> album.id },
@@ -171,21 +171,9 @@ fun EinkArtistDetailsScreen(
             pagerState = pagerState,
             titles = tabOptions,
             coroutineScope = coroutineScope,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            screenTitle = artistName.takeIf { it.isNotBlank() }
         )
-
-        if (artistName.isNotBlank()) {
-            TextMMD(
-                text = artistName,
-                fontSize = 26.sp,
-                fontWeight = FontWeight.Bold,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
-            )
-        }
 
         com.paperapps.paperui.components.PanoramaPager(
             state = pagerState,
@@ -199,7 +187,7 @@ fun EinkArtistDetailsScreen(
                         modifier = Modifier.fillMaxSize(),
                     )
                 } else {
-                    LazyColumn(contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp)) {
+                    LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(end = 16.dp)) {
                         itemsIndexed(
                             items = songs,
                             key = { _, song -> song.id },
@@ -243,7 +231,7 @@ fun EinkArtistDetailsScreen(
                         modifier = Modifier.fillMaxSize(),
                     )
                 } else {
-                    LazyColumn(contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp)) {
+                    LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(end = 16.dp)) {
                         itemsIndexed(
                             items = albums,
                             key = { _, album -> album.id },
@@ -334,7 +322,8 @@ fun EinkAlbumDetailsScreen(
                     pagerState = pagerState,
                     titles = tabOptions,
                     coroutineScope = coroutineScope,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    screenTitle = albumTitle.takeIf { it.isNotBlank() }
                 )
 
                 Box(modifier = Modifier.weight(1f)) {
@@ -344,18 +333,6 @@ fun EinkAlbumDetailsScreen(
                     ) { page ->
                         if (page == 0) {
                             Column(modifier = Modifier.fillMaxSize()) {
-                                if (albumTitle.isNotBlank()) {
-                                    TextMMD(
-                                        text = albumTitle,
-                                        fontSize = 26.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        maxLines = 2,
-                                        overflow = TextOverflow.Ellipsis,
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
-                                    )
-                                }
                                 
                                 if (uiState is AlbumUiState.Empty || (uiState is AlbumUiState.Content && songs.isEmpty())) {
                                     EinkEmptyState(
@@ -365,7 +342,7 @@ fun EinkAlbumDetailsScreen(
                                     )
                                 } else {
                                     LazyColumn(
-                                        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp),
+                                        contentPadding = PaddingValues(end = 16.dp),
                                         modifier = Modifier.weight(1f)
                                     ) {
                                         itemsIndexed(
@@ -406,7 +383,7 @@ fun EinkAlbumDetailsScreen(
                                 }
                             }
                         } else {
-                            LazyColumn(contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp)) {
+                            LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(end = 16.dp)) {
                                 if (album != null) {
                                     item(key = "album_info") {
                                         Column(modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)) {

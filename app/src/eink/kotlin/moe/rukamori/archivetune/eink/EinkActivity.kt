@@ -22,7 +22,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.lifecycleScope
-import com.mudita.mmd.ThemeMMD
+import com.paperapps.paperui.theme.PaperUITheme
 import dagger.hilt.android.AndroidEntryPoint
 import moe.rukamori.archivetune.LocalDatabase
 import moe.rukamori.archivetune.LocalDownloadUtil
@@ -104,43 +104,15 @@ class EinkActivity : ComponentActivity() {
             isAppearanceLightNavigationBars = true
         }
         setContent {
-            ThemeMMD {
-                // Fix for Android 16 API 36 Color.Unspecified crash:
-                // ThemeMMD might leave surface color unspecified, crashing Material 3 TopAppBar.
-                androidx.compose.material3.MaterialTheme(
-                    colorScheme = androidx.compose.material3.lightColorScheme(
-                        surface = androidx.compose.ui.graphics.Color.White,
-                        background = androidx.compose.ui.graphics.Color.White,
-                        onSurface = androidx.compose.ui.graphics.Color.Black,
-                        onBackground = androidx.compose.ui.graphics.Color.Black,
-                        surfaceTint = androidx.compose.ui.graphics.Color.White,
-                        primary = androidx.compose.ui.graphics.Color.Black,
-                        onPrimary = androidx.compose.ui.graphics.Color.White,
-                        primaryContainer = androidx.compose.ui.graphics.Color.Black,
-                        onPrimaryContainer = androidx.compose.ui.graphics.Color.White,
-                        secondary = androidx.compose.ui.graphics.Color.White,
-                        onSecondary = androidx.compose.ui.graphics.Color.Black,
-                        secondaryContainer = androidx.compose.ui.graphics.Color.Black,
-                        onSecondaryContainer = androidx.compose.ui.graphics.Color.White,
-                        tertiary = androidx.compose.ui.graphics.Color.Black,
-                        onTertiary = androidx.compose.ui.graphics.Color.White,
-                        tertiaryContainer = androidx.compose.ui.graphics.Color.Black,
-                        onTertiaryContainer = androidx.compose.ui.graphics.Color.White,
-                        surfaceVariant = androidx.compose.ui.graphics.Color.White,
-                        onSurfaceVariant = androidx.compose.ui.graphics.Color.Black,
-                        outline = androidx.compose.ui.graphics.Color.Black,
-                        outlineVariant = androidx.compose.ui.graphics.Color.Black
-                    )
+            PaperUITheme {
+                CompositionLocalProvider(
+                    LocalDatabase provides database,
+                    LocalDownloadUtil provides downloadUtil,
+                    LocalSyncUtils provides syncUtils,
+                    LocalPlayerConnection provides playerConnection,
+                    LocalPlayerAwareWindowInsets provides WindowInsets.systemBars,
                 ) {
-                    CompositionLocalProvider(
-                        LocalDatabase provides database,
-                        LocalDownloadUtil provides downloadUtil,
-                        LocalSyncUtils provides syncUtils,
-                        LocalPlayerConnection provides playerConnection,
-                        LocalPlayerAwareWindowInsets provides WindowInsets.systemBars,
-                    ) {
-                        EinkApp()
-                    }
+                    EinkApp()
                 }
             }
         }

@@ -166,23 +166,15 @@ fun EinkYouTubeArtistScreen(
             pagerState = pagerState,
             titles = tabOptions,
             coroutineScope = coroutineScope,
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        TextMMD(
-            text = artistName,
-            fontSize = 32.sp,
-            fontWeight = FontWeight.Bold,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 8.dp)
+            modifier = Modifier.fillMaxWidth(),
+            screenTitle = artistName
         )
 
         com.paperapps.paperui.components.PanoramaPager(
             state = pagerState,
             modifier = Modifier.weight(1f)
         ) { page ->
-            LazyColumn(contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp)) {
+            LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(end = 16.dp)) {
 
                 // ── Local tab ─────────────────────────────────────────────────────────────────
                 if (page == TAB_LOCAL) {
