@@ -26,7 +26,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.LibraryAdd
 import androidx.compose.material.icons.outlined.LibraryAddCheck
-import androidx.compose.material.icons.outlined.Pause
 import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material.icons.outlined.PlaylistAdd
 import androidx.compose.material.icons.outlined.Repeat
@@ -74,6 +73,7 @@ import moe.rukamori.archivetune.LocalPlayerConnection
 import moe.rukamori.archivetune.extensions.togglePlayPause
 import moe.rukamori.archivetune.utils.makeTimeString
 import moe.rukamori.archivetune.eink.components.EinkAddToPlaylistDialog
+import moe.rukamori.archivetune.eink.components.OutlinedPause
 
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.net.toUri
@@ -89,6 +89,10 @@ import moe.rukamori.archivetune.LocalDownloadUtil
 import moe.rukamori.archivetune.extensions.metadata
 import moe.rukamori.archivetune.models.MediaMetadata
 import moe.rukamori.archivetune.playback.ExoDownloadService
+import com.paperapps.paperui.components.AppbarMenuItem
+import moe.rukamori.archivetune.eink.einkYouTubeArtistDetailsRoute
+import moe.rukamori.archivetune.eink.EinkScreen
+import moe.rukamori.archivetune.playback.queues.YouTubeQueue
 
 @Composable
 fun EinkNowPlayingScreen(navController: NavController) {
@@ -143,7 +147,7 @@ fun EinkNowPlayingScreen(navController: NavController) {
             if (page == 0) {
                 Column(
                     modifier = Modifier
-                        .fillMaxSize().padding(end = 16.dp),
+                        .fillMaxSize(),
                     verticalArrangement = Arrangement.SpaceBetween,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
@@ -258,7 +262,7 @@ fun EinkNowPlayingScreen(navController: NavController) {
                             modifier = Modifier.size(72.dp)
                         ) {
                             Icon(
-                                imageVector = if (isPlaying) Icons.Outlined.Pause else Icons.Outlined.PlayArrow,
+                                imageVector = if (isPlaying) OutlinedPause else Icons.Outlined.PlayArrow,
                                 contentDescription = if (isPlaying) "Pause" else "Play",
                                 modifier = Modifier.size(46.dp),
                             )
@@ -278,7 +282,7 @@ fun EinkNowPlayingScreen(navController: NavController) {
                 }
             } else {
                 PaperLazyColumn(
-                    modifier = Modifier.fillMaxSize().padding(end = 16.dp),
+                    modifier = Modifier.fillMaxSize(),
                     refreshKey = queueWindows,
                 ) {
                     itemsIndexed(queueWindows) { index, window ->
@@ -365,22 +369,54 @@ fun EinkNowPlayingScreen(navController: NavController) {
                             }
                         }
                     }
-                ),
-                AppbarAction(
-                    icon = Icons.Outlined.PlaylistAdd,
-                    label = "Playlist",
-                    onClick = {
-                        if (mediaMetadata != null) {
-                            showAddToPlaylistDialog = true
-                        }
-                    }
-                ),
-                AppbarAction(
-                    icon = Icons.AutoMirrored.Filled.ArrowBack,
-                    label = "Back",
-                    onClick = { navController.navigateUp() }
                 )
-            )
+            ),
+            menuItems = buildList {
+                add(
+                    AppbarMenuItem(
+                        label = "Add to Playlist",
+                        onClick = {
+                            if (mediaMetadata != null) {
+                                showAddToPlaylistDialog = true
+                            }
+                        }
+                    )
+                )
+                val artistId = mediaMetadata?.artists?.firstOrNull()?.id
+                if (artistId != null) {
+                    add(
+                        AppbarMenuItem(
+                            label = "View Artist",
+                            onClick = {
+                                navController.navigate(einkYouTubeArtistDetailsRoute(artistId))
+                            }
+                        )
+                    )
+                }
+                val albumId = mediaMetadata?.album?.id
+                if (albumId != null) {
+                    add(
+                        AppbarMenuItem(
+                            label = "View Album",
+                            onClick = {
+                                navController.navigate("${EinkScreen.AlbumDetails.route}/${albumId}")
+                            }
+                        )
+                    )
+                }
+                if (mediaMetadata != null) {
+                    add(
+                        AppbarMenuItem(
+                            label = "Start Radio",
+                            onClick = {
+                                playerConnection.playQueue(YouTubeQueue.radio(mediaMetadata!!))
+                            }
+                        )
+                    )
+                }
+            },
+            pagerState = pagerState,
+            onBack = { navController.navigateUp() }
         )
     }
 

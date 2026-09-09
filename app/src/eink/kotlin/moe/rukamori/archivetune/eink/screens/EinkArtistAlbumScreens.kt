@@ -22,6 +22,7 @@ import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Shuffle
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -86,7 +87,7 @@ fun EinkArtistsScreen(
                 modifier = Modifier.fillMaxSize(),
             )
         } else {
-            PaperLazyColumn(modifier = Modifier.fillMaxSize().padding(end = 16.dp), refreshKey = artists) {
+            PaperLazyColumn(modifier = Modifier.fillMaxSize(), refreshKey = artists) {
                 itemsIndexed(
                     items = artists,
                     key = { _, artist -> artist.id },
@@ -125,7 +126,7 @@ fun EinkAlbumsScreen(
                 modifier = Modifier.fillMaxSize(),
             )
         } else {
-            PaperLazyColumn(modifier = Modifier.fillMaxSize().padding(end = 16.dp), refreshKey = albums) {
+            PaperLazyColumn(modifier = Modifier.fillMaxSize(), refreshKey = albums) {
                 itemsIndexed(
                     items = albums,
                     key = { _, album -> album.id },
@@ -187,7 +188,7 @@ fun EinkArtistDetailsScreen(
                         modifier = Modifier.fillMaxSize(),
                     )
                 } else {
-                    PaperLazyColumn(modifier = Modifier.fillMaxSize().padding(end = 16.dp), refreshKey = songs) {
+                    PaperLazyColumn(modifier = Modifier.fillMaxSize(), refreshKey = songs) {
                         itemsIndexed(
                             items = songs,
                             key = { _, song -> song.id },
@@ -231,7 +232,7 @@ fun EinkArtistDetailsScreen(
                         modifier = Modifier.fillMaxSize(),
                     )
                 } else {
-                    PaperLazyColumn(modifier = Modifier.fillMaxSize().padding(end = 16.dp), refreshKey = albums) {
+                    PaperLazyColumn(modifier = Modifier.fillMaxSize(), refreshKey = albums) {
                         itemsIndexed(
                             items = albums,
                             key = { _, album -> album.id },
@@ -272,7 +273,9 @@ fun EinkArtistDetailsScreen(
                 )
             ),
             menuItems = emptyList(),
-            leftSlot = { EinkNowPlayingButton(navController) }
+            leftSlot = { EinkNowPlayingButton(navController) },
+            pagerState = pagerState,
+            onBack = { navController.navigateUp() }
         )
     }
 }
@@ -342,7 +345,7 @@ fun EinkAlbumDetailsScreen(
                                     )
                                 } else {
                                     PaperLazyColumn(
-                                        modifier = Modifier.weight(1f).fillMaxWidth().padding(end = 16.dp),
+                                        modifier = Modifier.weight(1f).fillMaxWidth(),
                                         refreshKey = songs,
                                     ) {
                                         itemsIndexed(
@@ -383,7 +386,7 @@ fun EinkAlbumDetailsScreen(
                                 }
                             }
                         } else {
-                            PaperLazyColumn(modifier = Modifier.fillMaxSize().padding(end = 16.dp), refreshKey = album) {
+                            PaperLazyColumn(modifier = Modifier.fillMaxSize(), refreshKey = album) {
                                 if (album != null) {
                                     item(key = "album_info") {
                                         Column(modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)) {
@@ -445,40 +448,51 @@ fun EinkAlbumDetailsScreen(
                         }
                     }
 
-                    if (songs.isNotEmpty()) {
-                        FloatingActionButtonMMD(
-                            modifier = Modifier
-                                .align(Alignment.BottomEnd)
-                                .padding(16.dp),
+                }
+            }
+        }
+
+        com.paperapps.paperui.components.ApplicationBar(
+            actions = buildList {
+                val artist = album?.artists?.firstOrNull()
+                if (artist != null) {
+                    add(
+                        com.paperapps.paperui.components.AppbarAction(
+                            icon = Icons.Outlined.Person,
+                            label = "Artist",
                             onClick = {
+                                if (artist.channelId != null) {
+                                    navController.navigate(moe.rukamori.archivetune.eink.einkYouTubeArtistDetailsRoute(artist.channelId))
+                                } else {
+                                    navController.navigate(moe.rukamori.archivetune.eink.einkArtistDetailsRoute(artist.id))
+                                }
+                            }
+                        )
+                    )
+                }
+
+                add(
+                    com.paperapps.paperui.components.AppbarAction(
+                        icon = Icons.Outlined.Shuffle,
+                        label = "Shuffle",
+                        onClick = {
+                            if (songs.isNotEmpty()) {
                                 playerConnection.playQueue(
                                     ListQueue(
                                         title = albumTitle.ifBlank { "Album" },
                                         items = songs.shuffled().map { it.toMediaItem() },
                                     ),
                                 )
-                            },
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.Shuffle,
-                                contentDescription = "Shuffle album",
-                            )
+                                navController.navigate(moe.rukamori.archivetune.eink.EinkScreen.NowPlaying.route)
+                            }
                         }
-                    }
-                }
-            }
-        }
-
-        com.paperapps.paperui.components.ApplicationBar(
-            actions = listOf(
-                com.paperapps.paperui.components.AppbarAction(
-                    icon = Icons.AutoMirrored.Outlined.ArrowBack,
-                    label = "Back",
-                    onClick = { navController.navigateUp() }
+                    )
                 )
-            ),
+            },
             menuItems = emptyList(),
-            leftSlot = { moe.rukamori.archivetune.eink.components.EinkNowPlayingButton(navController) }
+            leftSlot = { moe.rukamori.archivetune.eink.components.EinkNowPlayingButton(navController) },
+            pagerState = pagerState,
+            onBack = { navController.navigateUp() }
         )
     }
 }

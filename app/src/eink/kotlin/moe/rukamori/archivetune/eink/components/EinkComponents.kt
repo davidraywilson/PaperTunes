@@ -47,6 +47,8 @@ import androidx.media3.exoplayer.offline.Download
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.graphics.vector.path
+import androidx.compose.ui.graphics.SolidColor
 import com.mudita.mmd.components.checkbox.CheckboxMMD
 import com.mudita.mmd.components.menus.DropdownMenuMMD
 import com.mudita.mmd.components.progress_indicator.CircularProgressIndicatorMMD
@@ -343,3 +345,40 @@ fun playlistSubtitle(playlist: Playlist): String {
     val count = playlist.songCount
     return if (count == 1) "1 song" else "$count songs"
 }
+
+val OutlinedPause: ImageVector
+    get() = ImageVector.Builder(
+        name = "Outlined.Pause",
+        defaultWidth = 24.dp,
+        defaultHeight = 24.dp,
+        viewportWidth = 24f,
+        viewportHeight = 24f
+    ).apply {
+        path(fill = SolidColor(Color.Black)) {
+            // Left bar outer
+            moveTo(5f, 5f)
+            horizontalLineToRelative(6f)
+            verticalLineToRelative(14f)
+            horizontalLineTo(5f)
+            close()
+            // Inner left hole (counter-clockwise)
+            moveTo(7f, 17f)
+            horizontalLineToRelative(2f)
+            verticalLineTo(7f)
+            horizontalLineTo(7f)
+            close()
+            
+            // Right bar outer
+            moveTo(13f, 5f)
+            horizontalLineToRelative(6f)
+            verticalLineToRelative(14f)
+            horizontalLineTo(13f)
+            close()
+            // Inner right hole (counter-clockwise)
+            moveTo(15f, 17f)
+            horizontalLineToRelative(2f)
+            verticalLineTo(7f)
+            horizontalLineTo(15f)
+            close()
+        }
+    }.build()

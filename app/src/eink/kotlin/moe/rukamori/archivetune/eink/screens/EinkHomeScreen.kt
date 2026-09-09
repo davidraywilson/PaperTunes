@@ -84,14 +84,15 @@ fun EinkHomeScreen(
                 icon = Icons.Outlined.Search,
                 label = "Search",
                 onClick = { navController.navigate(EinkScreen.Search.route) }
-            ),
-            AppbarAction(
-                icon = Icons.Outlined.Download,
+            )
+        )
+
+        val baseMenuItems = listOf(
+            com.paperapps.paperui.components.AppbarMenuItem(
                 label = "Downloads",
                 onClick = { navController.navigate(EinkScreen.Downloads.route) }
             ),
-            AppbarAction(
-                icon = Icons.Outlined.Settings,
+            com.paperapps.paperui.components.AppbarMenuItem(
                 label = "Settings",
                 onClick = { navController.navigate(EinkScreen.Settings.route) }
             )
@@ -109,7 +110,8 @@ fun EinkHomeScreen(
             } else {
                 baseActions
             },
-            menuItems = emptyList(), // Can add playlist edit actions here based on current page
+            menuItems = baseMenuItems,
+            pagerState = pagerState,
             leftSlot = { EinkNowPlayingButton(navController) }
         )
     }

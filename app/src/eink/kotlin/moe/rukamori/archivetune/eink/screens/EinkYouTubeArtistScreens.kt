@@ -174,7 +174,7 @@ fun EinkYouTubeArtistScreen(
             state = pagerState,
             modifier = Modifier.weight(1f)
         ) { page ->
-            PaperLazyColumn(modifier = Modifier.fillMaxSize().padding(end = 16.dp)) {
+            PaperLazyColumn(modifier = Modifier.fillMaxSize()) {
 
                 // ── Local tab ─────────────────────────────────────────────────────────────────
                 if (page == TAB_LOCAL) {

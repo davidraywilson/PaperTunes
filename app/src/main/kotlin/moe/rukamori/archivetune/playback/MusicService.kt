@@ -71,6 +71,7 @@ import androidx.media3.datasource.TransferListener
 import androidx.media3.datasource.cache.Cache
 import androidx.media3.datasource.cache.CacheDataSource
 import androidx.media3.datasource.cache.CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR
+import androidx.media3.datasource.cache.CacheDataSource.FLAG_IGNORE_CACHE_FOR_UNSET_LENGTH_REQUESTS
 import androidx.media3.datasource.cache.ContentMetadata
 import androidx.media3.datasource.cache.SimpleCache
 import androidx.media3.datasource.okhttp.OkHttpDataSource
@@ -5727,7 +5728,7 @@ class MusicService :
                 if (!cacheWriteEnabled) {
                     setCacheWriteDataSinkFactory(null)
                 }
-            }.setFlags(FLAG_IGNORE_CACHE_ON_ERROR)
+            }.setFlags(FLAG_IGNORE_CACHE_ON_ERROR or FLAG_IGNORE_CACHE_FOR_UNSET_LENGTH_REQUESTS)
 
     private fun createCacheDataSource(): CacheDataSource.Factory =
         CacheDataSource
@@ -5740,7 +5741,7 @@ class MusicService :
                     ).createDataSource()
                 },
             ).setCacheWriteDataSinkFactory(null)
-            .setFlags(FLAG_IGNORE_CACHE_ON_ERROR)
+            .setFlags(FLAG_IGNORE_CACHE_ON_ERROR or FLAG_IGNORE_CACHE_FOR_UNSET_LENGTH_REQUESTS)
 
     private fun createDataSourceFactory(): DataSource.Factory {
         val cachedFactory =
@@ -5791,7 +5792,7 @@ class MusicService :
             audioNormalizationFactorCache[mediaId] = calculateAudioNormalizationFactor(format, normalizeAudio = true)
         }
         val knownContentLength =
-            contentLengthCache[mediaId] ?: storedFormat?.contentLength?.takeIf { it > 0L } ?: runCatching {
+            runCatching {
                 downloadCache
                     .getContentMetadata(mediaId)
                     .get(ContentMetadata.KEY_CONTENT_LENGTH, -1L)
@@ -5799,7 +5800,7 @@ class MusicService :
                 playerCache
                     .getContentMetadata(mediaId)
                     .get(ContentMetadata.KEY_CONTENT_LENGTH, -1L)
-            }.getOrNull()?.takeIf { it > 0L } ?: runCatching {
+            }.getOrNull()?.takeIf { it > 0L } ?: contentLengthCache[mediaId] ?: storedFormat?.contentLength?.takeIf { it > 0L } ?: runCatching {
                 // Fallback: derive content length from cached download spans so that
                 // fully-downloaded songs can short-circuit even when cache metadata
                 // did not record KEY_CONTENT_LENGTH (e.g. chunked YouTube responses).
@@ -5834,7 +5835,7 @@ class MusicService :
                     playerCache.isCached(mediaId, dataSpec.position, requiredCachedLength)
             if (isFullyCached) {
                 scope.launch(Dispatchers.IO) { recoverSong(mediaId) }
-                return dataSpec
+                return dataSpec.subrange(0L, requiredCachedLength)
             }
         }
 

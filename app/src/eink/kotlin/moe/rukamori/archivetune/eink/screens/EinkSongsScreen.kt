@@ -94,7 +94,7 @@ fun EinkSongsScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(end = 16.dp, bottom = 8.dp)
+                .padding(bottom = 8.dp)
         ) {
             FilterChipMMD(
                 onClick = { selectedTab = 0 },
@@ -160,7 +160,7 @@ fun EinkSongsScreen(
                     modifier = Modifier.fillMaxSize(),
                 )
             } else {
-                PaperLazyColumn(modifier = Modifier.fillMaxSize().padding(end = 16.dp), refreshKey = displaySongs) {
+                PaperLazyColumn(modifier = Modifier.fillMaxSize(), refreshKey = displaySongs) {
                     itemsIndexed(
                         items = displaySongs,
                         key = { _, song -> song.id },

@@ -323,7 +323,7 @@ fun EinkPlaylistsScreen(
         } else {
             Column(modifier = Modifier.fillMaxSize()) {
                 PaperLazyColumn(
-                    modifier = Modifier.weight(1f).fillMaxWidth().padding(end = 16.dp),
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
                     refreshKey = playlists,
                 ) {
                     itemsIndexed(
@@ -504,7 +504,7 @@ fun EinkPlaylistDetailsScreen(
                     )
                 } else {
                     PaperLazyColumn(
-                        modifier = Modifier.weight(1f).fillMaxWidth().padding(end = 16.dp),
+                        modifier = Modifier.weight(1f).fillMaxWidth(),
                         refreshKey = songs,
                     ) {
                         itemsIndexed(
@@ -597,7 +597,9 @@ fun EinkPlaylistDetailsScreen(
                     onClick = onPlaylistAutoDownloadToggle
                 ),
             ),
-            leftSlot = { EinkNowPlayingButton(navController) }
+            leftSlot = { EinkNowPlayingButton(navController) },
+            pagerState = pagerState,
+            onBack = { navController.navigateUp() }
         )
     }
 }
@@ -624,7 +626,7 @@ fun EinkPlaylistEditScreen(
                 )
             } else {
                 PaperLazyColumn(
-                    modifier = Modifier.weight(1f).fillMaxWidth().padding(end = 16.dp),
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
                     refreshKey = songs,
                 ) {
                     itemsIndexed(
@@ -713,7 +715,7 @@ fun EinkPlaylistAddSongsScreen(
                 )
             } else {
                 PaperLazyColumn(
-                    modifier = Modifier.weight(1f).fillMaxWidth().padding(end = 16.dp),
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
                     refreshKey = songs,
                 ) {
                     itemsIndexed(

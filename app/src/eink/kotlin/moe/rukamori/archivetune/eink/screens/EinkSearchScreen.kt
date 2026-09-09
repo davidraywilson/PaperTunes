@@ -246,15 +246,11 @@ fun EinkSearchScreen(
         }
         
         ApplicationBar(
-            actions = listOf(
-                AppbarAction(
-                    icon = Icons.AutoMirrored.Filled.ArrowBack,
-                    label = "Back",
-                    onClick = { navController.navigateUp() }
-                )
-            ),
+            actions = emptyList(),
             menuItems = emptyList(),
-            leftSlot = { EinkNowPlayingButton(navController) }
+            leftSlot = { EinkNowPlayingButton(navController) },
+            pagerState = pagerState,
+            onBack = { navController.navigateUp() }
         )
     }
 }
@@ -276,7 +272,7 @@ private fun SongResults(
         )
         return
     }
-    PaperLazyColumn(modifier = Modifier.fillMaxSize().padding(end = 16.dp), refreshKey = songs) {
+    PaperLazyColumn(modifier = Modifier.fillMaxSize(), refreshKey = songs) {
         itemsIndexed(
             items = songs,
             key = { _, song -> song.id },
@@ -308,7 +304,7 @@ private fun AlbumResults(
         )
         return
     }
-    PaperLazyColumn(modifier = Modifier.fillMaxSize().padding(end = 16.dp), refreshKey = albums) {
+    PaperLazyColumn(modifier = Modifier.fillMaxSize(), refreshKey = albums) {
         itemsIndexed(
             items = albums,
             key = { _, album -> album.id },
