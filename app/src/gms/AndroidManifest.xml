@@ -2,10 +2,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application>
         <activity
-            android:name="moe.rukamori.archivetune.discord.DiscordOAuthCallbackActivity"
+            android:name="moe.rukamori.papertunes.discord.DiscordOAuthCallbackActivity"
             android:exported="true"
             android:noHistory="true"
-            android:theme="@style/Theme.ArchiveTune">
+            android:theme="@style/Theme.PaperTunes">
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
 

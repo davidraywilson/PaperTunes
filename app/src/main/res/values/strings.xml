@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Upstream InnerTune strings --><!-- Do not add new features here --><!-- Try to re-use strings here, but be careful on its usage e.g. verb vs noun --><!-- "InnerTune" is replaced with "ArchiveTune" --><!-- Translators: Do not modify this file for translations, use InnerTune's Weblate instead. --><resources>
+<!-- Upstream InnerTune strings --><!-- Do not add new features here --><!-- Try to re-use strings here, but be careful on its usage e.g. verb vs noun --><!-- "InnerTune" is replaced with "PaperTunes" --><!-- Translators: Do not modify this file for translations, use InnerTune's Weblate instead. --><resources>
     <!-- Bottom navigation -->
     <string name="home">Home</string>
     <string name="songs">Songs</string>
@@ -86,7 +86,7 @@
     <string name="library_top_mixes_refresh">Refresh mixes</string>
     <string name="library_top_mixes_configure_ai">Configure AI</string>
     <string name="library_top_mixes_ai_not_configured_title">Configure AI to build mixes</string>
-    <string name="library_top_mixes_ai_not_configured_desc">AI integration is required before ArchiveTune can build personal top mixes.</string>
+    <string name="library_top_mixes_ai_not_configured_desc">AI integration is required before PaperTunes can build personal top mixes.</string>
     <string name="library_top_mixes_no_recent_history_title">No recent listening mix yet</string>
     <string name="library_top_mixes_no_recent_history">Listen to more songs, then refresh to build AI mixes from your recent history.</string>
     <string name="library_top_mixes_no_valid_mixes">AI did not return any playable mixes from your recent history.</string>
@@ -162,7 +162,7 @@
     <string name="play">Play</string>
     <string name="widget_pause">Pause</string>
     <string name="widget_previous">Previous</string>
-    <string name="widget_tap_to_open">Tap to open ArchiveTune</string>
+    <string name="widget_tap_to_open">Tap to open PaperTunes</string>
     <string name="play_next">Play next</string>
     <string name="add_to_queue">Add to queue</string>
     <string name="add_to_library">Add to library</string>
@@ -471,9 +471,9 @@
     <string name="custom_value">Custom value</string>
     <string name="new_library_design">New library design</string>
     <string name="new_library_design_description">Enable the new library design (may be unstable)</string>
-    <string name="archivetune_canvas">ArchiveTune Canvas</string>
-    <string name="archivetune_canvas_desc">Animate album artwork while playing (Powered by BetterLyrics)</string>
-    <string name="archivetune_canvas_v7_desc">Unavailable with the Immersive player style</string>
+    <string name="papertunes_canvas">PaperTunes Canvas</string>
+    <string name="papertunes_canvas_desc">Animate album artwork while playing (Powered by BetterLyrics)</string>
+    <string name="papertunes_canvas_v7_desc">Unavailable with the Immersive player style</string>
     <string name="player_background_style_v8_v9_desc">Unavailable with V8 and V9 player styles</string>
     <string name="show_button1_description">Toggle visibility of button 1 in Discord Rich Presence</string>
     <string name="show_button2_description">Toggle visibility of button 2 in Discord Rich Presence</string>
@@ -534,9 +534,9 @@
     <string name="not_logged_in">Not logged in</string>
     <string name="login_failed">Login failed</string>
     <string name="playback_confirmation_required">Playback confirmation required</string>
-    <string name="playback_requires_youtube_music_confirmation">Confirm playback in YouTube Music, then return to ArchiveTune.</string>
+    <string name="playback_requires_youtube_music_confirmation">Confirm playback in YouTube Music, then return to PaperTunes.</string>
     <string name="playback_login_refresh_required">Refresh YouTube Music login</string>
-    <string name="playback_requires_youtube_music_login_refresh">Refresh your YouTube Music login, then return to ArchiveTune.</string>
+    <string name="playback_requires_youtube_music_login_refresh">Refresh your YouTube Music login, then return to PaperTunes.</string>
     <string name="could_not_open_youtube_music">Could not open YouTube Music</string>
     <string name="content_language">Default content language</string>
     <string name="content_country">Default content country</string>
@@ -710,12 +710,12 @@
     <string name="restore_failed">Failed to restore backup</string>
     <string name="discord_integration">Discord Integration</string>
     <string name="account_integrations_summary">Discord, Last.fm, Libre.fm, ListenBrainz</string>
-    <string name="discord_login_description">Connect your Discord account with OAuth so ArchiveTune can publish Rich Presence.</string>
+    <string name="discord_login_description">Connect your Discord account with OAuth so PaperTunes can publish Rich Presence.</string>
     <string name="discord_open_authorization">Open Discord authorization</string>
     <string name="discord_waiting_for_authorization">Waiting for Discord authorization...</string>
     <string name="discord_authorization_success">Discord account connected</string>
     <string name="discord_authorization_failed">Discord authorization failed</string>
-    <string name="discord_account_ready">ArchiveTune is ready to publish Rich Presence for your listening session.</string>
+    <string name="discord_account_ready">PaperTunes is ready to publish Rich Presence for your listening session.</string>
     <string name="discord_reauthorize_required_title">Discord session expired</string>
     <string name="discord_reauthorize_required_description">Rich Presence cannot be shown until you authorize Discord again.</string>
     <string name="discord_reauthorize_action">Reauthorize</string>
@@ -825,9 +825,9 @@
     <string name="select_language">Select Language</string>
     <string name="close_dialog">Close</string>
     <string name="select_dialog">Select</string>
-    <string name="support_github">Star ArchiveTune!</string>
+    <string name="support_github">Star PaperTunes!</string>
     <string name="support_development_title">Support development</string>
-    <string name="support_development_message">Hey there! I\'m Koiverse, the developer of ArchiveTune. If ArchiveTune has earned a place in your daily listening, you can help keep it moving forward by donating or starring the project on GitHub. Thanks for supporting the work behind the app.</string>
+    <string name="support_development_message">Hey there! I\'m Koiverse, the developer of PaperTunes. If PaperTunes has earned a place in your daily listening, you can help keep it moving forward by donating or starring the project on GitHub. Thanks for supporting the work behind the app.</string>
     <string name="support_development_donate">Donate to support development</string>
     <string name="support_development_star">Star on GitHub</string>
     <string name="later">Later</string>
@@ -950,10 +950,10 @@
     <string name="update_notification_channel_name">App Updates</string>
     <string name="update_notification_channel_desc">Notifications for new app updates</string>
     <string name="update_notification_title">Update Available</string>
-    <string name="update_notification_text">ArchiveTune %s is now available</string>
+    <string name="update_notification_text">PaperTunes %s is now available</string>
     <string name="download">Download</string>
 
-    <string name="permissions_title">Allow ArchiveTune to work best</string>
+    <string name="permissions_title">Allow PaperTunes to work best</string>
     <string name="permissions_subtitle">We use a few permissions to play and manage your music reliably. You can change these anytime in system settings.</string>
     <string name="permission_storage_title">Storage access</string>
     <string name="permission_storage_desc">Required to read your downloaded and local audio files for playback.</string>
@@ -973,7 +973,7 @@
     <string name="playlist_suggestion_source_content">Playlist content</string>
     <string name="playlist_suggestion_source_both">Playlist title and content</string>
 
-    <string name="music_together">ArchiveTune Music Together</string>
+    <string name="music_together">PaperTunes Music Together</string>
     <string name="together_display_name">Display name</string>
     <string name="together_display_name_placeholder">Your name</string>
     <string name="together_port">Session port</string>
@@ -1031,10 +1031,10 @@
 
     <string name="got_it">Got it</string>
     <string name="together_dont_show_again">Don\'t show this again</string>
-    <string name="together_welcome_title">Welcome to ArchiveTune Music Together</string>
+    <string name="together_welcome_title">Welcome to PaperTunes Music Together</string>
     <string name="together_welcome_body">Music Together lets multiple devices share a live session with a synced queue and playback.</string>
     <string name="together_welcome_host_title">Host a session</string>
-    <string name="together_welcome_host_body">Tap Start session, then share the session link. Keep ArchiveTune open in the background while hosting.</string>
+    <string name="together_welcome_host_body">Tap Start session, then share the session link. Keep PaperTunes open in the background while hosting.</string>
     <string name="together_welcome_join_title">Join from another device</string>
     <string name="together_welcome_join_body">Open the shared link, or enter code and tap Join. Your queue and playback will follow the host.</string>
     <string name="together_welcome_permissions_title">Permissions and safety</string>
@@ -1066,7 +1066,7 @@
     <string name="no_visitor_data">No visitor data available. Tokens cannot be generated.</string>
     <string name="extracting_from_url">Extracting tokens from URL</string>
     <string name="po_token_account_notice_title">Use the same account</string>
-    <string name="po_token_account_notice_body">Sign in here with the same Google account that you already use for YouTube Music inside ArchiveTune before generating a PO token.</string>
+    <string name="po_token_account_notice_body">Sign in here with the same Google account that you already use for YouTube Music inside PaperTunes before generating a PO token.</string>
     <string name="po_token_account_notice_same_account">If this WebView uses a different account, the generated token will not work correctly.</string>
     <string name="po_token_account_notice_mismatch">Use the matching account, finish the sign-in flow, then open youtube.com/account and generate the token from that page.</string>
     <string name="saved_accounts">Saved accounts</string>

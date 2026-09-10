@@ -1,8 +1,8 @@
 <div align="center">
 
-  <img src="https://github.com/ArchiveTuneApp/ArchiveTune/blob/main/fastlane/metadata/android/en-US/images/icon.png" width="160" height="160" alt="ArchiveTune Logo" style="border-radius: 22%">
+  <img src="https://github.com/PaperTunesApp/PaperTunes/blob/main/fastlane/metadata/android/en-US/images/icon.png" width="160" height="160" alt="PaperTunes Logo" style="border-radius: 22%">
 
-  <h1>ArchiveTune</h1>
+  <h1>PaperTunes</h1>
 
   <p align="center">
     <a href="README.md">
@@ -20,38 +20,38 @@
   </p>
 
   <p align="center">
-    <a href="https://archivetune.koiiverse.cloud"><b>Official Website</b></a> •
+    <a href="https://papertunes.koiiverse.cloud"><b>Official Website</b></a> •
     <a href="#features"><b>Features</b></a> •
-    <a href="https://archivetune.koiiverse.cloud/privacy"><b>Privacy</b></a> •
+    <a href="https://papertunes.koiiverse.cloud/privacy"><b>Privacy</b></a> •
     <a href="#download-now"><b>Download</b></a> •
     <a href="#screenshots"><b>Screenshots</b></a> •
-    <a href="https://github.com/ArchiveTuneApp/ArchiveTune/issues/new/choose"><b>Support</b></a>
+    <a href="https://github.com/PaperTunesApp/PaperTunes/issues/new/choose"><b>Support</b></a>
   </p>
 
   <div align="center">
-    <img src="https://img.shields.io/github/v/release/ArchiveTuneApp/ArchiveTune?style=for-the-badge&color=6366f1&labelColor=1e1e2e&logo=github" alt="Latest Version" />
-    <img src="https://img.shields.io/github/downloads/ArchiveTuneApp/ArchiveTune/total?style=for-the-badge&color=6366f1&labelColor=1e1e2e&logo=github" alt="Downloads" />
-    <img src="https://img.shields.io/github/stars/ArchiveTuneApp/ArchiveTune?style=for-the-badge&color=6366f1&labelColor=1e1e2e&logo=github" alt="Stars" />
-    <img src="https://img.shields.io/github/license/ArchiveTuneApp/ArchiveTune?style=for-the-badge&color=6366f1&labelColor=1e1e2e" alt="License" />
+    <img src="https://img.shields.io/github/v/release/PaperTunesApp/PaperTunes?style=for-the-badge&color=6366f1&labelColor=1e1e2e&logo=github" alt="Latest Version" />
+    <img src="https://img.shields.io/github/downloads/PaperTunesApp/PaperTunes/total?style=for-the-badge&color=6366f1&labelColor=1e1e2e&logo=github" alt="Downloads" />
+    <img src="https://img.shields.io/github/stars/PaperTunesApp/PaperTunes?style=for-the-badge&color=6366f1&labelColor=1e1e2e&logo=github" alt="Stars" />
+    <img src="https://img.shields.io/github/license/PaperTunesApp/PaperTunes?style=for-the-badge&color=6366f1&labelColor=1e1e2e" alt="License" />
     <img src="https://img.shields.io/badge/Architecture-MVVM-6366f1?style=for-the-badge&labelColor=1e1e2e&logo=kotlin" alt="MVVM Architecture" />
     <img src="https://img.shields.io/badge/Language-Kotlin-7f52ff?style=for-the-badge&logo=kotlin&color=6366f1&labelColor=1e1e2e" alt="Kotlin Language" />
     <img src="https://img.shields.io/badge/Toolkit-Jetpack_Compose-4285f4?style=for-the-badge&logo=jetpack-compose&color=6366f1&labelColor=1e1e2e" alt="Jetpack Compose Toolkit" />
     <img src="https://img.shields.io/badge/Design-Material_3-000000?style=for-the-badge&logo=material-design&color=6366f1&labelColor=1e1e2e" alt="Material Design 3" />
     <a href="https://www.virustotal.com/gui/file/176bea37aff02a606d04ff0a61478fabdb0bd079f9e97319645452af420e5d84/detection/f-176bea37aff02a606d04ff0a61478fabdb0bd079f9e97319645452af420e5d84-1778840479" target="_blank"><img src="https://img.shields.io/badge/VirusTotal-SAFE-green?style=for-the-badge&logo=virustotal&logoColor=white&labelColor=1e1e2e&color=5865F2" alt="VirusTotal" /></a>
-    <a href="https://t.me/ArchiveTuneGC"><img src="https://img.shields.io/badge/Telegram-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white" alt="Telegram" /></a>
+    <a href="https://t.me/PaperTunesGC"><img src="https://img.shields.io/badge/Telegram-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white" alt="Telegram" /></a>
     <a href="https://discord.gg/XF2fpb9rTq"><img src="https://img.shields.io/badge/Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord" /></a>
   </div>
   
   <br />
 
   <a href="https://trendshift.io/repositories/17521" target="_blank">
-    <img src="https://trendshift.io/api/badge/repositories/17521" alt="ArchiveTune | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/>
+    <img src="https://trendshift.io/api/badge/repositories/17521" alt="PaperTunes | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/>
   </a>
 </div>
 
 <hr />
 
-**ArchiveTune** isn’t just another generic YouTube Music wrapper. It’s a fully custom-built player made from the ground up, because we think your music should stay private, look clean, and work exactly the way you expect. If you care about sound quality and want something that actually feels good to use, this is it.
+**PaperTunes** isn’t just another generic YouTube Music wrapper. It’s a fully custom-built player made from the ground up, because we think your music should stay private, look clean, and work exactly the way you expect. If you care about sound quality and want something that actually feels good to use, this is it.
 
 ---
 
@@ -64,15 +64,15 @@
 
 <div align="center">
 
-<img src="https://github.com/ArchiveTuneApp/ArchiveTune/blob/main/fastlane/metadata/android/en-US/images/phoneScreenshots/screenshot_1.jpg" alt="Browse" width="30%" />
-<img src="https://github.com/ArchiveTuneApp/ArchiveTune/blob/main/fastlane/metadata/android/en-US/images/phoneScreenshots/screenshot_2.jpg" alt="Live Lyrics" width="30%" />
-<img src="https://github.com/ArchiveTuneApp/ArchiveTune/blob/main/fastlane/metadata/android/en-US/images/phoneScreenshots/screenshot_3.jpg" alt="Theme Customization" width="30%" />
-<img src="https://github.com/ArchiveTuneApp/ArchiveTune/blob/main/fastlane/metadata/android/en-US/images/phoneScreenshots/screenshot_4.jpg" alt="Live Statistics" width="30%" />
-<img src="https://github.com/ArchiveTuneApp/ArchiveTune/blob/main/fastlane/metadata/android/en-US/images/phoneScreenshots/screenshot_5.jpg" alt="Artist" width="30%" />
-<img src="https://github.com/ArchiveTuneApp/ArchiveTune/blob/main/fastlane/metadata/android/en-US/images/phoneScreenshots/screenshot_6.jpg" alt="Album" width="30%" />
-<img src="https://github.com/ArchiveTuneApp/ArchiveTune/blob/main/fastlane/metadata/android/en-US/images/phoneScreenshots/screenshot_7.jpg" alt="Player" width="30%" />
-<img src="https://github.com/ArchiveTuneApp/ArchiveTune/blob/main/fastlane/metadata/android/en-US/images/phoneScreenshots/screenshot_8.jpg" alt="Settings" width="30%" />
-<img src="https://github.com/ArchiveTuneApp/ArchiveTune/blob/main/fastlane/metadata/android/en-US/images/phoneScreenshots/screenshot_9.jpg" alt="Settings" width="30%" />
+<img src="https://github.com/PaperTunesApp/PaperTunes/blob/main/fastlane/metadata/android/en-US/images/phoneScreenshots/screenshot_1.jpg" alt="Browse" width="30%" />
+<img src="https://github.com/PaperTunesApp/PaperTunes/blob/main/fastlane/metadata/android/en-US/images/phoneScreenshots/screenshot_2.jpg" alt="Live Lyrics" width="30%" />
+<img src="https://github.com/PaperTunesApp/PaperTunes/blob/main/fastlane/metadata/android/en-US/images/phoneScreenshots/screenshot_3.jpg" alt="Theme Customization" width="30%" />
+<img src="https://github.com/PaperTunesApp/PaperTunes/blob/main/fastlane/metadata/android/en-US/images/phoneScreenshots/screenshot_4.jpg" alt="Live Statistics" width="30%" />
+<img src="https://github.com/PaperTunesApp/PaperTunes/blob/main/fastlane/metadata/android/en-US/images/phoneScreenshots/screenshot_5.jpg" alt="Artist" width="30%" />
+<img src="https://github.com/PaperTunesApp/PaperTunes/blob/main/fastlane/metadata/android/en-US/images/phoneScreenshots/screenshot_6.jpg" alt="Album" width="30%" />
+<img src="https://github.com/PaperTunesApp/PaperTunes/blob/main/fastlane/metadata/android/en-US/images/phoneScreenshots/screenshot_7.jpg" alt="Player" width="30%" />
+<img src="https://github.com/PaperTunesApp/PaperTunes/blob/main/fastlane/metadata/android/en-US/images/phoneScreenshots/screenshot_8.jpg" alt="Settings" width="30%" />
+<img src="https://github.com/PaperTunesApp/PaperTunes/blob/main/fastlane/metadata/android/en-US/images/phoneScreenshots/screenshot_9.jpg" alt="Settings" width="30%" />
 
 </div>
 
@@ -183,13 +183,13 @@
   <tbody>
     <tr>
       <td align="center">
-        <a href="https://apps.obtainium.imranr.dev/redirect?r=obtainium://add/https://github.com/ArchiveTuneApp/ArchiveTune/">
-          <img src="https://github.com/ImranR98/Obtainium/blob/main/assets/graphics/badge_obtainium.png" height="50" alt="Get ArchiveTune on Obtainium">
+        <a href="https://apps.obtainium.imranr.dev/redirect?r=obtainium://add/https://github.com/PaperTunesApp/PaperTunes/">
+          <img src="https://github.com/ImranR98/Obtainium/blob/main/assets/graphics/badge_obtainium.png" height="50" alt="Get PaperTunes on Obtainium">
         </a>
       </td>
       <td align="center">
-        <a href="https://apt.izzysoft.de/fdroid/index/apk/moe.rukamori.archivetune">
-          <img src="https://raw.githubusercontent.com/ArchiveTuneApp/ArchiveTune/757d5932832e1da27ced56de98c5ad1275cf0db1/assets/IzzyOnDroidButtonBorder.svg" height="50" alt="Get ArchiveTune on IzzyOnDroid">
+        <a href="https://apt.izzysoft.de/fdroid/index/apk/moe.rukamori.papertunes">
+          <img src="https://raw.githubusercontent.com/PaperTunesApp/PaperTunes/757d5932832e1da27ced56de98c5ad1275cf0db1/assets/IzzyOnDroidButtonBorder.svg" height="50" alt="Get PaperTunes on IzzyOnDroid">
         </a>
       </td>
     </tr>
@@ -198,8 +198,8 @@
     </tr>
     <tr>
       <td align="center" colspan="2">
-        <a href="https://github.com/ArchiveTuneApp/ArchiveTune/releases/latest">
-          <img src="https://raw.githubusercontent.com/ArchiveTuneApp/ArchiveTune/refs/heads/main/assets/badge_github.png" height="50" alt="Get ArchiveTune on GitHub">
+        <a href="https://github.com/PaperTunesApp/PaperTunes/releases/latest">
+          <img src="https://raw.githubusercontent.com/PaperTunesApp/PaperTunes/refs/heads/main/assets/badge_github.png" height="50" alt="Get PaperTunes on GitHub">
         </a>
       </td>
     </tr>
@@ -209,13 +209,13 @@
     </tr>
     <tr>
       <td align="center">
-        <a href="https://www.openapk.net/archivetune/moe.rukamori.archivetune/">
-          <img src="https://www.openapk.net/images/openapk-badge.png" height="75" alt="Get ArchiveTune on OpenAPK">
+        <a href="https://www.openapk.net/papertunes/moe.rukamori.papertunes/">
+          <img src="https://www.openapk.net/images/openapk-badge.png" height="75" alt="Get PaperTunes on OpenAPK">
         </a>
       </td>
       <td align="center">
-        <a href="https://unclouded.app/apps/archivetune/">
-          <img src="https://raw.githubusercontent.com/ArchiveTuneApp/ArchiveTune/refs/heads/dev/assets/badge_unclouded.png" height="50" alt="Get ArchiveTune on Unclouded">
+        <a href="https://unclouded.app/apps/papertunes/">
+          <img src="https://raw.githubusercontent.com/PaperTunesApp/PaperTunes/refs/heads/dev/assets/badge_unclouded.png" height="50" alt="Get PaperTunes on Unclouded">
         </a>
       </td>
     </tr>
@@ -233,8 +233,8 @@
   <tbody>
     <tr>
       <td align="center">
-        <a href="https://nightly.link/ArchiveTuneApp/ArchiveTune/workflows/build/dev/app-mobile-universal-release">
-          <img src="https://raw.githubusercontent.com/ArchiveTuneApp/ArchiveTune/refs/heads/main/assets/badge_github.png" height="50" alt="Download the latest ArchiveTune nightly build">
+        <a href="https://nightly.link/PaperTunesApp/PaperTunes/workflows/build/dev/app-mobile-universal-release">
+          <img src="https://raw.githubusercontent.com/PaperTunesApp/PaperTunes/refs/heads/main/assets/badge_github.png" height="50" alt="Download the latest PaperTunes nightly build">
         </a>
       </td>
     </tr>
@@ -248,37 +248,37 @@
 ## ❓ Need Help or Have Questions?
 Join Our Telegram Channels or Discord Servers for Support and Discussion.
 
-[![Telegram](https://img.shields.io/badge/Telegram-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/ArchiveTuneGC)
+[![Telegram](https://img.shields.io/badge/Telegram-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/PaperTunesGC)
 [![Discord](https://img.shields.io/badge/Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/XF2fpb9rTq)
 
 ---
 
 ## 🌍 Globalization
 
-ArchiveTune belongs to everyone. Help us localize the experience for your region.
+PaperTunes belongs to everyone. Help us localize the experience for your region.
 
-[![Static Badge](https://img.shields.io/badge/translate-help?style=for-the-badge&logo=weblate&labelColor=grey)](https://translate.codeberg.org/engage/archivetune/)
+[![Static Badge](https://img.shields.io/badge/translate-help?style=for-the-badge&logo=weblate&labelColor=grey)](https://translate.codeberg.org/engage/papertunes/)
 
 <div align="center">
-  <a href="https://translate.codeberg.org/engage/archivetune/">
-    <img src="https://translate.codeberg.org/widget/archivetune/horizontal-blue.svg" alt="Translation status" />
+  <a href="https://translate.codeberg.org/engage/papertunes/">
+    <img src="https://translate.codeberg.org/widget/papertunes/horizontal-blue.svg" alt="Translation status" />
   </a>
 </div>
 
 ### ✨ Project Contributors
-<a href="https://github.com/ArchiveTuneApp/ArchiveTune/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=ArchiveTuneApp/ArchiveTune&columns=6" />
+<a href="https://github.com/PaperTunesApp/PaperTunes/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=PaperTunesApp/PaperTunes&columns=6" />
 </a>
 
 ### 🛠️ Development & Engineering
-Interested in building the project or contributing? ArchiveTune is built on a high-performance Kotlin stack.
+Interested in building the project or contributing? PaperTunes is built on a high-performance Kotlin stack.
 <a href="CONTRIBUTING.md"><b>Read the Build & Contribution Guide →</b></a>
 
 ---
 
 ### Open-Source Acknowledgments
 
-ArchiveTune is made possible by the work of many open-source projects and communities:
+PaperTunes is made possible by the work of many open-source projects and communities:
 
 - **Metrolist** by [Mostafa Alagamy](https://github.com/mostafaalagamy/Metrolist) for the base framework.
 - **SimpMusic** by [maxrave-dev](https://github.com/maxrave-dev/SimpMusic) for the lyrics API provider.
@@ -291,7 +291,7 @@ ArchiveTune is made possible by the work of many open-source projects and commun
 
 ## ⚖️ Legal Disclaimer
 
-ArchiveTune is an independent third-party client.
+PaperTunes is an independent third-party client.
 - Not affiliated with Google LLC or YouTube.
 - Does not bypass YouTube's technical protections.
 - Users are encouraged to support artists by purchasing music via official channels.
@@ -299,8 +299,8 @@ ArchiveTune is an independent third-party client.
 ---
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/ArchiveTuneApp/ArchiveTune/refs/heads/dev/fastlane/metadata/android/en-US/images/ArchiveTuneFull.png" alt="ArchiveTune Banner" style="width: 100%; max-width: 500px;">
-  <p><b>If ArchiveTune elevated your music experience, please consider giving us a ⭐</b></p>
+  <img src="https://raw.githubusercontent.com/PaperTunesApp/PaperTunes/refs/heads/dev/fastlane/metadata/android/en-US/images/PaperTunesFull.png" alt="PaperTunes Banner" style="width: 100%; max-width: 500px;">
+  <p><b>If PaperTunes elevated your music experience, please consider giving us a ⭐</b></p>
   <br />
-  <img src="https://raw.githubusercontent.com/ArchiveTuneApp/ArchiveTune/refs/heads/dev/assets/badge_part.png" alt="ArchiveTune Banner" style="width: 160px">
+  <img src="https://raw.githubusercontent.com/PaperTunesApp/PaperTunes/refs/heads/dev/assets/badge_part.png" alt="PaperTunes Banner" style="width: 160px">
 </div>

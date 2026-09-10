@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Upstream InnerTune strings --><!-- Do not add new features here --><!-- Try to re-use strings here, but be careful on its usage e.g. verb vs noun --><!-- "InnerTune" is replaced with "ArchiveTune" --><!-- Translators: Do not modify this file for translations, use InnerTune's Weblate instead. --><resources>
+<!-- Upstream InnerTune strings --><!-- Do not add new features here --><!-- Try to re-use strings here, but be careful on its usage e.g. verb vs noun --><!-- "InnerTune" is replaced with "PaperTunes" --><!-- Translators: Do not modify this file for translations, use InnerTune's Weblate instead. --><resources>
     <!-- Bottom navigation -->
     <string name="home">Home</string>
     <string name="songs">Lieder</string>
@@ -481,7 +481,7 @@
     <string name="select_language">Wählen Sie Sprache aus</string>
     <string name="close_dialog">Schließen</string>
     <string name="select_dialog">Wählen</string>
-    <string name="support_github">Star ArchiveTune!</string>
+    <string name="support_github">Star PaperTunes!</string>
     <!-- Update dialog -->
     <string name="new_update_available">Neues Update verfügbar</string>
     <string name="release_notes_unavailable">Versionshinweise sind nicht verfügbar</string>

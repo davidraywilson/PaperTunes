@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Upstream InnerTune strings --><!-- Do not add new features here --><!-- Try to re-use strings here, but be careful on its usage e.g. verb vs noun --><!-- "InnerTune" is replaced with "ArchiveTune" --><!-- Translators: Do not modify this file for translations, use InnerTune's Weblate instead. --><resources>
+<!-- Upstream InnerTune strings --><!-- Do not add new features here --><!-- Try to re-use strings here, but be careful on its usage e.g. verb vs noun --><!-- "InnerTune" is replaced with "PaperTunes" --><!-- Translators: Do not modify this file for translations, use InnerTune's Weblate instead. --><resources>
     <!-- Bottom navigation -->
     <string name="home">Accueil</string>
     <string name="songs">Titres</string>
@@ -492,7 +492,7 @@
     <string name="select_language">Sélectionner la langue</string>
     <string name="close_dialog">Fermer</string>
     <string name="select_dialog">Sélectionner</string>
-    <string name="support_github">Évaluez ArchiveTune !</string>
+    <string name="support_github">Évaluez PaperTunes !</string>
     <!-- Update dialog -->
     <string name="new_update_available">Nouvelle mise à jour disponible</string>
     <string name="release_notes_unavailable">Les notes de version ne sont pas disponibles</string>
@@ -573,7 +573,7 @@
     <string name="update_notification_channel_name">Mises à jour de l\'application</string>
     <string name="update_notification_channel_desc">Notifications pour les nouvelles mises à jour de l\'application</string>
     <string name="update_notification_title">Mise à jour disponible</string>
-    <string name="update_notification_text">ArchiveTune %s est désormais disponible</string>
+    <string name="update_notification_text">PaperTunes %s est désormais disponible</string>
     <string name="download">Télécharger</string>
     <string name="added_to_playlist">Ajouté à %s</string>
     <string name="added_n_songs_to_playlist">Ajout de %1$d titres à %2$s</string>
@@ -581,7 +581,7 @@
     <string name="added_n_songs_to_n_playlists">Ajout de %1$d titres à %2$d playlists</string>
     <string name="smart_trimmer">Smart Trimmer</string>
     <string name="smart_trimmer_description">Smart Trimmer gère de manière dynamique le cache d\'images et le cache des titres, en supprimant les anciennes entrées afin d\'économiser de l\'espace disque.</string>
-    <string name="permissions_title">Permettre à ArchiveTune de fonctionner de manière optimale</string>
+    <string name="permissions_title">Permettre à PaperTunes de fonctionner de manière optimale</string>
     <string name="permissions_subtitle">Nous utilisons quelques autorisations pour lire et gérer votre musique de manière fiable. Vous pouvez les modifier à tout moment dans les paramètres système.</string>
     <string name="permission_storage_title">Accès au stockage</string>
     <string name="permission_storage_desc">Nécessaire pour lire vos fichiers audio téléchargés et locaux en vue de leur lecture.</string>
@@ -646,9 +646,9 @@
     <string name="pitch">Pas</string>
     <string name="pitch_mode_semitones_short">dt</string>
     <string name="pitch_mode_multiplier_short">x</string>
-    <string name="archivetune_canvas_desc">Animer les pochettes d\'album pendant la lecture (technologie BetterLyrics)</string>
+    <string name="papertunes_canvas_desc">Animer les pochettes d\'album pendant la lecture (technologie BetterLyrics)</string>
     <string name="restore_success">Sauvegarde restaurée avec succès</string>
-    <string name="archivetune_canvas">ArchiveTune Canvas</string>
+    <string name="papertunes_canvas">PaperTunes Canvas</string>
     <string name="change_playlist_cover">Changer la couverture de la playlist</string>
     <string name="remove_playlist_cover">Retirer la couverture</string>
     <string name="together_participants">Participants</string>
@@ -674,7 +674,7 @@
     <string name="no_releases">Aucune version disponible</string>
     <string name="you_might_like">Vous pourriez aimer</string>
     <string name="refresh_suggestions">Actualiser les suggestions</string>
-    <string name="music_together">ArchiveTune Music Together</string>
+    <string name="music_together">PaperTunes Music Together</string>
     <string name="together_display_name">Nom d\'affichage</string>
     <string name="together_display_name_placeholder">Votre nom</string>
     <string name="together_port">Port de session</string>
@@ -729,10 +729,10 @@
     <string name="together_error_state">Erreur</string>
     <string name="got_it">Compris</string>
     <string name="together_dont_show_again">Ne plus afficher ce message</string>
-    <string name="together_welcome_title">Bienvenue sur ArchiveTune Music Together</string>
+    <string name="together_welcome_title">Bienvenue sur PaperTunes Music Together</string>
     <string name="together_welcome_body">Music Together permet à plusieurs appareils de partager une session en direct avec une file d\'attente et une lecture synchronisées.</string>
     <string name="together_welcome_host_title">Organiser une session</string>
-    <string name="together_welcome_host_body">Appuyez sur « Démarrer la session », puis partagez le lien de la session. Laissez ArchiveTune ouvert en arrière-plan pendant l\'hébergement.</string>
+    <string name="together_welcome_host_body">Appuyez sur « Démarrer la session », puis partagez le lien de la session. Laissez PaperTunes ouvert en arrière-plan pendant l\'hébergement.</string>
     <string name="together_welcome_join_title">Se connecter depuis un autre appareil</string>
     <string name="together_welcome_join_body">Ouvrez le lien partagé ou saisissez le code et appuyez sur Rejoindre. Votre file d\'attente et la lecture suivront celle de l\'hôte.</string>
     <string name="together_welcome_permissions_title">Autorisations et sécurité</string>
@@ -789,9 +789,9 @@
     <string name="blur_intensity">Intensité du flou</string>
     <string name="blur_intensity_value">%1$d dp</string>
     <string name="playback_confirmation_required">Confirmation de lecture requise</string>
-    <string name="playback_requires_youtube_music_confirmation">Confirmez la lecture dans YouTube Music, puis retournez dans ArchiveTune.</string>
+    <string name="playback_requires_youtube_music_confirmation">Confirmez la lecture dans YouTube Music, puis retournez dans PaperTunes.</string>
     <string name="playback_login_refresh_required">Actualiser la connexion à YouTube Music</string>
-    <string name="playback_requires_youtube_music_login_refresh">Actualisez votre connexion YouTube Music, puis retournez sur ArchiveTune.</string>
+    <string name="playback_requires_youtube_music_login_refresh">Actualisez votre connexion YouTube Music, puis retournez sur PaperTunes.</string>
     <string name="wakelock">Maintenir le processeur actif pendant la lecture</string>
     <string name="wakelock_desc">Empêche le système d\'interrompre la lecture musicale en maintenant un verrou de réveil du processeur</string>
     <string name="external_downloader">Téléchargeur Externe</string>
@@ -802,9 +802,9 @@
     <string name="external_downloader_not_installed">L\'application de téléchargement externe n\'est pas installée</string>
     <string name="external_downloader_not_configured">Aucun téléchargeur externe n\'est configuré. Configurez-en un dans Paramètres → Lecteur.</string>
     <string name="open_youtube_music">Ouvrir YouTube Music</string>
-    <string name="archivetune_canvas_v7_desc">Non disponible avec le style de lecteur immersif</string>
+    <string name="papertunes_canvas_v7_desc">Non disponible avec le style de lecteur immersif</string>
     <string name="po_token_account_notice_title">Utiliser le même compte</string>
-    <string name="po_token_account_notice_body">Connectez-vous ici avec le même compte Google que celui que vous utilisez déjà pour YouTube Music dans ArchiveTune avant de générer un jeton PO.</string>
+    <string name="po_token_account_notice_body">Connectez-vous ici avec le même compte Google que celui que vous utilisez déjà pour YouTube Music dans PaperTunes avant de générer un jeton PO.</string>
     <string name="po_token_account_notice_same_account">Si cette WebView utilise un autre compte, le jeton généré ne fonctionnera pas correctement.</string>
     <string name="po_token_account_notice_mismatch">Utilisez le compte correspondant, terminez la procédure de connexion, puis ouvrez youtube.com/account et générez le jeton à partir de cette page.</string>
     <string name="mood_and_genres_supporting">Écoutez en fonction de vos sensations, de l\'époque ou de l\'énergie</string>
@@ -869,7 +869,7 @@
     <string name="aod_mode_exit">Quitter AOD</string>
     <string name="error_malformed_stream">Erreur source</string>
     <string name="support_development_title">Soutenir le développement</string>
-    <string name="support_development_message">Salut ! Je m\'appelle Koiverse, je suis le développeur d\'ArchiveTune. Si ArchiveTune fait désormais partie de vos habitudes d\'écoute quotidiennes, vous pouvez contribuer à son développement en faisant un don ou en ajoutant le projet à vos favoris sur GitHub. Merci de soutenir le travail qui se cache derrière cette application.</string>
+    <string name="support_development_message">Salut ! Je m\'appelle Koiverse, je suis le développeur d\'PaperTunes. Si PaperTunes fait désormais partie de vos habitudes d\'écoute quotidiennes, vous pouvez contribuer à son développement en faisant un don ou en ajoutant le projet à vos favoris sur GitHub. Merci de soutenir le travail qui se cache derrière cette application.</string>
     <string name="support_development_donate">Faites un don pour soutenir le développement</string>
     <string name="support_development_star">Ajouter à vos favoris sur GitHub</string>
     <string name="later">Plus tard</string>
@@ -917,7 +917,7 @@
     <string name="year_sort">Année</string>
     <string name="discord_activity_type_watching_label">Regarder</string>
     <string name="newest_first">Du plus récent au plus ancien</string>
-    <string name="discord_account_ready">ArchiveTune est prêt à publier Rich Presence pour votre séance d\'écoute.</string>
+    <string name="discord_account_ready">PaperTunes est prêt à publier Rich Presence pour votre séance d\'écoute.</string>
     <string name="discord_connection_settings">Connexion</string>
     <string name="no_saved_accounts">Aucun compte enregistré pour l\'instant</string>
     <string name="recent_requests">Demandes récentes</string>
@@ -943,7 +943,7 @@
     <string name="display">Affichage</string>
     <string name="youtube_synced">Synchronisé avec YouTube</string>
     <string name="your_collection">Votre Collection</string>
-    <string name="discord_login_description">Connectez votre compte Discord via OAuth afin qu\'ArchiveTune puisse publier des informations de présence enrichies.</string>
+    <string name="discord_login_description">Connectez votre compte Discord via OAuth afin qu\'PaperTunes puisse publier des informations de présence enrichies.</string>
     <string name="personal_label">Personnel</string>
     <string name="lyrics_animation_style_v2_only">Disponible uniquement en mode paroles V2</string>
     <string name="discord_platform_ios">iOS</string>
@@ -985,7 +985,7 @@
     <string name="discord_platform_embedded">Intégré</string>
     <string name="lyrics_mode_v2">V2 Legacy</string>
     <string name="saved_accounts">Comptes enregistrés</string>
-    <string name="widget_tap_to_open">Appuyez pour ouvrir ArchiveTune</string>
+    <string name="widget_tap_to_open">Appuyez pour ouvrir PaperTunes</string>
     <string name="discord_refresh_failed">Échec de l\'actualisation de la présence sur Discord</string>
     <string name="top_artist_badge">MEILLEUR ARTISTE</string>
     <string name="youtube_channels">Chaînes YouTube</string>

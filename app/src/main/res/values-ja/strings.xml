@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Upstream InnerTune strings --><!-- Do not add new features here --><!-- Try to re-use strings here, but be careful on its usage e.g. verb vs noun --><!-- "InnerTune" is replaced with "ArchiveTune" --><!-- Translators: Do not modify this file for translations, use InnerTune's Weblate instead. --><resources>
+<!-- Upstream InnerTune strings --><!-- Do not add new features here --><!-- Try to re-use strings here, but be careful on its usage e.g. verb vs noun --><!-- "InnerTune" is replaced with "PaperTunes" --><!-- Translators: Do not modify this file for translations, use InnerTune's Weblate instead. --><resources>
     <!-- Bottom navigation -->
     <string name="home">ホーム</string>
     <string name="songs">歌</string>
@@ -435,9 +435,9 @@
     <string name="custom_value">カスタム値</string>
     <string name="new_library_design">新しいライブラリのデザイン</string>
     <string name="new_library_design_description">新しいライブラリ設計を有効にします (不安定になる可能性があります)</string>
-    <string name="archivetune_canvas">アーカイブチューン キャンバス</string>
-    <string name="archivetune_canvas_desc">再生中にアルバムのアートワークをアニメーション化 (Powered by BetterLyrics)</string>
-    <string name="archivetune_canvas_v7_desc">イマーシブ プレーヤー スタイルでは利用できません</string>
+    <string name="papertunes_canvas">アーカイブチューン キャンバス</string>
+    <string name="papertunes_canvas_desc">再生中にアルバムのアートワークをアニメーション化 (Powered by BetterLyrics)</string>
+    <string name="papertunes_canvas_v7_desc">イマーシブ プレーヤー スタイルでは利用できません</string>
     <string name="show_button1_description">Discord リッチ プレゼンスのボタン 1 の表示を切り替えます</string>
     <string name="show_button2_description">Discord リッチ プレゼンスのボタン 2 の表示を切り替えます</string>
     <string name="discord_activity_type">アクティビティの種類</string>
@@ -493,9 +493,9 @@
     <string name="not_logged_in">ログインしていません</string>
     <string name="login_failed">ログインに失敗しました</string>
     <string name="playback_confirmation_required">再生確認が必要です</string>
-    <string name="playback_requires_youtube_music_confirmation">YouTube Music で再生を確認し、ArchiveTune に戻ります。</string>
+    <string name="playback_requires_youtube_music_confirmation">YouTube Music で再生を確認し、PaperTunes に戻ります。</string>
     <string name="playback_login_refresh_required">YouTube Music のログインを更新する</string>
-    <string name="playback_requires_youtube_music_login_refresh">YouTube Music のログインを更新してから、ArchiveTune に戻ります。</string>
+    <string name="playback_requires_youtube_music_login_refresh">YouTube Music のログインを更新してから、PaperTunes に戻ります。</string>
     <string name="content_language">デフォルトのコンテンツ言語</string>
     <string name="content_country">デフォルトのコンテンツの国</string>
     <string name="system_default">システムのデフォルト</string>
@@ -710,7 +710,7 @@
     <string name="select_dialog">選択</string>
     <string name="support_github">スターアーカイブチューン！</string>
     <string name="support_development_title">サポート開発</string>
-    <string name="support_development_message">ちょっと、そこ！ ArchiveTune の開発者、Koiverse です。 ArchiveTune が毎日のリスニングに活用されている場合は、GitHub でプロジェクトに寄付したりスターを付けたりすることで、ArchiveTune を前進させることができます。アプリの開発にご協力いただきありがとうございます。</string>
+    <string name="support_development_message">ちょっと、そこ！ PaperTunes の開発者、Koiverse です。 PaperTunes が毎日のリスニングに活用されている場合は、GitHub でプロジェクトに寄付したりスターを付けたりすることで、PaperTunes を前進させることができます。アプリの開発にご協力いただきありがとうございます。</string>
     <string name="support_development_donate">開発をサポートするために寄付する</string>
     <string name="support_development_star">GitHub でスターを付ける</string>
     <string name="later">後で</string>
@@ -829,9 +829,9 @@
     <string name="update_notification_channel_name">アプリのアップデート</string>
     <string name="update_notification_channel_desc">新しいアプリのアップデートの通知</string>
     <string name="update_notification_title">利用可能なアップデート</string>
-    <string name="update_notification_text">ArchiveTune %s が利用可能になりました</string>
+    <string name="update_notification_text">PaperTunes %s が利用可能になりました</string>
     <string name="download">ダウンロード</string>
-    <string name="permissions_title">ArchiveTune が最適に動作するようにします</string>
+    <string name="permissions_title">PaperTunes が最適に動作するようにします</string>
     <string name="permissions_subtitle">音楽を確実に再生および管理するために、いくつかの権限を使用します。これらはシステム設定でいつでも変更できます。</string>
     <string name="permission_storage_title">ストレージアクセス</string>
     <string name="permission_storage_desc">ダウンロードしたローカルのオーディオ ファイルを再生のために読み取るために必要です。</string>
@@ -906,10 +906,10 @@
     <string name="together_error_state">エラー</string>
     <string name="got_it">わかりました</string>
     <string name="together_dont_show_again">これを二度と表示しないでください</string>
-    <string name="together_welcome_title">ArchiveTune Music Together へようこそ</string>
+    <string name="together_welcome_title">PaperTunes Music Together へようこそ</string>
     <string name="together_welcome_body">Music Together を使用すると、複数のデバイスが同期されたキューと再生を使用してライブ セッションを共有できます。</string>
     <string name="together_welcome_host_title">セッションを主催する</string>
-    <string name="together_welcome_host_body">[セッションの開始] をタップし、セッション リンクを共有します。ホスティング中は、ArchiveTune をバックグラウンドで開いたままにしてください。</string>
+    <string name="together_welcome_host_body">[セッションの開始] をタップし、セッション リンクを共有します。ホスティング中は、PaperTunes をバックグラウンドで開いたままにしてください。</string>
     <string name="together_welcome_join_title">別のデバイスから参加する</string>
     <string name="together_welcome_join_body">共有リンクを開くか、コードを入力して「参加」をタップします。キューと再生はホストに従います。</string>
     <string name="together_welcome_permissions_title">許可と安全性</string>
@@ -940,7 +940,7 @@
     <string name="no_visitor_data">利用可能な訪問者データはありません。トークンは生成できません。</string>
     <string name="extracting_from_url">URL からトークンを抽出しています…</string>
     <string name="po_token_account_notice_title">同じアカウントを使用する</string>
-    <string name="po_token_account_notice_body">PO トークンを生成する前に、ArchiveTune 内で YouTube Music にすでに使用しているのと同じ Google アカウントでここにサインインします。</string>
+    <string name="po_token_account_notice_body">PO トークンを生成する前に、PaperTunes 内で YouTube Music にすでに使用しているのと同じ Google アカウントでここにサインインします。</string>
     <string name="po_token_account_notice_same_account">この WebView が別のアカウントを使用している場合、生成されたトークンは正しく機能しません。</string>
     <string name="po_token_account_notice_mismatch">一致するアカウントを使用してサインイン フローを完了し、youtube.com/account を開いてそのページからトークンを生成します。</string>
     <string name="saved_accounts">保存されたアカウント</string>
@@ -950,7 +950,7 @@
     <string name="album_name">アルバム名</string>
     <string name="app_icon">アプリアイコン</string>
     <string name="could_not_open_youtube_music">YouTube Music を開けませんでした</string>
-    <string name="discord_account_ready">ArchiveTune はあなたのリスニングセッションの Rich Presence を公開する準備ができています。</string>
+    <string name="discord_account_ready">PaperTunes はあなたのリスニングセッションの Rich Presence を公開する準備ができています。</string>
     <string name="discord_activity_content">アクティビティコンテンツ</string>
     <string name="discord_activity_type_competing_label">競技中</string>
     <string name="discord_activity_type_listening_label">再生中</string>
@@ -967,7 +967,7 @@
     <string name="discord_interval_unit_hours">時間</string>
     <string name="discord_interval_unit_minutes">分</string>
     <string name="discord_interval_unit_seconds">秒</string>
-    <string name="discord_login_description">Discord アカウントを OAuth で接続して、ArchiveTune が Discord の公式 Social SDK を通じて Rich Presence を公開できるようにします。</string>
+    <string name="discord_login_description">Discord アカウントを OAuth で接続して、PaperTunes が Discord の公式 Social SDK を通じて Rich Presence を公開できるようにします。</string>
     <string name="discord_open_authorization">Discord 認証を開く</string>
     <string name="discord_platform_android">Android</string>
     <string name="discord_platform_desktop">デスクトップ</string>
@@ -993,7 +993,7 @@
     <string name="player_background_style_v8_v9_desc">V8 および V9 プレーヤースタイルでは使用できません</string>
     <string name="widget_pause">一時停止</string>
     <string name="widget_previous">前へ</string>
-    <string name="widget_tap_to_open">タップして ArchiveTune を開く</string>
+    <string name="widget_tap_to_open">タップして PaperTunes を開く</string>
     <string name="album_backdrop">背景ブラー</string>
     <string name="album_backdrop_desc">プレーヤーにアートワークをぼかした背景として表示</string>
     <string name="backdrop_blur_amount">背景ブラーの量</string>
