@@ -33,7 +33,7 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import moe.rukamori.archivetune.R
+import com.paperapps.papertunes.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

@@ -15,7 +15,7 @@ import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpStatusCode
 import moe.rukamori.archivetune.App
-import moe.rukamori.archivetune.BuildConfig
+import com.paperapps.papertunes.BuildConfig
 import moe.rukamori.archivetune.constants.DailyNightlyReleasesEtagKey
 import moe.rukamori.archivetune.constants.DailyNightlyReleasesFingerprintKey
 import moe.rukamori.archivetune.constants.DailyNightlyReleasesJsonKey

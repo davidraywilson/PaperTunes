@@ -42,7 +42,7 @@ import androidx.glance.state.PreferencesGlanceStateDefinition
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
-import moe.rukamori.archivetune.R
+import com.paperapps.papertunes.R
 
 /**
  * Now Playing Card widget — a landscape 4×2 card with a full-height artwork column,

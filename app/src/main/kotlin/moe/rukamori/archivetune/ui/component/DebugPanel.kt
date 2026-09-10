@@ -11,7 +11,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.painterResource
-import moe.rukamori.archivetune.R
+import com.paperapps.papertunes.R
 
 /**
  * Returns a `Material3SettingsItem` that can be placed inside a `Material3SettingsGroup`.

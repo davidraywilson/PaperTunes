@@ -8,6 +8,8 @@
 @file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
 
 package moe.rukamori.archivetune
+import com.paperapps.papertunes.BuildConfig
+import com.paperapps.papertunes.R
 
 import android.Manifest
 import android.annotation.SuppressLint
@@ -2550,8 +2552,8 @@ class MainActivity : ComponentActivity() {
     }
 
     companion object {
-        const val ACTION_SEARCH = "moe.rukamori.archivetune.action.SEARCH"
-        const val ACTION_LIBRARY = "moe.rukamori.archivetune.action.LIBRARY"
+        const val ACTION_SEARCH = "com.paperapps.papertunes.action.SEARCH"
+        const val ACTION_LIBRARY = "com.paperapps.papertunes.action.LIBRARY"
     }
 }
 

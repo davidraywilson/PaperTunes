@@ -17,7 +17,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import moe.rukamori.archivetune.BuildConfig
+import com.paperapps.papertunes.BuildConfig
 import moe.rukamori.archivetune.constants.DiscordAvatarUrlKey
 import moe.rukamori.archivetune.constants.DiscordNameKey
 import moe.rukamori.archivetune.constants.DiscordRefreshTokenKey

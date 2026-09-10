@@ -252,7 +252,7 @@ fun EinkNowPlayingScreen(navController: NavController) {
                         ) {
                             Icon(
                                 imageVector = Icons.Outlined.SkipPrevious,
-                                contentDescription = "Previous Song",
+                                contentDescription = "Previous Song", tint = androidx.compose.ui.graphics.Color.Black,
                                 modifier = Modifier.size(46.dp),
                             )
                         }
@@ -263,7 +263,7 @@ fun EinkNowPlayingScreen(navController: NavController) {
                         ) {
                             Icon(
                                 imageVector = if (isPlaying) OutlinedPause else Icons.Outlined.PlayArrow,
-                                contentDescription = if (isPlaying) "Pause" else "Play",
+                                contentDescription = if (isPlaying) "Pause" else "Play", tint = androidx.compose.ui.graphics.Color.Black,
                                 modifier = Modifier.size(46.dp),
                             )
                         }
@@ -274,7 +274,7 @@ fun EinkNowPlayingScreen(navController: NavController) {
                         ) {
                             Icon(
                                 imageVector = Icons.Outlined.SkipNext,
-                                contentDescription = "Next Song",
+                                contentDescription = "Next Song", tint = androidx.compose.ui.graphics.Color.Black,
                                 modifier = Modifier.size(46.dp),
                             )
                         }
@@ -449,7 +449,7 @@ private fun EinkQueueRow(
             if (isCurrentlyPlaying) {
                 Icon(
                     imageVector = Icons.Outlined.Headphones,
-                    contentDescription = "Now playing",
+                    contentDescription = "Now playing", tint = androidx.compose.ui.graphics.Color.Black,
                     modifier = Modifier
                         .size(24.dp)
                         .padding(start = 4.dp),

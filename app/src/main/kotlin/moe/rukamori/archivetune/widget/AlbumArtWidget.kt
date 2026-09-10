@@ -40,7 +40,7 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
-import moe.rukamori.archivetune.R
+import com.paperapps.papertunes.R
 
 class AlbumArtWidget : GlanceAppWidget() {
     override val stateDefinition = PreferencesGlanceStateDefinition

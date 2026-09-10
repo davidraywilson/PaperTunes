@@ -22,6 +22,9 @@ import androidx.navigation.compose.composable
 import androidx.compose.material3.Scaffold
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import androidx.compose.runtime.getValue
+import moe.rukamori.archivetune.eink.screens.EinkOnboardingScreen
+import moe.rukamori.archivetune.utils.rememberPreference
 import moe.rukamori.archivetune.eink.components.EinkAutoDownloadObserver
 import moe.rukamori.archivetune.eink.screens.EinkAlbumDetailsScreen
 import moe.rukamori.archivetune.eink.screens.EinkArtistDetailsScreen
@@ -51,28 +54,30 @@ fun einkYouTubeArtistDetailsRoute(artistId: String) = "${EinkScreen.YouTubeArtis
 @Composable
 fun EinkApp() {
     val navController = rememberNavController()
+    val isOnboardingCompleted by rememberPreference(EinkOnboardingCompletedKey, false)
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(androidx.compose.ui.graphics.Color.White)
     ) {
         EinkAutoDownloadObserver()
-        Scaffold { innerPadding ->
+        Scaffold(containerColor = androidx.compose.ui.graphics.Color.White, contentColor = androidx.compose.ui.graphics.Color.Black) { innerPadding ->
             Box(
                 modifier = Modifier
                     .padding(bottom = innerPadding.calculateBottomPadding())
                     .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.background)
+                    .background(androidx.compose.ui.graphics.Color.White)
             ) {
                 NavHost(
                     navController = navController,
-                    startDestination = "home",
+                    startDestination = if (isOnboardingCompleted) "home" else "onboarding",
                     enterTransition = { EnterTransition.None },
                     exitTransition = { ExitTransition.None },
                     popEnterTransition = { EnterTransition.None },
                     popExitTransition = { ExitTransition.None },
                 ) {
+                    composable("onboarding") { EinkOnboardingScreen(navController) }
                     composable("home") { EinkHomeScreen(navController) }
                     composable(EinkScreen.More.route) { EinkMoreScreen(navController) }
                     composable(EinkScreen.Settings.route) { EinkSettingsScreen(navController) }

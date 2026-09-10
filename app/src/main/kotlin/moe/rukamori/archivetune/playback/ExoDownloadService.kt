@@ -22,7 +22,7 @@ import androidx.media3.exoplayer.offline.DownloadService
 import androidx.media3.exoplayer.scheduler.PlatformScheduler
 import androidx.media3.exoplayer.scheduler.Scheduler
 import dagger.hilt.android.AndroidEntryPoint
-import moe.rukamori.archivetune.R
+import com.paperapps.papertunes.R
 import javax.inject.Inject
 
 @AndroidEntryPoint

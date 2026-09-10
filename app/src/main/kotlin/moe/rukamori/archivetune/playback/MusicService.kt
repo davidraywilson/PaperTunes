@@ -8,6 +8,7 @@
 @file:Suppress("DEPRECATION")
 
 package moe.rukamori.archivetune.playback
+import com.paperapps.papertunes.BuildConfig
 
 import android.app.ActivityManager
 import android.app.Notification
@@ -120,7 +121,7 @@ import kotlinx.coroutines.plus
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import moe.rukamori.archivetune.MainActivity
-import moe.rukamori.archivetune.R
+import com.paperapps.papertunes.R
 import moe.rukamori.archivetune.constants.AudioNormalizationKey
 import moe.rukamori.archivetune.constants.AudioOffload
 import moe.rukamori.archivetune.constants.AudioQuality
@@ -3254,7 +3255,7 @@ class MusicService :
             }
 
             val togetherToken =
-                moe.rukamori.archivetune.BuildConfig.TOGETHER_BEARER_TOKEN
+                com.paperapps.papertunes.BuildConfig.TOGETHER_BEARER_TOKEN
                     .trim()
                     .takeIf { it.isNotBlank() }
             if (togetherToken == null) {
@@ -3604,7 +3605,7 @@ class MusicService :
             }
 
             val togetherToken =
-                moe.rukamori.archivetune.BuildConfig.TOGETHER_BEARER_TOKEN
+                com.paperapps.papertunes.BuildConfig.TOGETHER_BEARER_TOKEN
                     .trim()
                     .takeIf { it.isNotBlank() }
             if (togetherToken == null) {
@@ -6802,19 +6803,21 @@ class MusicService :
     ): Int {
         ensureStartedAsForeground()
         when (intent?.action) {
-            "moe.rukamori.archivetune.WIDGET_PLAY_PAUSE" -> {
-                if (player.isPlaying) player.pause() else player.play()
+            "com.paperapps.papertunes.WIDGET_PLAY_PAUSE" -> {
+                if (player.isPlaying) {
+                    player.pause()
+                } else {
+                    player.play()
+                }
             }
-
-            "moe.rukamori.archivetune.WIDGET_SKIP_NEXT" -> {
+            "com.paperapps.papertunes.WIDGET_SKIP_NEXT" -> {
                 if (player.hasNextMediaItem()) {
                     player.seekToNext()
                     player.prepare()
                     player.play()
                 }
             }
-
-            "moe.rukamori.archivetune.WIDGET_SKIP_PREV" -> {
+            "com.paperapps.papertunes.WIDGET_SKIP_PREV" -> {
                 if (player.hasPreviousMediaItem()) {
                     player.seekToPrevious()
                     player.prepare()

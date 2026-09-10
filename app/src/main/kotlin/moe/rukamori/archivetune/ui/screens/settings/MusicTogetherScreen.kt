@@ -108,7 +108,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import moe.rukamori.archivetune.LocalPlayerAwareWindowInsets
 import moe.rukamori.archivetune.LocalPlayerConnection
-import moe.rukamori.archivetune.R
+import com.paperapps.papertunes.R
 import moe.rukamori.archivetune.constants.TogetherAllowGuestsToAddTracksKey
 import moe.rukamori.archivetune.constants.TogetherAllowGuestsToControlPlaybackKey
 import moe.rukamori.archivetune.constants.TogetherDefaultPortKey

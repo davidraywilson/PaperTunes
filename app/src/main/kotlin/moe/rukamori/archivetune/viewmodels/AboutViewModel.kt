@@ -22,8 +22,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import moe.rukamori.archivetune.BuildConfig
-import moe.rukamori.archivetune.R
+import com.paperapps.papertunes.BuildConfig
+import com.paperapps.papertunes.R
 import moe.rukamori.archivetune.about.AboutContributor
 import moe.rukamori.archivetune.about.AboutContributorCollection
 import moe.rukamori.archivetune.about.AboutDependencyLicense

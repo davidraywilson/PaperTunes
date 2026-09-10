@@ -46,7 +46,7 @@ import androidx.glance.layout.size
 import androidx.glance.material3.ColorProviders
 import androidx.glance.unit.ColorProvider
 import moe.rukamori.archivetune.MainActivity
-import moe.rukamori.archivetune.R
+import com.paperapps.papertunes.R
 import java.io.File
 
 @Immutable

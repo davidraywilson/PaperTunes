@@ -6,6 +6,7 @@
  */
 
 package moe.rukamori.archivetune
+import com.paperapps.papertunes.BuildConfig
 
 import android.app.ActivityManager
 import android.app.Application

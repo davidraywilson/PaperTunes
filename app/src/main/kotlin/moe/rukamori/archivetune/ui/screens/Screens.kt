@@ -10,7 +10,7 @@ package moe.rukamori.archivetune.ui.screens
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Immutable
-import moe.rukamori.archivetune.R
+import com.paperapps.papertunes.R
 
 @Immutable
 sealed class Screens(

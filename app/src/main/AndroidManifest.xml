@@ -38,7 +38,7 @@
         <package android:name="com.google.android.projection.gearhead" />
     </queries>
     <application
-        android:name=".App"
+        android:name="moe.rukamori.archivetune.App"
         android:allowBackup="true"
         android:allowAudioPlaybackCapture="true"
         android:appCategory="audio"
@@ -58,7 +58,7 @@
 
         <!-- New e-ink (MMD) UI: this is now the app launcher entry point. -->
         <activity
-            android:name=".eink.EinkActivity"
+            android:name="moe.rukamori.archivetune.eink.EinkActivity"
             android:exported="true"
             android:launchMode="singleTask"
             android:theme="@style/Theme.ArchiveTune"
@@ -75,7 +75,7 @@
 
         <!-- Legacy Material UI. Kept in code but no longer the launcher; retains deep links. -->
         <activity
-            android:name=".MainActivity"
+            android:name="moe.rukamori.archivetune.MainActivity"
             android:exported="true"
             android:launchMode="singleTask"
             android:theme="@style/Theme.ArchiveTune"
@@ -201,7 +201,7 @@
         </provider>
 
         <service
-            android:name=".playback.MusicService"
+            android:name="moe.rukamori.archivetune.playback.MusicService"
             android:exported="true"
             android:foregroundServiceType="mediaPlayback"
             tools:ignore="ExportedService">
@@ -213,7 +213,7 @@
         </service>
 
         <service
-            android:name=".playback.ExoDownloadService"
+            android:name="moe.rukamori.archivetune.playback.ExoDownloadService"
             android:exported="false"
             android:foregroundServiceType="dataSync">
             <intent-filter>
@@ -228,7 +228,7 @@
             android:permission="android.permission.BIND_JOB_SERVICE" />
 
         <service
-            android:name=".musicrecognition.MusicRecognitionTileService"
+            android:name="moe.rukamori.archivetune.musicrecognition.MusicRecognitionTileService"
             android:permission="android.permission.BIND_QUICK_SETTINGS_TILE"
             android:exported="true"
             android:icon="@drawable/mic"
@@ -246,7 +246,7 @@
             </intent-filter>
         </receiver>
 <receiver
-    android:name=".widget.MusicWidgetReceiver"
+    android:name="moe.rukamori.archivetune.widget.MusicWidgetReceiver"
     android:exported="true">
     <intent-filter>
         <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
@@ -257,7 +257,7 @@
 </receiver>
 
 <receiver
-    android:name=".widget.AlbumArtWidgetReceiver"
+    android:name="moe.rukamori.archivetune.widget.AlbumArtWidgetReceiver"
     android:exported="true">
     <intent-filter>
         <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
@@ -268,7 +268,7 @@
 </receiver>
 
 <receiver
-    android:name=".widget.NowPlayingCardWidgetReceiver"
+    android:name="moe.rukamori.archivetune.widget.NowPlayingCardWidgetReceiver"
     android:exported="true">
     <intent-filter>
         <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
@@ -279,7 +279,7 @@
 </receiver>
 
 <receiver
-    android:name=".widget.PlaybackDeckWidgetReceiver"
+    android:name="moe.rukamori.archivetune.widget.PlaybackDeckWidgetReceiver"
     android:exported="true">
     <intent-filter>
         <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
@@ -290,7 +290,7 @@
 </receiver>
 
 <receiver
-    android:name=".widget.PlaybackCapsuleWidgetReceiver"
+    android:name="moe.rukamori.archivetune.widget.PlaybackCapsuleWidgetReceiver"
     android:exported="true">
     <intent-filter>
         <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
@@ -301,7 +301,7 @@
 </receiver>
 
 <receiver
-    android:name=".widget.PlaybackSpotlightWidgetReceiver"
+    android:name="moe.rukamori.archivetune.widget.PlaybackSpotlightWidgetReceiver"
     android:exported="true">
     <intent-filter>
         <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
@@ -312,7 +312,7 @@
 </receiver>
 
 <receiver
-    android:name=".widget.PlaybackCommandWidgetReceiver"
+    android:name="moe.rukamori.archivetune.widget.PlaybackCommandWidgetReceiver"
     android:exported="true">
     <intent-filter>
         <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
@@ -328,14 +328,14 @@
             android:resource="@xml/automotive_app_desc" />
 
         <activity
-            android:name=".DebugActivity"
+            android:name="moe.rukamori.archivetune.DebugActivity"
             android:exported="true"
             android:process=":crash"
             android:theme="@style/Theme.ArchiveTune">
         </activity>
 
         <activity
-            android:name=".ui.screens.settings.PoTokenExtractionActivity"
+            android:name="moe.rukamori.archivetune.ui.screens.settings.PoTokenExtractionActivity"
             android:exported="false"
             android:theme="@style/Theme.ArchiveTune" />
     </application>

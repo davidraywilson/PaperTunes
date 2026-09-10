@@ -26,15 +26,15 @@ val discordApplicationIdLong = discordApplicationId.toLongOrNull() ?: 1165706613
 val discordRedirectScheme = "discord-$discordApplicationId"
 
 android {
-    namespace = "moe.rukamori.archivetune"
+    namespace = "com.paperapps.papertunes"
     compileSdk = 37
 
     defaultConfig {
-    applicationId = "moe.rukamori.archivetune"
+    applicationId = "com.paperapps.papertunes"
         minSdk = 28
         targetSdk = 37
-        versionCode = 200
-        versionName = "13.5.64"
+        versionCode = 1
+        versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true

@@ -23,6 +23,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.lifecycleScope
 import com.paperapps.paperui.theme.PaperUITheme
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.lightColorScheme
 import dagger.hilt.android.AndroidEntryPoint
 import moe.rukamori.archivetune.LocalDatabase
 import moe.rukamori.archivetune.LocalDownloadUtil
@@ -105,14 +107,22 @@ class EinkActivity : ComponentActivity() {
         }
         setContent {
             PaperUITheme {
-                CompositionLocalProvider(
-                    LocalDatabase provides database,
-                    LocalDownloadUtil provides downloadUtil,
-                    LocalSyncUtils provides syncUtils,
-                    LocalPlayerConnection provides playerConnection,
-                    LocalPlayerAwareWindowInsets provides WindowInsets.systemBars,
-                ) {
-                    EinkApp()
+                MaterialTheme(colorScheme = lightColorScheme()) {
+                    androidx.compose.material3.Surface(
+                        color = androidx.compose.ui.graphics.Color.White,
+                        contentColor = androidx.compose.ui.graphics.Color.Black
+                    ) {
+                        CompositionLocalProvider(
+                            LocalDatabase provides database,
+                            LocalDownloadUtil provides downloadUtil,
+                            LocalSyncUtils provides syncUtils,
+                            LocalPlayerConnection provides playerConnection,
+                            LocalPlayerAwareWindowInsets provides WindowInsets.systemBars,
+                            androidx.compose.material3.LocalContentColor provides androidx.compose.ui.graphics.Color.Black,
+                        ) {
+                            EinkApp()
+                        }
+                    }
                 }
             }
         }

@@ -8,6 +8,7 @@
 package moe.rukamori.archivetune.eink.components
 
 import com.paperapps.paperui.components.DashedDivider
+import com.paperapps.papertunes.R
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -127,7 +128,7 @@ fun EinkSongRow(
                 if (isCurrentlyPlaying) {
                     Icon(
                         imageVector = Icons.Outlined.Headphones,
-                        contentDescription = "Now playing",
+                        contentDescription = "Now playing", tint = androidx.compose.ui.graphics.Color.Black,
                         modifier = Modifier
                             .size(24.dp)
                             .padding(start = 4.dp),
@@ -154,8 +155,8 @@ fun EinkSongRow(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         if (song.song.isLocal) {
                             Icon(
-                                painter = painterResource(id = moe.rukamori.archivetune.R.drawable.snippet_folder),
-                                contentDescription = "Local file",
+                                painter = painterResource(id = R.drawable.snippet_folder),
+                                contentDescription = "Local file", tint = androidx.compose.ui.graphics.Color.Black,
                                 modifier = Modifier.size(16.dp),
                             )
                             Spacer(modifier = Modifier.width(4.dp))
@@ -163,7 +164,7 @@ fun EinkSongRow(
                             when (downloadState) {
                             Download.STATE_COMPLETED -> {
                                 Icon(
-                                    painter = painterResource(id = moe.rukamori.archivetune.R.drawable.offline),
+                                    painter = painterResource(id = R.drawable.offline), tint = androidx.compose.ui.graphics.Color.Black,
                                     contentDescription = "Downloaded",
                                     modifier = Modifier.size(16.dp),
                                 )
@@ -243,7 +244,7 @@ fun EinkTwoLineRow(
                 if (subtitleTrailingIcon != null) {
                     Spacer(modifier = Modifier.width(6.dp))
                     Icon(
-                        imageVector = subtitleTrailingIcon,
+                        imageVector = subtitleTrailingIcon, tint = androidx.compose.ui.graphics.Color.Black,
                         contentDescription = null,
                         modifier = Modifier.size(16.dp),
                     )

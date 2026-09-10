@@ -18,8 +18,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavController
-import moe.rukamori.archivetune.BuildConfig
-import moe.rukamori.archivetune.R
+import com.paperapps.papertunes.BuildConfig
+import com.paperapps.papertunes.R
 
 @Composable
 fun buildSettingsGroups(

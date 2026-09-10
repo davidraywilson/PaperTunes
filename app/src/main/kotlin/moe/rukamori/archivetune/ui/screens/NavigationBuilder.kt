@@ -44,8 +44,8 @@ import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
-import moe.rukamori.archivetune.BuildConfig
-import moe.rukamori.archivetune.R
+import com.paperapps.papertunes.BuildConfig
+import com.paperapps.papertunes.R
 import moe.rukamori.archivetune.constants.DarkModeKey
 import moe.rukamori.archivetune.constants.PureBlackKey
 import moe.rukamori.archivetune.constants.UpdateChannel

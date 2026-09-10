@@ -40,7 +40,7 @@ import androidx.glance.state.PreferencesGlanceStateDefinition
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
-import moe.rukamori.archivetune.R
+import com.paperapps.papertunes.R
 
 class PlaybackSpotlightWidget : GlanceAppWidget() {
     override val stateDefinition = PreferencesGlanceStateDefinition

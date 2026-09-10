@@ -43,8 +43,23 @@ class LocalSongsViewModel
         fun scanDevice(scanConfig: LocalSongScanConfig = LocalSongScanConfig()) {
             if (_scanState.value.isScanning) return
             viewModelScope.launch(Dispatchers.IO) {
-                _scanState.value = _scanState.value.copy(isScanning = true, errorMessage = null)
-                runCatching { localSongScanner.scanDevice(scanConfig) }
+                _scanState.value = _scanState.value.copy(
+                    isScanning = true,
+                    scannedCount = 0,
+                    totalCount = 0,
+                    errorMessage = null,
+                )
+                runCatching {
+                    localSongScanner.scanDevice(
+                        scanConfig = scanConfig,
+                        onProgress = { completed, total ->
+                            _scanState.value = _scanState.value.copy(
+                                scannedCount = completed,
+                                totalCount = total,
+                            )
+                        },
+                    )
+                }
                     .onSuccess { summary ->
                         _scanState.value =
                             LocalSongsScanState(
@@ -66,6 +81,8 @@ class LocalSongsViewModel
 
 data class LocalSongsScanState(
     val isScanning: Boolean = false,
+    val scannedCount: Int = 0,
+    val totalCount: Int = 0,
     val lastSummary: LocalSongScanSummary? = null,
     val errorMessage: String? = null,
 )

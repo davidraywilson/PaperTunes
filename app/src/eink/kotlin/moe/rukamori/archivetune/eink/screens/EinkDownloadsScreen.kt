@@ -44,6 +44,7 @@ import com.paperapps.paperui.components.PaperLazyColumn
 import com.mudita.mmd.components.progress_indicator.CircularProgressIndicatorMMD
 import kotlinx.coroutines.delay
 import moe.rukamori.archivetune.LocalDownloadUtil
+import com.paperapps.papertunes.R
 import moe.rukamori.archivetune.eink.components.EinkEmptyState
 import moe.rukamori.archivetune.playback.ExoDownloadService
 
@@ -126,13 +127,13 @@ fun EinkDownloadsScreen(navController: NavController) {
                     } else if (download.state == Download.STATE_FAILED) {
                         Icon(
                             imageVector = Icons.Outlined.Error,
-                            contentDescription = "Failed",
+                            contentDescription = "Failed", tint = androidx.compose.ui.graphics.Color.Black,
                             modifier = Modifier.size(24.dp)
                         )
                     } else {
                         Icon(
-                            painter = androidx.compose.ui.res.painterResource(moe.rukamori.archivetune.R.drawable.download),
-                            contentDescription = "Queued",
+                            painter = androidx.compose.ui.res.painterResource(R.drawable.download),
+                            contentDescription = "Queued", tint = androidx.compose.ui.graphics.Color.Black,
                             modifier = Modifier.size(24.dp)
                         )
                     }
@@ -187,7 +188,7 @@ fun EinkDownloadsScreen(navController: NavController) {
                     }) {
                         Icon(
                             imageVector = Icons.Outlined.Refresh,
-                            contentDescription = "Retry download",
+                            contentDescription = "Retry download", tint = androidx.compose.ui.graphics.Color.Black,
                             modifier = Modifier.size(28.dp)
                         )
                     }
@@ -203,7 +204,7 @@ fun EinkDownloadsScreen(navController: NavController) {
                 }) {
                     Icon(
                         imageVector = Icons.Outlined.Cancel,
-                        contentDescription = "Cancel download",
+                        contentDescription = "Cancel download", tint = androidx.compose.ui.graphics.Color.Black,
                         modifier = Modifier.size(28.dp)
                     )
                 }

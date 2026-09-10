@@ -41,7 +41,7 @@ import com.mudita.mmd.components.text.TextMMD
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import moe.rukamori.archivetune.LocalDatabase
-import moe.rukamori.archivetune.R
+import com.paperapps.papertunes.R
 import moe.rukamori.archivetune.constants.InnerTubeCookieKey
 import moe.rukamori.archivetune.db.entities.PlaylistEntity
 import moe.rukamori.archivetune.extensions.isSyncEnabled
@@ -332,7 +332,7 @@ fun EinkAddToPlaylistDialog(
                 ) {
                     Icon(
                         imageVector = Icons.Outlined.Close,
-                        contentDescription = "Cancel Add to Playlist"
+                        contentDescription = "Cancel Add to Playlist", tint = androidx.compose.ui.graphics.Color.Black
                     )
                 }
             }

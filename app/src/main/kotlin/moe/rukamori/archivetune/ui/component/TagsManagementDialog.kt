@@ -67,7 +67,7 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.core.graphics.toColorInt
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import moe.rukamori.archivetune.R
+import com.paperapps.papertunes.R
 import moe.rukamori.archivetune.viewmodels.PlaylistTagColorPickerState
 import moe.rukamori.archivetune.viewmodels.PlaylistTagEditorState
 import moe.rukamori.archivetune.viewmodels.PlaylistTagUiModel

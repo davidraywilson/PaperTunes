@@ -51,7 +51,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import moe.rukamori.archivetune.R
+import com.paperapps.papertunes.R
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable

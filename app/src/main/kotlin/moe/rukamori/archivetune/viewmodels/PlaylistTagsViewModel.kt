@@ -26,7 +26,7 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import moe.rukamori.archivetune.R
+import com.paperapps.papertunes.R
 import moe.rukamori.archivetune.db.entities.TagEntity
 import moe.rukamori.archivetune.playlisttags.AddTagsToPlaylistsUseCase
 import moe.rukamori.archivetune.playlisttags.CreatePlaylistTagUseCase

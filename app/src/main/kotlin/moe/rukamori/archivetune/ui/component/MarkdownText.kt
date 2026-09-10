@@ -29,7 +29,7 @@ import io.noties.markwon.image.ImagesPlugin
 import io.noties.markwon.image.network.OkHttpNetworkSchemeHandler
 import io.noties.markwon.linkify.LinkifyPlugin
 import io.noties.markwon.simple.ext.SimpleExtPlugin
-import moe.rukamori.archivetune.R
+import com.paperapps.papertunes.R
 
 @Composable
 fun MarkdownText(

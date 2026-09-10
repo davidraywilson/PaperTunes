@@ -23,7 +23,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import moe.rukamori.archivetune.R
+import com.paperapps.papertunes.R
 import moe.rukamori.archivetune.constants.LastFmProvider
 import moe.rukamori.archivetune.lastfm.LastFM
 import moe.rukamori.archivetune.scrobbling.LastFmServiceConfig

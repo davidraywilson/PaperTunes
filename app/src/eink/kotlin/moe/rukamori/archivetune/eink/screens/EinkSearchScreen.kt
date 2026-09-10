@@ -62,6 +62,7 @@ import com.mudita.mmd.components.tabs.PrimaryTabRowMMD
 import com.mudita.mmd.components.tabs.TabMMD
 import com.mudita.mmd.components.text.TextMMD
 import moe.rukamori.archivetune.LocalPlayerConnection
+import com.paperapps.papertunes.R
 import moe.rukamori.archivetune.eink.EinkScreen
 import com.paperapps.paperui.components.DashedDivider
 import moe.rukamori.archivetune.eink.components.EinkEmptyState
@@ -162,7 +163,7 @@ fun EinkSearchScreen(
                 Row {
                     if (searchViewModel.query.isNotEmpty()) {
                         IconButton(onClick = searchViewModel::clearSearch) {
-                            Icon(imageVector = Icons.Outlined.Clear, contentDescription = "Clear search")
+                            Icon(imageVector = Icons.Outlined.Clear, contentDescription = "Clear search", tint = androidx.compose.ui.graphics.Color.Black)
                         }
                     }
                     IconButton(
@@ -171,7 +172,7 @@ fun EinkSearchScreen(
                             searchViewModel.runSearch { keyboardController?.hide() }
                         }
                     ) {
-                        Icon(imageVector = Icons.Outlined.Search, contentDescription = "Search")
+                        Icon(imageVector = Icons.Outlined.Search, contentDescription = "Search", tint = androidx.compose.ui.graphics.Color.Black)
                     }
                 }
             },
@@ -362,7 +363,7 @@ private fun EinkYouTubeSongRow(
                 if (isCurrentlyPlaying) {
                     Icon(
                         imageVector = Icons.Outlined.Headphones,
-                        contentDescription = "Now playing",
+                        contentDescription = "Now playing", tint = androidx.compose.ui.graphics.Color.Black,
                         modifier = Modifier
                             .size(24.dp)
                             .padding(start = 4.dp),
@@ -381,8 +382,8 @@ private fun EinkYouTubeSongRow(
                         when (downloadState) {
                             Download.STATE_COMPLETED -> {
                                 Icon(
-                                    painter = painterResource(id = moe.rukamori.archivetune.R.drawable.offline),
-                                    contentDescription = "Downloaded",
+                                    painter = painterResource(id = R.drawable.offline),
+                                    contentDescription = "Downloaded", tint = androidx.compose.ui.graphics.Color.Black,
                                     modifier = Modifier.size(16.dp),
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))

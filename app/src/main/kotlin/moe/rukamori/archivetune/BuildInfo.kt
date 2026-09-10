@@ -6,6 +6,7 @@
  */
 
 package moe.rukamori.archivetune
+import com.paperapps.papertunes.BuildConfig
 
 import moe.rukamori.archivetune.constants.UpdateChannel
 

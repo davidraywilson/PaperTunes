@@ -18,7 +18,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import moe.rukamori.archivetune.R
+import com.paperapps.papertunes.R
 import moe.rukamori.archivetune.db.MusicDatabase
 import moe.rukamori.archivetune.db.entities.AlbumArtistMap
 import moe.rukamori.archivetune.db.entities.AlbumEntity
@@ -94,7 +94,10 @@ class LocalSongScanner
         @ApplicationContext private val context: Context,
         private val database: MusicDatabase,
     ) {
-        suspend fun scanDevice(scanConfig: LocalSongScanConfig = LocalSongScanConfig()): LocalSongScanSummary =
+        suspend fun scanDevice(
+            scanConfig: LocalSongScanConfig = LocalSongScanConfig(),
+            onProgress: (completed: Int, total: Int) -> Unit = { _, _ -> },
+        ): LocalSongScanSummary =
             withContext(Dispatchers.IO) {
                 val snapshot = queryTracks(scanConfig)
                 var removedCount = 0
@@ -170,6 +173,10 @@ class LocalSongScanner
                         }
                     }
 
+                    val totalTracks = snapshot.tracks.size
+                    var completedTracks = 0
+                    onProgress(0, totalTracks)
+
                     snapshot.tracks.forEach { track ->
                         val existingSong = existingSongs[track.id]?.song
                         upsert(
@@ -227,6 +234,7 @@ class LocalSongScanner
                             )
                         }
                         updateEmbeddedLyrics(track, existingLyrics[track.id])
+                        onProgress(++completedTracks, totalTracks)
                     }
 
                     pruneLocalAlbums()

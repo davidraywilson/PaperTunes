@@ -20,7 +20,7 @@ import moe.rukamori.archivetune.models.toMediaMetadata
 import moe.rukamori.archivetune.ui.utils.resize
 import moe.rukamori.archivetune.utils.isLocalMediaId
 
-const val ExtraIsMusicVideo = "moe.rukamori.archivetune.extra.IS_MUSIC_VIDEO"
+const val ExtraIsMusicVideo = "com.paperapps.papertunes.extra.IS_MUSIC_VIDEO"
 private const val NotificationArtworkSizePx = 1080
 
 val MediaItem.metadata: MediaMetadata?

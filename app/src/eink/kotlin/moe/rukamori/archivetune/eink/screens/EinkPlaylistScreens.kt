@@ -224,7 +224,7 @@ fun EinkPlaylistsScreen(
                     ) {
                         Icon(
                             imageVector = Icons.Outlined.Close,
-                            contentDescription = "Cancel Sort"
+                            contentDescription = "Cancel Sort", tint = androidx.compose.ui.graphics.Color.Black
                         )
                     }
                 }
@@ -370,7 +370,7 @@ fun EinkPlaylistsScreen(
             ) {
                 Icon(
                     imageVector = Icons.Filled.Add,
-                    contentDescription = "New playlist",
+                    contentDescription = "New playlist", tint = androidx.compose.ui.graphics.Color.Black,
                 )
             }
         }
@@ -792,7 +792,7 @@ private fun EinkEditableSongRow(
                     IconButton(onClick = onMoveUp) {
                         Icon(
                             imageVector = Icons.Outlined.ArrowUpward,
-                            contentDescription = "Move up",
+                            contentDescription = "Move up", tint = androidx.compose.ui.graphics.Color.Black,
                             modifier = Modifier.size(24.dp),
                         )
                     }
@@ -801,7 +801,7 @@ private fun EinkEditableSongRow(
                     IconButton(onClick = onMoveDown) {
                         Icon(
                             imageVector = Icons.Outlined.ArrowDownward,
-                            contentDescription = "Move down",
+                            contentDescription = "Move down", tint = androidx.compose.ui.graphics.Color.Black,
                             modifier = Modifier.size(24.dp),
                         )
                     }
@@ -809,7 +809,7 @@ private fun EinkEditableSongRow(
                 IconButton(onClick = onRemove) {
                     Icon(
                         imageVector = Icons.Outlined.Close,
-                        contentDescription = "Remove from playlist",
+                        contentDescription = "Remove from playlist", tint = androidx.compose.ui.graphics.Color.Black,
                         modifier = Modifier.size(24.dp),
                     )
                 }

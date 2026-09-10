@@ -4,12 +4,12 @@
     <application>
         <!-- Remove the standard MainActivity -->
         <activity
-            android:name=".MainActivity"
+            android:name="moe.rukamori.archivetune.MainActivity"
             tools:node="remove" />
 
         <!-- Set EinkActivity as the launcher -->
         <activity
-            android:name=".eink.EinkActivity"
+            android:name="moe.rukamori.archivetune.eink.EinkActivity"
             android:exported="true"
             android:theme="@style/Theme.ArchiveTune">
             <intent-filter>

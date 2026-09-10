@@ -64,7 +64,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
-import moe.rukamori.archivetune.R
+import com.paperapps.papertunes.R
 
 @Composable
 fun SettingsProfileHeader(

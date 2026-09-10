@@ -35,7 +35,7 @@ import androidx.navigation.NavController
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.launch
 import moe.rukamori.archivetune.LocalPlayerAwareWindowInsets
-import moe.rukamori.archivetune.R
+import com.paperapps.papertunes.R
 import moe.rukamori.archivetune.constants.AccountChannelHandleKey
 import moe.rukamori.archivetune.constants.AccountEmailKey
 import moe.rukamori.archivetune.constants.AccountNameKey
@@ -180,7 +180,14 @@ fun LoginScreen(
     )
 
     TopAppBar(
-        title = { Text(stringResource(R.string.login)) },
+        title = { Text(stringResource(R.string.login), color = androidx.compose.material3.MaterialTheme.colorScheme.onSurface) },
+        colors = androidx.compose.material3.TopAppBarDefaults.topAppBarColors(
+            containerColor = androidx.compose.material3.MaterialTheme.colorScheme.surface,
+            scrolledContainerColor = androidx.compose.material3.MaterialTheme.colorScheme.surface,
+            navigationIconContentColor = androidx.compose.material3.MaterialTheme.colorScheme.onSurface,
+            titleContentColor = androidx.compose.material3.MaterialTheme.colorScheme.onSurface,
+            actionIconContentColor = androidx.compose.material3.MaterialTheme.colorScheme.onSurface,
+        ),
         navigationIcon = {
             IconButton(
                 onClick = navController::navigateUp,
@@ -189,6 +196,7 @@ fun LoginScreen(
                 Icon(
                     painterResource(R.drawable.arrow_back),
                     contentDescription = null,
+                    tint = androidx.compose.material3.MaterialTheme.colorScheme.onSurface
                 )
             }
         },

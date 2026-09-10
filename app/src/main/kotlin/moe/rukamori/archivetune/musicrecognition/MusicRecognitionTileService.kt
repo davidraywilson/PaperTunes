@@ -14,7 +14,7 @@ import android.os.Build
 import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
 import moe.rukamori.archivetune.MainActivity
-import moe.rukamori.archivetune.R
+import com.paperapps.papertunes.R
 
 class MusicRecognitionTileService : TileService() {
     override fun onStartListening() {

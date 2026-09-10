@@ -8,6 +8,7 @@
 @file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
 
 package moe.rukamori.archivetune
+import com.paperapps.papertunes.R
 
 import android.content.Intent
 import android.os.Build

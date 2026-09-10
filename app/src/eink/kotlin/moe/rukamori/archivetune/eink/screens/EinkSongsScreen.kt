@@ -104,7 +104,7 @@ fun EinkSongsScreen(
                     {
                         Icon(
                             imageVector = androidx.compose.material.icons.Icons.Filled.Done,
-                            contentDescription = "Done icon",
+                            contentDescription = "Done icon", tint = androidx.compose.ui.graphics.Color.Black,
                             modifier = Modifier.size(com.mudita.mmd.components.chips.FilterChipDefaultsMMD.IconSize)
                         )
                     }
@@ -119,7 +119,7 @@ fun EinkSongsScreen(
                     {
                         Icon(
                             imageVector = androidx.compose.material.icons.Icons.Filled.Done,
-                            contentDescription = "Done icon",
+                            contentDescription = "Done icon", tint = androidx.compose.ui.graphics.Color.Black,
                             modifier = Modifier.size(com.mudita.mmd.components.chips.FilterChipDefaultsMMD.IconSize)
                         )
                     }
@@ -134,7 +134,7 @@ fun EinkSongsScreen(
                     {
                         Icon(
                             imageVector = androidx.compose.material.icons.Icons.Filled.Done,
-                            contentDescription = "Done icon",
+                            contentDescription = "Done icon", tint = androidx.compose.ui.graphics.Color.Black,
                             modifier = Modifier.size(com.mudita.mmd.components.chips.FilterChipDefaultsMMD.IconSize)
                         )
                     }
@@ -215,7 +215,7 @@ fun EinkSongsScreen(
             ) {
                 Icon(
                     imageVector = Icons.Outlined.Shuffle,
-                    contentDescription = "Shuffle songs",
+                    contentDescription = "Shuffle songs", tint = androidx.compose.ui.graphics.Color.Black,
                 )
             }
         }

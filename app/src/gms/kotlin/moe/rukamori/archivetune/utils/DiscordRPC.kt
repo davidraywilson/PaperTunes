@@ -10,8 +10,8 @@ package moe.rukamori.archivetune.utils
 import android.content.Context
 import me.bush.translator.Language
 import me.bush.translator.Translator
-import moe.rukamori.archivetune.BuildConfig
-import moe.rukamori.archivetune.R
+import com.paperapps.papertunes.BuildConfig
+import com.paperapps.papertunes.R
 import moe.rukamori.archivetune.constants.DiscordActivityButton1CustomUrlKey
 import moe.rukamori.archivetune.constants.DiscordActivityButton1EnabledKey
 import moe.rukamori.archivetune.constants.DiscordActivityButton1LabelKey
