@@ -1,6 +1,47 @@
 <?xml version="1.0" encoding="utf-8"?>
-<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
-    <background android:drawable="@color/ic_launcher_background" />
-    <foreground android:drawable="@mipmap/ic_launcher_foreground" />
-    <monochrome android:drawable="@mipmap/ic_launcher_monochrome" />
-</adaptive-icon>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="81"
+    android:viewportHeight="81">
+    
+    <!-- White fill for the rounded rect -->
+    <path
+        android:pathData="M1.25,19 A17.75,17.75 0 0 1 19,1.25 L62,1.25 A17.75,17.75 0 0 1 79.75,19 L79.75,62 A17.75,17.75 0 0 1 62,79.75 L19,79.75 A17.75,17.75 0 0 1 1.25,62 Z"
+        android:fillColor="#FFFFFF"
+        android:strokeColor="#000000"
+        android:strokeWidth="2.5" />
+
+    <!-- Group for music notes centered at 40.5, 40.5 -->
+    <group
+        android:translateX="40.5"
+        android:translateY="40.5">
+        
+        <!-- Left head -->
+        <path
+            android:pathData="M -6.5,10 A 4.5,4.5 0 1 1 -15.5,10 A 4.5,4.5 0 1 1 -6.5,10"
+            android:strokeColor="#000000"
+            android:strokeWidth="2.5"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round"
+            android:fillColor="#00000000" />
+            
+        <!-- Right head -->
+        <path
+            android:pathData="M 15.5,5 A 4.5,4.5 0 1 1 6.5,5 A 4.5,4.5 0 1 1 15.5,5"
+            android:strokeColor="#000000"
+            android:strokeWidth="2.5"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round"
+            android:fillColor="#00000000" />
+
+        <!-- Stems and beam -->
+        <path
+            android:pathData="M -6.5,10 L -6.5,-9.5 L 15.5,-14.5 L 15.5,5"
+            android:strokeColor="#000000"
+            android:strokeWidth="2.5"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round"
+            android:fillColor="#00000000" />
+    </group>
+</vector>
