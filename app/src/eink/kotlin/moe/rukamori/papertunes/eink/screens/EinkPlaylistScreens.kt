@@ -131,13 +131,13 @@ fun EinkPlaylistsScreen(
     selectedIds: Set<String> = emptySet(),
     showSortSheet: Boolean = false,
     onDismissSortSheet: () -> Unit = {},
+    showCreateDialog: Boolean = false,
+    onDismissCreateDialog: () -> Unit = {},
     viewModel: LibraryPlaylistsViewModel = hiltViewModel(),
 ) {
     val database = LocalDatabase.current
     val coroutineScope = rememberCoroutineScope()
     val playlists by viewModel.allPlaylists.collectAsState()
-
-    var showCreateDialog by remember { mutableStateOf(false) }
 
     val (sortType, onSortTypeChange) = rememberEnumPreference(
         PlaylistSortTypeKey,
@@ -149,7 +149,7 @@ fun EinkPlaylistsScreen(
     )
 
     if (showCreateDialog) {
-        EinkCreatePlaylistDialog(onDismiss = { showCreateDialog = false })
+        EinkCreatePlaylistDialog(onDismiss = onDismissCreateDialog)
     }
 
     if (showDeleteConfirmation) {
@@ -358,20 +358,6 @@ fun EinkPlaylistsScreen(
                         }
                     }
                 }
-            }
-        }
-
-        if (playlists.isNotEmpty() && !isInEditMode) {
-            FloatingActionButtonMMD(
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(16.dp),
-                onClick = { showCreateDialog = true },
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Add,
-                    contentDescription = "New playlist", tint = androidx.compose.ui.graphics.Color.Black,
-                )
             }
         }
     }

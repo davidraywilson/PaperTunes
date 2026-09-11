@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.padding
 import com.paperapps.paperui.components.PanoramaPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.outlined.Shuffle
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.Settings
@@ -38,6 +40,10 @@ fun EinkHomeScreen(
     val playlistEditSelectionIds = remember { mutableSetOf<String>() }
     var showDeletePlaylistsConfirmation by remember { mutableStateOf(false) }
     var showSortSheet by remember { mutableStateOf(false) }
+    
+    // Action bar state
+    var showCreateDialog by remember { mutableStateOf(false) }
+    var shuffleSongsAction by remember { mutableStateOf<(() -> Unit)?>(null) }
 
     Column(modifier = Modifier.fillMaxSize()) {
         PanoramaHeader(
@@ -71,21 +77,49 @@ fun EinkHomeScreen(
                     onCancelDelete = { showDeletePlaylistsConfirmation = false },
                     selectedIds = playlistEditSelectionIds,
                     showSortSheet = showSortSheet,
-                    onDismissSortSheet = { showSortSheet = false }
+                    onDismissSortSheet = { showSortSheet = false },
+                    showCreateDialog = showCreateDialog,
+                    onDismissCreateDialog = { showCreateDialog = false }
                 )
-                1 -> EinkSongsScreen(navController)
+                1 -> EinkSongsScreen(
+                    navController = navController,
+                    onShuffleReady = { shuffleSongsAction = it }
+                )
                 2 -> EinkArtistsScreen(navController)
                 3 -> EinkAlbumsScreen(navController)
             }
         }
 
-        val baseActions = listOf(
+        var baseActions = listOf(
             AppbarAction(
                 icon = Icons.Outlined.Search,
                 label = "Search",
                 onClick = { navController.navigate(EinkScreen.Search.route) }
             )
         )
+        
+        if (pagerState.currentPage == 0) {
+            baseActions = listOf(
+                AppbarAction(
+                    icon = Icons.Filled.Add,
+                    label = "New",
+                    onClick = { showCreateDialog = true }
+                ),
+                AppbarAction(
+                    icon = Icons.AutoMirrored.Rounded.Sort,
+                    label = "Sort",
+                    onClick = { showSortSheet = true }
+                )
+            ) + baseActions
+        } else if (pagerState.currentPage == 1 && shuffleSongsAction != null) {
+            baseActions = listOf(
+                AppbarAction(
+                    icon = Icons.Outlined.Shuffle,
+                    label = "Shuffle",
+                    onClick = shuffleSongsAction!!
+                )
+            ) + baseActions
+        }
 
         val baseMenuItems = listOf(
             com.paperapps.paperui.components.AppbarMenuItem(
@@ -99,17 +133,7 @@ fun EinkHomeScreen(
         )
 
         ApplicationBar(
-            actions = if (pagerState.currentPage == 0) {
-                listOf(
-                    AppbarAction(
-                        icon = Icons.AutoMirrored.Rounded.Sort,
-                        label = "Sort",
-                        onClick = { showSortSheet = true }
-                    )
-                ) + baseActions
-            } else {
-                baseActions
-            },
+            actions = baseActions,
             menuItems = baseMenuItems,
             pagerState = pagerState,
             leftSlot = { EinkNowPlayingButton(navController) }

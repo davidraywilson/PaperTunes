@@ -61,6 +61,7 @@ import moe.rukamori.papertunes.viewmodels.LibrarySongsViewModel
 @Composable
 fun EinkSongsScreen(
     navController: NavController,
+    onShuffleReady: ((() -> Unit)?) -> Unit = {},
     viewModel: LibrarySongsViewModel = hiltViewModel(),
     localViewModel: moe.rukamori.papertunes.viewmodels.LocalSongsViewModel = hiltViewModel(),
 ) {
@@ -89,6 +90,21 @@ fun EinkSongsScreen(
             1 -> allSongsMixed.filter { it.song.isLocal }
             2 -> allDbSongs.filter { !it.song.isLocal && downloadsMap[it.id]?.state == Download.STATE_COMPLETED }.sortedBy { it.song.title }
             else -> allSongsMixed
+        }
+    }
+
+    androidx.compose.runtime.LaunchedEffect(displaySongs) {
+        if (displaySongs.isNotEmpty()) {
+            onShuffleReady {
+                playerConnection.playQueue(
+                    ListQueue(
+                        title = "Songs",
+                        items = displaySongs.shuffled().map { it.toMediaItem() },
+                    ),
+                )
+            }
+        } else {
+            onShuffleReady(null)
         }
     }
 
@@ -155,27 +171,6 @@ fun EinkSongsScreen(
                 }
             }
         }
-
-        FloatingActionButtonMMD(
-            modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(16.dp),
-                onClick = {
-                    if (displaySongs.isNotEmpty()) {
-                        playerConnection.playQueue(
-                            ListQueue(
-                                title = "Songs",
-                                items = displaySongs.shuffled().map { it.toMediaItem() },
-                            ),
-                        )
-                    }
-                },
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.Shuffle,
-                    contentDescription = "Shuffle songs", tint = androidx.compose.ui.graphics.Color.Black,
-                )
-            }
-        }
     }
+}
 }

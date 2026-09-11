@@ -107,7 +107,38 @@ class EinkActivity : ComponentActivity() {
         }
         setContent {
             PaperUITheme {
-                MaterialTheme(colorScheme = lightColorScheme()) {
+                MaterialTheme(
+                    colorScheme = lightColorScheme(
+                        primary = androidx.compose.ui.graphics.Color.Black,
+                        onPrimary = androidx.compose.ui.graphics.Color.White,
+                        primaryContainer = androidx.compose.ui.graphics.Color.Black,
+                        onPrimaryContainer = androidx.compose.ui.graphics.Color.White,
+                        secondary = androidx.compose.ui.graphics.Color.Black,
+                        onSecondary = androidx.compose.ui.graphics.Color.White,
+                        secondaryContainer = androidx.compose.ui.graphics.Color.Black,
+                        onSecondaryContainer = androidx.compose.ui.graphics.Color.White,
+                        tertiary = androidx.compose.ui.graphics.Color.Black,
+                        onTertiary = androidx.compose.ui.graphics.Color.White,
+                        tertiaryContainer = androidx.compose.ui.graphics.Color.Black,
+                        onTertiaryContainer = androidx.compose.ui.graphics.Color.White,
+                        background = androidx.compose.ui.graphics.Color.White,
+                        onBackground = androidx.compose.ui.graphics.Color.Black,
+                        surface = androidx.compose.ui.graphics.Color.White,
+                        onSurface = androidx.compose.ui.graphics.Color.Black,
+                        surfaceVariant = androidx.compose.ui.graphics.Color.White,
+                        onSurfaceVariant = androidx.compose.ui.graphics.Color.Black,
+                        surfaceTint = androidx.compose.ui.graphics.Color.White,
+                        inverseSurface = androidx.compose.ui.graphics.Color.Black,
+                        inverseOnSurface = androidx.compose.ui.graphics.Color.White,
+                        error = androidx.compose.ui.graphics.Color.Black,
+                        onError = androidx.compose.ui.graphics.Color.White,
+                        errorContainer = androidx.compose.ui.graphics.Color.Black,
+                        onErrorContainer = androidx.compose.ui.graphics.Color.White,
+                        outline = androidx.compose.ui.graphics.Color.Black,
+                        outlineVariant = androidx.compose.ui.graphics.Color.DarkGray,
+                        scrim = androidx.compose.ui.graphics.Color.Black
+                    )
+                ) {
                     androidx.compose.material3.Surface(
                         color = androidx.compose.ui.graphics.Color.White,
                         contentColor = androidx.compose.ui.graphics.Color.Black
