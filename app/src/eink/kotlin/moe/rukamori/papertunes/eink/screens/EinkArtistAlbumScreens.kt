@@ -8,6 +8,7 @@
 package moe.rukamori.papertunes.eink.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.material.icons.outlined.Download
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -79,7 +80,7 @@ fun EinkArtistsScreen(
 ) {
     val artists by viewModel.allArtists.collectAsState()
 
-    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+    Box(modifier = Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color.White)) {
         if (artists.isEmpty()) {
             EinkEmptyState(
                 title = "No artists yet",
@@ -118,7 +119,7 @@ fun EinkAlbumsScreen(
 ) {
     val albums by viewModel.allAlbums.collectAsState()
 
-    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+    Box(modifier = Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color.White)) {
         if (albums.isEmpty()) {
             EinkEmptyState(
                 title = "No albums yet",
@@ -165,7 +166,7 @@ fun EinkArtistDetailsScreen(
     val tabOptions = remember { listOf("Songs", "Albums") }
     val pagerState = androidx.compose.foundation.pager.rememberPagerState(pageCount = { tabOptions.size })
 
-    Column(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+    Column(modifier = Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color.White)) {
 
 
         com.paperapps.paperui.components.PanoramaHeader(
@@ -299,12 +300,24 @@ fun EinkAlbumDetailsScreen(
     val album = albumWithSongs
     val songs = album?.songs.orEmpty()
     val albumTitle = album?.album?.title.orEmpty()
+    val isLocal = album?.album?.isLocal ?: false
+
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val downloadUtil = moe.rukamori.papertunes.LocalDownloadUtil.current
+    val downloadsMap by downloadUtil.downloads.collectAsStateWithLifecycle()
+
+    val downloadState = remember(songs, downloadsMap) {
+        val songIds = songs.filter { !it.song.isLocal }.map { it.id }
+        moe.rukamori.papertunes.ui.utils.headerDownloadState(songIds, downloadsMap)
+    }
+    
+    val hasUndownloadedSongs = downloadState != moe.rukamori.papertunes.ui.utils.HeaderDownloadState.Completed
 
     val tabOptions = remember { listOf("Songs", "Details") }
     val pagerState = androidx.compose.foundation.pager.rememberPagerState(pageCount = { tabOptions.size })
     val coroutineScope = androidx.compose.runtime.rememberCoroutineScope()
 
-    Column(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+    Column(modifier = Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color.White)) {
 
 
         when {
@@ -488,6 +501,27 @@ fun EinkAlbumDetailsScreen(
                         }
                     )
                 )
+
+                if (!isLocal && songs.isNotEmpty() && hasUndownloadedSongs) {
+                    add(
+                        com.paperapps.paperui.components.AppbarAction(
+                            icon = Icons.Outlined.Download,
+                            label = "Download",
+                            onClick = {
+                                moe.rukamori.papertunes.ui.utils.sendAddMissingDownloads(
+                                    context = context,
+                                    songs = songs.map { 
+                                        moe.rukamori.papertunes.ui.utils.HeaderDownloadItem(
+                                            id = it.id,
+                                            title = it.song.title,
+                                        ) 
+                                    },
+                                    downloads = downloadsMap,
+                                )
+                            }
+                        )
+                    )
+                }
             },
             menuItems = emptyList(),
             leftSlot = { moe.rukamori.papertunes.eink.components.EinkNowPlayingButton(navController) },

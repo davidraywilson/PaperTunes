@@ -132,7 +132,7 @@ fun EinkSearchScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(androidx.compose.ui.graphics.Color.White)
             .then(
                 if (!hasSearched) Modifier.padding(top = WindowInsets.systemBars.asPaddingValues().calculateTopPadding())
                 else Modifier

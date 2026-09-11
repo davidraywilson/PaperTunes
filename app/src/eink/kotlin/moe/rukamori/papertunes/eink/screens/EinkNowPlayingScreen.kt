@@ -131,7 +131,7 @@ fun EinkNowPlayingScreen(navController: NavController) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surface)
+            .background(androidx.compose.ui.graphics.Color.White)
     ) {
         PanoramaHeader(
             pagerState = pagerState,

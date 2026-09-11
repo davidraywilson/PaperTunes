@@ -67,6 +67,7 @@ import androidx.navigation.NavController
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import moe.rukamori.papertunes.models.toMediaMetadata
 import moe.rukamori.papertunes.LocalDatabase
 import moe.rukamori.papertunes.LocalDownloadUtil
 import moe.rukamori.papertunes.LocalPlayerConnection
@@ -618,18 +619,34 @@ fun YouTubeAlbumMenu(
                             },
                             modifier =
                                 Modifier.clickable {
-                                    album?.songs?.let { songs ->
-                                        sendAddMissingDownloads(
-                                            context = context,
-                                            songs =
-                                                songs.map { song ->
-                                                    HeaderDownloadItem(
-                                                        id = song.id,
-                                                        title = song.song.title,
-                                                    )
-                                                },
-                                            downloads = downloadUtil.downloads.value,
-                                        )
+                                    onDismiss()
+                                    coroutineScope.launch {
+                                        album?.songs
+                                            ?.map { it.toMediaMetadata() }
+                                            .takeIf { !it.isNullOrEmpty() }
+                                            ?: withContext(Dispatchers.IO) {
+                                                YouTube
+                                                    .album(albumItem.id)
+                                                    .getOrNull()
+                                                    ?.songs
+                                                    ?.map { it.toMediaMetadata() }
+                                                    .orEmpty()
+                                            }.also { albumSongs ->
+                                                database.transaction {
+                                                    albumSongs.forEach { insert(it) }
+                                                }
+                                                sendAddMissingDownloads(
+                                                    context = context,
+                                                    songs =
+                                                        albumSongs.map { song ->
+                                                            HeaderDownloadItem(
+                                                                id = song.id,
+                                                                title = song.title,
+                                                            )
+                                                        },
+                                                    downloads = downloadUtil.downloads.value,
+                                                )
+                                            }
                                     }
                                 },
                             colors = ListItemDefaults.colors(containerColor = Color.Transparent),

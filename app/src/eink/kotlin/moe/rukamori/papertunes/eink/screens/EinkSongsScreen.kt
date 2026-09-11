@@ -70,8 +70,10 @@ fun EinkSongsScreen(
     val playerConnection = LocalPlayerConnection.current ?: return
     val downloadUtil = LocalDownloadUtil.current
 
+    val database = moe.rukamori.papertunes.LocalDatabase.current
     val librarySongs by viewModel.allSongs.collectAsState()
     val localSongs by localViewModel.songs.collectAsState()
+    val allDbSongs by database.allSongs().collectAsState(initial = emptyList())
     val mediaMetadata by playerConnection.mediaMetadata.collectAsState()
     val downloadsMap by downloadUtil.downloads.collectAsState()
 
@@ -81,66 +83,22 @@ fun EinkSongsScreen(
 
     var selectedTab by remember { mutableIntStateOf(0) }
     
-    val displaySongs = remember(allSongsMixed, selectedTab, downloadsMap) {
+    val displaySongs = remember(allSongsMixed, allDbSongs, selectedTab, downloadsMap) {
         when (selectedTab) {
             0 -> allSongsMixed
             1 -> allSongsMixed.filter { it.song.isLocal }
-            2 -> allSongsMixed.filter { downloadsMap[it.id]?.state == Download.STATE_COMPLETED }
+            2 -> allDbSongs.filter { !it.song.isLocal && downloadsMap[it.id]?.state == Download.STATE_COMPLETED }.sortedBy { it.song.title }
             else -> allSongsMixed
         }
     }
 
-    Column(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 8.dp)
-        ) {
-            FilterChipMMD(
-                onClick = { selectedTab = 0 },
-                label = { TextMMD("All", fontWeight = if (selectedTab == 0) FontWeight.Bold else FontWeight.Normal, fontSize = 14.sp) },
-                selected = selectedTab == 0,
-                leadingIcon = if (selectedTab == 0) {
-                    {
-                        Icon(
-                            imageVector = androidx.compose.material.icons.Icons.Filled.Done,
-                            contentDescription = "Done icon", tint = androidx.compose.ui.graphics.Color.Black,
-                            modifier = Modifier.size(com.mudita.mmd.components.chips.FilterChipDefaultsMMD.IconSize)
-                        )
-                    }
-                } else null
-            )
-            androidx.compose.foundation.layout.Spacer(modifier = Modifier.width(8.dp))
-            FilterChipMMD(
-                onClick = { selectedTab = 1 },
-                label = { TextMMD("Local", fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Normal, fontSize = 14.sp) },
-                selected = selectedTab == 1,
-                leadingIcon = if (selectedTab == 1) {
-                    {
-                        Icon(
-                            imageVector = androidx.compose.material.icons.Icons.Filled.Done,
-                            contentDescription = "Done icon", tint = androidx.compose.ui.graphics.Color.Black,
-                            modifier = Modifier.size(com.mudita.mmd.components.chips.FilterChipDefaultsMMD.IconSize)
-                        )
-                    }
-                } else null
-            )
-            androidx.compose.foundation.layout.Spacer(modifier = Modifier.width(8.dp))
-            FilterChipMMD(
-                onClick = { selectedTab = 2 },
-                label = { TextMMD("Downloaded", fontWeight = if (selectedTab == 2) FontWeight.Bold else FontWeight.Normal, fontSize = 14.sp) },
-                selected = selectedTab == 2,
-                leadingIcon = if (selectedTab == 2) {
-                    {
-                        Icon(
-                            imageVector = androidx.compose.material.icons.Icons.Filled.Done,
-                            contentDescription = "Done icon", tint = androidx.compose.ui.graphics.Color.Black,
-                            modifier = Modifier.size(com.mudita.mmd.components.chips.FilterChipDefaultsMMD.IconSize)
-                        )
-                    }
-                } else null
-            )
-        }
+    Column(modifier = Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color.White)) {
+        moe.rukamori.papertunes.eink.components.EinkSegmentedControl(
+            items = listOf("All", "Local", "Downloaded"),
+            selectedIndex = selectedTab,
+            onItemSelection = { selectedTab = it },
+            modifier = Modifier.padding(vertical = 8.dp)
+        )
 
         Box(modifier = Modifier.weight(1f)) {
             if (displaySongs.isEmpty()) {

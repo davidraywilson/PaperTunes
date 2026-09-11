@@ -908,6 +908,7 @@ fun YouTubePlaylistMenu(
                             },
                             modifier =
                                 Modifier.clickable {
+                                    onDismiss()
                                     coroutineScope.launch {
                                         songs
                                             .ifEmpty {
@@ -920,6 +921,9 @@ fun YouTubePlaylistMenu(
                                                         .orEmpty()
                                                 }
                                             }.let { playlistSongs ->
+                                                database.transaction {
+                                                    playlistSongs.forEach { insert(it.toMediaMetadata()) }
+                                                }
                                                 sendAddMissingDownloads(
                                                     context = context,
                                                     songs =

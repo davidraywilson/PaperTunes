@@ -909,6 +909,11 @@ fun OnlinePlaylistScreen(
                                                 }
 
                                                 else -> {
+                                                    database.transaction {
+                                                        songs.forEach { song ->
+                                                            insert(song.toMediaMetadata())
+                                                        }
+                                                    }
                                                     downloadProgressToolbarDismissed = false
                                                     sendAddMissingDownloads(
                                                         context = context,

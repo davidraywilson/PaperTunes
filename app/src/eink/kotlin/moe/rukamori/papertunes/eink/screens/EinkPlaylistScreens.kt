@@ -304,7 +304,7 @@ fun EinkPlaylistsScreen(
     }
     }
 
-    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+    Box(modifier = Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color.White)) {
         if (playlists.isEmpty()) {
             Box(
                 modifier = Modifier
@@ -389,6 +389,8 @@ fun EinkPlaylistDetailsScreen(
     val haptic = LocalHapticFeedback.current
     val playerConnection = LocalPlayerConnection.current ?: return
     val coroutineScope = rememberCoroutineScope()
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val downloadUtil = moe.rukamori.papertunes.LocalDownloadUtil.current
 
     val playlist by viewModel.playlist.collectAsState()
     val songs by viewModel.playlistSongs.collectAsState()
@@ -480,7 +482,7 @@ fun EinkPlaylistDetailsScreen(
         }
     }
 
-    Column(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+    Column(modifier = Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color.White)) {
 
 
         com.paperapps.paperui.components.PanoramaHeader(
@@ -590,7 +592,18 @@ fun EinkPlaylistDetailsScreen(
                 ),
                 com.paperapps.paperui.components.AppbarMenuItem(
                     label = "Download",
-                    onClick = { /* Implement download if needed */ }
+                    onClick = {
+                        moe.rukamori.papertunes.ui.utils.sendAddMissingDownloads(
+                            context = context,
+                            songs = songs.map { song ->
+                                moe.rukamori.papertunes.ui.utils.HeaderDownloadItem(
+                                    id = song.song.id,
+                                    title = song.song.song.title,
+                                )
+                            },
+                            downloads = downloadUtil.downloads.value,
+                        )
+                    }
                 ),
                 com.paperapps.paperui.components.AppbarMenuItem(
                     label = if (isPlaylistAutoDownloadEnabled) "Auto-download: ON" else "Auto-download: OFF",
@@ -616,7 +629,7 @@ fun EinkPlaylistEditScreen(
     val playlist by viewModel.playlist.collectAsState()
     val songs by viewModel.playlistSongs.collectAsState()
 
-    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+    Box(modifier = Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color.White)) {
         Column(modifier = Modifier.fillMaxSize()) {
             if (songs.isEmpty()) {
                 EinkEmptyState(
@@ -680,7 +693,7 @@ fun EinkPlaylistAddSongsScreen(
         moe.rukamori.papertunes.innertube.utils.hasYouTubeLoginCookie(innerTubeCookie) 
     }
 
-    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+    Box(modifier = Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color.White)) {
         Column(modifier = Modifier.fillMaxSize()) {
             Row(
                 modifier = Modifier

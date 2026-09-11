@@ -160,7 +160,7 @@ fun EinkYouTubeArtistScreen(
         hasHandledInitialTab = true
     }
 
-    Column(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+    Column(modifier = Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color.White)) {
 
         com.paperapps.paperui.components.PanoramaHeader(
             pagerState = pagerState,

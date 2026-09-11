@@ -502,6 +502,7 @@ fun SelectionSongMenu(
                             },
                             modifier =
                                 Modifier.clickable {
+                                    onDismiss()
                                     sendAddMissingDownloads(
                                         context = context,
                                         songs =
@@ -513,6 +514,7 @@ fun SelectionSongMenu(
                                             },
                                         downloads = downloadUtil.downloads.value,
                                     )
+                                    clearAction()
                                 },
                             colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                         )
@@ -1058,6 +1060,10 @@ fun SelectionMediaMetadataMenu(
                             },
                             modifier =
                                 Modifier.clickable {
+                                    onDismiss()
+                                    database.transaction {
+                                        songSelection.forEach { insert(it) }
+                                    }
                                     sendAddMissingDownloads(
                                         context = context,
                                         songs =
@@ -1069,6 +1075,7 @@ fun SelectionMediaMetadataMenu(
                                             },
                                         downloads = downloadUtil.downloads.value,
                                     )
+                                    clearAction()
                                 },
                             colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                         )

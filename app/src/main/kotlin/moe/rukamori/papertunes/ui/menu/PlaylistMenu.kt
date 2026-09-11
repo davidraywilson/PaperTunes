@@ -798,6 +798,7 @@ fun PlaylistMenu(
                                 },
                                 modifier =
                                     Modifier.clickable {
+                                        onDismiss()
                                         sendAddMissingDownloads(
                                             context = context,
                                             songs =

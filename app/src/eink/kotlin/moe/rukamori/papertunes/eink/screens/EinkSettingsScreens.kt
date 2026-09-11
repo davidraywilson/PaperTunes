@@ -59,7 +59,7 @@ fun EinkMoreScreen(navController: NavController) {
     PaperLazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(androidx.compose.ui.graphics.Color.White)
             .padding(
                 top = WindowInsets.systemBars.asPaddingValues().calculateTopPadding() + 16.dp,
                 bottom = 16.dp,
@@ -126,7 +126,7 @@ fun EinkSettingsScreen(
     PaperLazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(androidx.compose.ui.graphics.Color.White)
             .padding(
                 top = WindowInsets.systemBars.asPaddingValues().calculateTopPadding() + 16.dp,
                 bottom = 16.dp,

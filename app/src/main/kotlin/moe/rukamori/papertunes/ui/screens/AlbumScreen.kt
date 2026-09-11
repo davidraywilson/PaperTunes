@@ -1116,6 +1116,38 @@ fun AlbumScreen(
                             contentDescription = null,
                         )
                     }
+                } else if (albumWithSongs?.songs?.isNotEmpty() == true && downloadState != HeaderDownloadState.Completed) {
+                    IconButton(
+                        onClick = {
+                            albumWithSongs?.let { albumData ->
+                                downloadProgressToolbarDismissed = false
+                                sendAddMissingDownloads(
+                                    context = context,
+                                    songs =
+                                        albumData.songs.map {
+                                            HeaderDownloadItem(
+                                                id = it.id,
+                                                title = it.song.title,
+                                            )
+                                        },
+                                    downloads = downloads,
+                                )
+                            }
+                        },
+                        onLongClick = {},
+                    ) {
+                        when (val state = downloadState) {
+                            is HeaderDownloadState.Partial -> {
+                                HeaderDownloadProgressIndicator(progress = state.progress)
+                            }
+                            else -> {
+                                Icon(
+                                    painter = painterResource(R.drawable.download),
+                                    contentDescription = null,
+                                )
+                            }
+                        }
+                    }
                 }
             },
         )

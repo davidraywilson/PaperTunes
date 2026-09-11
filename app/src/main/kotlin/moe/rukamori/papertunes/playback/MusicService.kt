@@ -280,6 +280,9 @@ class MusicService :
     lateinit var database: MusicDatabase
 
     @Inject
+    lateinit var downloadUtil: DownloadUtil
+
+    @Inject
     lateinit var lyricsHelper: LyricsHelper
 
     @Inject
@@ -5840,13 +5843,14 @@ class MusicService :
             }
         }
 
-        // Safety net: if content length is still unknown but the song has data in
-        // downloadCache, return the original dataSpec and let CacheDataSource handle
-        // it. This prevents a network call for songs that are fully downloaded but
-        // whose content length could not be determined from any metadata source.
-        if (allowCacheShortCircuit && requiredCachedLength == null && downloadCache.keys.contains(mediaId)) {
+        // Safety net: if the song is fully downloaded according to DownloadManager,
+        // or if content length is unknown but we have some cached data, return the
+        // original dataSpec and let CacheDataSource handle it. This prevents a network
+        // call for downloaded songs whose content length didn't perfectly match cache.
+        val isFullyDownloaded = downloadUtil.downloads.value[mediaId]?.state == androidx.media3.exoplayer.offline.Download.STATE_COMPLETED
+        if (allowCacheShortCircuit && (isFullyDownloaded || (requiredCachedLength == null && downloadCache.keys.contains(mediaId)))) {
             scope.launch(Dispatchers.IO) { recoverSong(mediaId) }
-            return dataSpec
+            return if (isFullyDownloaded) dataSpec.subrange(0L, androidx.media3.common.C.LENGTH_UNSET.toLong()) else dataSpec
         }
 
         val lowDataModeActive = isLowDataModeActive()

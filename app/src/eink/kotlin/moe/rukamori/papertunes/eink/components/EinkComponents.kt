@@ -17,7 +17,11 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.border
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -383,3 +387,46 @@ val OutlinedPause: ImageVector
             close()
         }
     }.build()
+
+@Composable
+fun EinkSegmentedControl(
+    items: List<String>,
+    selectedIndex: Int,
+    onItemSelection: (Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(32.dp)
+            .border(2.dp, Color.Black, androidx.compose.foundation.shape.RoundedCornerShape(8.dp))
+            .clip(androidx.compose.foundation.shape.RoundedCornerShape(8.dp))
+    ) {
+        items.forEachIndexed { index, item ->
+            val isSelected = index == selectedIndex
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+                    .clickable { onItemSelection(index) }
+                    .background(if (isSelected) Color.Black else Color.Transparent),
+                contentAlignment = Alignment.Center
+            ) {
+                com.mudita.mmd.components.text.TextMMD(
+                    text = item,
+                    color = if (isSelected) Color.White else Color.Black,
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                    fontSize = 12.sp
+                )
+            }
+            if (index < items.size - 1) {
+                Box(
+                    modifier = Modifier
+                        .width(2.dp)
+                        .fillMaxHeight()
+                        .background(Color.Black)
+                )
+            }
+        }
+    }
+}
