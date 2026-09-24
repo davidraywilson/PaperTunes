@@ -63,10 +63,10 @@ android {
 
     defaultConfig {
     applicationId = "moe.rukamori.archivetune"
-        minSdk = 26
-        targetSdk = 37
+        minSdk = 28
+        targetSdk = 36
         versionCode = 1
-        versionName = "0.0.0"
+        versionName = "0.0.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
@@ -436,7 +436,11 @@ androidComponents {
                 metadataFile.set(rootProject.layout.projectDirectory.file("IconPack/metadata.json"))
                 svgDirectory.set(rootProject.layout.projectDirectory.dir("IconPack/svg"))
                 applicationId.set(variant.applicationId)
-                targetActivityClassName.set("moe.rukamori.archivetune.MainActivity")
+                                if (variant.flavorName?.contains("eink", ignoreCase = true) == true) {
+                    targetActivityClassName.set("moe.rukamori.archivetune.eink.EinkActivity")
+                } else {
+                    targetActivityClassName.set("moe.rukamori.archivetune.MainActivity")
+                }
                 resourceOutputDirectory.set(
                     layout.buildDirectory.dir("generated/iconPack/${variant.name}/res"),
                 )

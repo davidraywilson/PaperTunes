@@ -156,12 +156,7 @@ fun EinkSettingsScreen(
                 scanState.errorMessage != null -> "Scan failed: ${scanState.errorMessage}"
                 scanState.lastSummary != null -> {
                     val summary = scanState.lastSummary!!
-                    // val enrichedStr = if (emptyList<String>().isNotEmpty()) {
-                        // " Enriched: " + emptyList<String>().joinToString(", ")
-                    } else {
-                        ""
-                    }
-                    "Last scan: Found ${summary.scannedSongs} new songs.$enrichedStr"
+                    "Last scan: Found ${summary.scannedSongs} new songs."
                 }
                 !hasStoragePermission -> "Tap to grant permission and scan"
                 else -> "Scan device for local audio files"
@@ -208,13 +203,6 @@ fun EinkSettingsScreen(
             }
         }
         
-        item {
-            EinkTwoLineRow(
-                title = "Force High Quality Downloads",
-                // subtitle = if (forceHighQuality) "Enabled (High Quality)" else "Disabled (Data Saver Default)",
-                // onClick = { onForceHighQualityChange(!forceHighQuality) },
-                showDivider = false
-            )
-        }
+
     }
 }
