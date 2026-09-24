@@ -1,0 +1,57 @@
+/*
+ * PaperTunes (2026)
+ * © Rukamori — github.com/rukamori
+ * GPL-3.0 License | Contributors: see git history
+ * Do not remove or alter this notice. - Per GPL-3.0 Section 4 & Section 5
+ */
+
+package moe.rukamori.archivetune.eink.viewmodels
+
+import android.content.Context
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.stateIn
+import moe.rukamori.archivetune.constants.SongSortType
+import moe.rukamori.archivetune.db.MusicDatabase
+import javax.inject.Inject
+
+@OptIn(ExperimentalCoroutinesApi::class)
+@HiltViewModel
+class EinkLibrarySongsViewModel
+    @Inject
+    constructor(
+        @ApplicationContext private val context: Context,
+        private val database: MusicDatabase,
+    ) : ViewModel() {
+
+        // Sort preference — default NAME ascending for e-ink readability
+        private val _sortType = MutableStateFlow(SongSortType.NAME)
+        val sortType = _sortType.asStateFlow()
+
+        private val _sortDescending = MutableStateFlow(false)
+        val sortDescending = _sortDescending.asStateFlow()
+
+        // Unified song list: liked OR isLocal=1 OR dateDownload IS NOT NULL
+        // All three source types merged and deduplicated by title, local wins over YTM
+        val allSongs =
+            combine(_sortType, _sortDescending) { sort, desc -> sort to desc }
+                .flatMapLatest { (sort, desc) ->
+                    database.likedSongs(sort, desc)
+                }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+
+        fun setSortType(type: SongSortType) {
+            _sortType.value = type
+        }
+
+        fun toggleSortOrder() {
+            _sortDescending.value = !_sortDescending.value
+        }
+    }

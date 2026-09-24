@@ -65,8 +65,8 @@ android {
     applicationId = "moe.rukamori.archivetune"
         minSdk = 26
         targetSdk = 37
-        versionCode = 141
-        versionName = "15.0.0"
+        versionCode = 1
+        versionName = "0.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
@@ -133,8 +133,15 @@ android {
         buildConfigField("String", "RELEASE_GITHUB_REPO", releaseGithubRepo.asBuildConfigString())
     }
 
-    flavorDimensions += listOf("distribution", "device", "abi")
+    flavorDimensions += listOf("ui", "distribution", "device", "abi")
     productFlavors {
+        create("standard") {
+            dimension = "ui"
+            isDefault = true
+        }
+        create("eink") {
+            dimension = "ui"
+        }
         create("gms") {
             dimension = "distribution"
             isDefault = true
@@ -300,6 +307,9 @@ ksp {
 }
 
 dependencies {
+    implementation(project(":paperui"))
+    implementation("com.mudita:MMD:1.0.1")
+
     implementation(libs.guava)
     implementation(libs.coroutines.guava)
     implementation(libs.concurrent.futures)

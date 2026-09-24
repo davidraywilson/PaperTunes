@@ -1,0 +1,158 @@
+package moe.rukamori.archivetune.eink.screens
+
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import com.paperapps.paperui.components.PanoramaPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.outlined.Shuffle
+import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.Download
+import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.automirrored.rounded.Sort
+import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+import com.paperapps.paperui.components.AppbarAction
+import com.paperapps.paperui.components.ApplicationBar
+import com.paperapps.paperui.components.PanoramaHeader
+import moe.rukamori.archivetune.eink.EinkScreen
+import kotlinx.coroutines.launch
+import moe.rukamori.archivetune.eink.components.EinkNowPlayingButton
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun EinkHomeScreen(
+    navController: NavController,
+) {
+    val coroutineScope = rememberCoroutineScope()
+    val titles = listOf("Playlists", "Songs", "Artists", "Albums")
+    val pagerState = rememberPagerState(pageCount = { titles.size })
+
+    // Playlists edit mode state
+    var isPlaylistsEditMode by remember { mutableStateOf(false) }
+    var playlistEditSelectionCount by remember { mutableIntStateOf(0) }
+    val playlistEditSelectionIds = remember { mutableSetOf<String>() }
+    var showDeletePlaylistsConfirmation by remember { mutableStateOf(false) }
+    var showSortSheet by remember { mutableStateOf(false) }
+    
+    // Action bar state
+    var showCreateDialog by remember { mutableStateOf(false) }
+    var shuffleSongsAction by remember { mutableStateOf<(() -> Unit)?>(null) }
+    // Sort action provided by EinkSongsScreen — invoked when Sort icon is tapped
+    var sortSongsAction by remember { mutableStateOf<(() -> Unit)?>(null) }
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        PanoramaHeader(
+            pagerState = pagerState,
+            titles = titles,
+            coroutineScope = coroutineScope,
+            modifier = Modifier.fillMaxWidth(),
+            screenTitle = "PaperTunes"
+        )
+
+        PanoramaPager(
+            state = pagerState,
+            modifier = Modifier.weight(1f)
+        ) { page ->
+            when (page) {
+                0 -> EinkPlaylistsScreen(
+                    navController = navController,
+                    isInEditMode = isPlaylistsEditMode,
+                    onSelectionChanged = { 
+                        playlistEditSelectionIds.clear()
+                        playlistEditSelectionIds.addAll(it)
+                        playlistEditSelectionCount = it.size 
+                    },
+                    showDeleteConfirmation = showDeletePlaylistsConfirmation,
+                    onDeleteConfirmed = { 
+                        showDeletePlaylistsConfirmation = false
+                        isPlaylistsEditMode = false
+                        playlistEditSelectionIds.clear()
+                        playlistEditSelectionCount = 0
+                    },
+                    onCancelDelete = { showDeletePlaylistsConfirmation = false },
+                    selectedIds = playlistEditSelectionIds,
+                    showSortSheet = showSortSheet,
+                    onDismissSortSheet = { showSortSheet = false },
+                    showCreateDialog = showCreateDialog,
+                    onDismissCreateDialog = { showCreateDialog = false }
+                )
+                1 -> EinkSongsScreen(
+                    navController = navController,
+                    onShuffleReady = { shuffleSongsAction = it },
+                    onSortActionReady = { sortSongsAction = it },
+                )
+                2 -> EinkArtistsScreen(navController)
+                3 -> EinkAlbumsScreen(navController)
+            }
+        }
+
+        var baseActions = listOf(
+            AppbarAction(
+                icon = Icons.Outlined.Search,
+                label = "Search",
+                onClick = { navController.navigate(EinkScreen.Search.route) }
+            )
+        )
+        
+        if (pagerState.currentPage == 0) {
+            baseActions = listOf(
+                AppbarAction(
+                    icon = Icons.Filled.Add,
+                    label = "New",
+                    onClick = { showCreateDialog = true }
+                ),
+                AppbarAction(
+                    icon = Icons.AutoMirrored.Rounded.Sort,
+                    label = "Sort",
+                    onClick = { showSortSheet = true }
+                )
+            ) + baseActions
+        } else if (pagerState.currentPage == 1) {
+            // Songs tab: Shuffle + Sort actions
+            val songsActions = buildList {
+                shuffleSongsAction?.let { action ->
+                    add(AppbarAction(
+                        icon = Icons.Outlined.Shuffle,
+                        label = "Shuffle",
+                        onClick = action,
+                    ))
+                }
+                sortSongsAction?.let { action ->
+                    add(AppbarAction(
+                        icon = Icons.AutoMirrored.Rounded.Sort,
+                        label = "Sort",
+                        onClick = action,
+                    ))
+                }
+            }
+            if (songsActions.isNotEmpty()) {
+                baseActions = songsActions + baseActions
+            }
+        }
+
+        val baseMenuItems = listOf(
+            com.paperapps.paperui.components.AppbarMenuItem(
+                label = "Downloads",
+                onClick = { navController.navigate(EinkScreen.Downloads.route) }
+            ),
+            com.paperapps.paperui.components.AppbarMenuItem(
+                label = "Settings",
+                onClick = { navController.navigate(EinkScreen.Settings.route) }
+            )
+        )
+
+        ApplicationBar(
+            actions = baseActions,
+            menuItems = baseMenuItems,
+            pagerState = pagerState,
+            leftSlot = { EinkNowPlayingButton(navController) }
+        )
+    }
+}

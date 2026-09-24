@@ -75,3 +75,6 @@ include(":morideobfuscator")
 //        substitute(module("com.github.TeamNewPipe:NewPipeExtractor")).using(project(":extractor"))
 //    }
 // }
+
+include(":paperui")
+project(":paperui").projectDir = file("../PaperUI/paperui")
