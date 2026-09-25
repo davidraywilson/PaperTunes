@@ -60,6 +60,8 @@ val hasReleaseSigningConfig =
 android {
     namespace = "moe.rukamori.archivetune"
     compileSdk = 37
+    ndkVersion = "30.0.16248370"
+    compileSdkMinor = 2
 
     defaultConfig {
     applicationId = "moe.rukamori.archivetune"
@@ -168,6 +170,11 @@ android {
         create("tv") {
             dimension = "device"
             buildConfigField("String", "DEVICE", "\"tv\"")
+        }
+        create("automotive") {
+            dimension = "device"
+            minSdk = 28
+            buildConfigField("String", "DEVICE", "\"automotive\"")
         }
         create("universal") {
             dimension = "abi"
@@ -339,6 +346,8 @@ dependencies {
     implementation(libs.lifecycle.runtime.compose)
 
     implementation(libs.material3)
+    implementation(libs.haze)
+    implementation(libs.haze.blur)
     implementation(libs.androidx.graphics.shapes)
     implementation(libs.palette)
     implementation(libs.androidsvg)
@@ -366,6 +375,7 @@ dependencies {
     implementation(libs.media3)
     implementation("androidx.media3:media3-exoplayer-hls:${libs.versions.media3.get()}")
     implementation(libs.media3.session)
+    implementation(libs.car.app)
     implementation(libs.media3.okhttp)
     implementation("androidx.media3:media3-ui:${libs.versions.media3.get()}")
     implementation("androidx.media3:media3-ui-compose:${libs.versions.media3.get()}")
@@ -427,6 +437,7 @@ dependencies {
 
 androidComponents {
     onVariants(selector().all()) { variant ->
+        if ("automotive" in variant.name) return@onVariants
         val capitalizedVariantName =
             variant.name.replaceFirstChar { character ->
                 if (character.isLowerCase()) character.titlecase() else character.toString()
@@ -483,13 +494,18 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach 
 }
 
 configurations.configureEach {
+    resolutionStrategy.eachDependency {
+        when (requested.group) {
+            "androidx.compose.runtime",
+            "androidx.compose.foundation",
+            "androidx.compose.ui",
+            "androidx.compose.animation" -> {
+                useVersion(libs.versions.compose.get())
+                because("Keep Compose aligned with the RectList alignment-placement fix")
+            }
+        }
+    }
     resolutionStrategy.force(
-        "androidx.compose.runtime:runtime:${libs.versions.compose.get()}",
-        "androidx.compose.foundation:foundation:${libs.versions.compose.get()}",
-        "androidx.compose.ui:ui:${libs.versions.compose.get()}",
-        "androidx.compose.ui:ui-util:${libs.versions.compose.get()}",
-        "androidx.compose.ui:ui-tooling:${libs.versions.compose.get()}",
-        "androidx.compose.animation:animation-graphics:${libs.versions.compose.get()}",
         "org.jetbrains.kotlin:kotlin-metadata-jvm:${libs.versions.kotlinMetadata.get()}",
     )
 }
