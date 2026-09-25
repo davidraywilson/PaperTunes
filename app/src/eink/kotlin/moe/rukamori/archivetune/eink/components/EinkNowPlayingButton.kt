@@ -11,6 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Pause
 import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material.icons.outlined.KeyboardArrowUp
+import androidx.compose.material.icons.outlined.Downloading
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -30,6 +31,8 @@ import moe.rukamori.archivetune.eink.EinkScreen
 fun EinkNowPlayingButton(navController: NavController) {
     val playerConnection = LocalPlayerConnection.current ?: return
     val isPlaying by playerConnection.isPlaying.collectAsState()
+    val playbackState by playerConnection.playbackState.collectAsState()
+    val isBuffering = playbackState == androidx.media3.common.Player.STATE_BUFFERING
 
     val hasNowPlaying by remember {
         derivedStateOf {

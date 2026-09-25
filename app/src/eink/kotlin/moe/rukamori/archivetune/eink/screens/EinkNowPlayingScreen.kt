@@ -109,6 +109,8 @@ fun EinkNowPlayingScreen(navController: NavController) {
     val librarySong by database.song(mediaMetadata?.id ?: "").collectAsState(initial = null)
     val isLibrarySong = librarySong?.song?.inLibrary != null
     val isPlaying by playerConnection.isPlaying.collectAsState()
+    val playbackState by playerConnection.playbackState.collectAsState()
+    val isBuffering = playbackState == androidx.media3.common.Player.STATE_BUFFERING
     val shuffleEnabled by playerConnection.shuffleModeEnabled.collectAsState()
     val repeatMode by playerConnection.repeatMode.collectAsState()
     val download by LocalDownloadUtil.current.getDownload(mediaMetadata?.id ?: "").collectAsState(initial = null)
@@ -213,6 +215,7 @@ fun EinkNowPlayingScreen(navController: NavController) {
                         PaperProgressBar(
                             progress = sliderPosition.coerceIn(0f, 1f),
                             modifier = Modifier.fillMaxWidth(),
+                            isIndeterminate = isBuffering,
                             onProgressChange = { value ->
                                 sliderPosition = value
                                 if (duration > 0) {
