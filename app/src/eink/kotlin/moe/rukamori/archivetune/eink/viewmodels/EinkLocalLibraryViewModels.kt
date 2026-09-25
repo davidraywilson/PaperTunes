@@ -25,31 +25,28 @@ class EinkLibraryArtistsViewModel
         private val database: MusicDatabase,
     ) : ViewModel() {
 
-        // artistsBookmarked: YTM-followed artists + local artists + artists from downloaded songs
         val allArtists =
             combine(
                 database.artistsBookmarked(ArtistSortType.NAME, false),
                 database.importSongCandidates()
             ) { bookmarked, librarySongs ->
-                val artistMap = mutableMapOf<String, ArtistEntity>()
+                val allEntities = mutableMapOf<String, ArtistEntity>()
                 val artistSongCount = mutableMapOf<String, Int>()
 
-                // 1. Add bookmarked artists (these might be followed online)
+                // Add from bookmarked
                 bookmarked.forEach { 
-                    artistMap[it.id] = it.artist
+                    allEntities[it.id] = it.artist
                     artistSongCount[it.id] = it.songCount
                 }
 
-                // 2. Add artists from library songs (local + downloaded + liked)
+                // Add from library songs
                 librarySongs.forEach { song ->
                     song.artists.forEach { artist ->
-                        artistMap[artist.id] = artist
-                        // We count library songs for these artists
-                        // If it's a new artist, start at 1, if it existed, we might just recompute it
+                        allEntities[artist.id] = artist
                     }
                 }
-                
-                // Recompute exact library song count for ALL artists to be safe
+
+                // Recompute accurate library song count for artists
                 val computedSongCount = mutableMapOf<String, Int>()
                 librarySongs.forEach { song ->
                     song.artists.forEach { artist ->
@@ -57,13 +54,33 @@ class EinkLibraryArtistsViewModel
                     }
                 }
 
-                artistMap.values.map { entity ->
+                // First create the raw unmerged list
+                val rawArtists = allEntities.values.map { entity ->
                     Artist(
                         artist = entity,
                         songCount = computedSongCount[entity.id] ?: artistSongCount[entity.id] ?: 0,
                         timeListened = 0
                     )
-                }.sortedBy { it.title.lowercase() }
+                }
+
+                // Now MERGE by case-insensitive name
+                rawArtists
+                    .groupBy { it.title.lowercase() }
+                    .map { (name, group) ->
+                        // Prioritize YouTube artists (isLocal == false) over Local ones
+                        val bestRepresentative = group.minByOrNull { if (it.artist.isLocal) 1 else 0 } ?: group.first()
+                        
+                        // Sum up the song counts of all merged entities
+                        // Note: If an artist has no songs (just bookmarked), this safely carries over 0
+                        val totalSongs = group.sumOf { it.songCount }
+                        
+                        Artist(
+                            artist = bestRepresentative.artist,
+                            songCount = totalSongs,
+                            timeListened = group.sumOf { it.timeListened ?: 0 }
+                        )
+                    }
+                    .sortedBy { it.title.lowercase() }
             }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
     }
 
@@ -75,37 +92,52 @@ class EinkLibraryAlbumsViewModel
         private val database: MusicDatabase,
     ) : ViewModel() {
 
-        // albumsLiked: YTM-bookmarked albums + local albums + albums from downloaded songs
         val allAlbums =
             combine(
                 database.albumsLiked(AlbumSortType.NAME, false),
                 database.importSongCandidates()
             ) { liked, librarySongs ->
-                val albumMap = mutableMapOf<String, AlbumEntity>()
+                val allEntities = mutableMapOf<String, AlbumEntity>()
                 val albumArtistsMap = mutableMapOf<String, List<ArtistEntity>>()
 
-                // 1. Add explicitly liked/bookmarked albums
                 liked.forEach { 
-                    albumMap[it.id] = it.album
+                    allEntities[it.id] = it.album
                     albumArtistsMap[it.id] = it.artists
                 }
 
-                // 2. Add albums derived from library songs
                 librarySongs.forEach { song ->
                     song.album?.let { albumEntity ->
-                        albumMap[albumEntity.id] = albumEntity
+                        allEntities[albumEntity.id] = albumEntity
                         if (!albumArtistsMap.containsKey(albumEntity.id)) {
                             albumArtistsMap[albumEntity.id] = song.artists
                         }
                     }
                 }
 
-                albumMap.values.map { entity ->
+                val rawAlbums = allEntities.values.map { entity ->
                     Album(
                         album = entity,
                         artists = albumArtistsMap[entity.id] ?: emptyList(),
                         songCountListened = 0
                     )
-                }.sortedBy { it.title.lowercase() }
+                }
+
+                // Merge by case-insensitive title
+                rawAlbums
+                    .groupBy { it.title.lowercase() }
+                    .map { (title, group) ->
+                        // Prefer online/YouTube albums over local ones if duplicates exist
+                        val bestRepresentative = group.minByOrNull { if (it.album.isLocal) 1 else 0 } ?: group.first()
+                        
+                        // Pick the artists from the representative
+                        val representativeArtists = albumArtistsMap[bestRepresentative.id] ?: emptyList()
+                        
+                        Album(
+                            album = bestRepresentative.album,
+                            artists = representativeArtists,
+                            songCountListened = group.sumOf { it.songCountListened ?: 0 }
+                        )
+                    }
+                    .sortedBy { it.title.lowercase() }
             }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
     }

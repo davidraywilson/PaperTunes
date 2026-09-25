@@ -35,17 +35,24 @@ class EinkLibrarySongsViewModel
 
         // Unified song list: liked OR isLocal=1 OR dateDownload IS NOT NULL
         // importSongCandidates() already returns `WHERE inLibrary IS NOT NULL OR isLocal`
-        // which perfectly captures all 3 categories (liked and downloaded songs both set inLibrary)
         val allSongs =
             combine(_sortType, _sortDescending) { sort, desc -> sort to desc }
                 .flatMapLatest { (sort, desc) ->
                     database.importSongCandidates().map { songs ->
-                        // Manual in-memory sort to fulfill the sort types
+                        // Deduplicate by title (case-insensitive). Local wins over YTM.
+                        val deduplicated = songs
+                            .groupBy { it.title.lowercase() }
+                            .map { (title, group) ->
+                                // local wins over YTM
+                                group.maxByOrNull { if (it.song.isLocal) 1 else 0 } ?: group.first()
+                            }
+
+                        // Manual in-memory sort
                         val sorted = when (sort) {
-                            SongSortType.NAME -> songs.sortedBy { it.title.lowercase() }
-                            SongSortType.CREATE_DATE -> songs.sortedBy { it.song.inLibrary ?: it.song.dateModified ?: it.song.date }
-                            SongSortType.PLAY_TIME -> songs.sortedBy { it.song.totalPlayTime }
-                            SongSortType.ARTIST -> songs.sortedBy { it.artists.firstOrNull()?.name?.lowercase() ?: "" }
+                            SongSortType.NAME -> deduplicated.sortedBy { it.title.lowercase() }
+                            SongSortType.CREATE_DATE -> deduplicated.sortedBy { it.song.inLibrary ?: it.song.dateModified ?: it.song.date }
+                            SongSortType.PLAY_TIME -> deduplicated.sortedBy { it.song.totalPlayTime }
+                            SongSortType.ARTIST -> deduplicated.sortedBy { it.artists.firstOrNull()?.name?.lowercase() ?: "" }
                         }
                         
                         if (desc) sorted.reversed() else sorted
