@@ -297,6 +297,7 @@ fun EinkYouTubeArtistScreen(
                                                     song.toMediaMetadata(),
                                                 )
                                             )
+                                            navController.navigate(moe.rukamori.archivetune.eink.EinkScreen.NowPlaying.route)
                                         }
                                     },
                                     onLongClick = {
@@ -354,12 +355,15 @@ fun EinkYouTubeArtistScreen(
                                     subtitle = subtitle,
                                     onClick = {
                                         when (item) {
-                                            is SongItem -> playerConnection.playQueue(
-                                                YouTubeQueue(
-                                                    WatchEndpoint(videoId = item.id),
-                                                    item.toMediaMetadata(),
+                                            is SongItem -> {
+                                                playerConnection.playQueue(
+                                                    YouTubeQueue(
+                                                        WatchEndpoint(videoId = item.id),
+                                                        item.toMediaMetadata(),
+                                                    )
                                                 )
-                                            )
+                                                navController.navigate(moe.rukamori.archivetune.eink.EinkScreen.NowPlaying.route)
+                                            }
                                             is AlbumItem -> navController.navigate(einkAlbumDetailsRoute(item.id))
                                             is ArtistItem -> navController.navigate(einkYouTubeArtistDetailsRoute(item.id))
                                             is PlaylistItem -> navController.navigate(einkPlaylistDetailsRoute(item.id))
