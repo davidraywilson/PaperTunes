@@ -159,7 +159,7 @@ fun EinkAlbumsScreen(
 fun EinkArtistDetailsScreen(
     navController: NavController,
     artistId: String,
-    songsViewModel: ArtistSongsViewModel = hiltViewModel(),
+    songsViewModel: ArtistSongsViewModel = hiltViewModel(), einkContentViewModel: moe.rukamori.archivetune.eink.viewmodels.EinkArtistContentViewModel = hiltViewModel(),
     albumsViewModel: ArtistAlbumsViewModel = hiltViewModel(),
 ) {
     val menuState = LocalEinkMenuState.current
@@ -168,9 +168,9 @@ fun EinkArtistDetailsScreen(
     val playerConnection = LocalPlayerConnection.current ?: return
     val coroutineScope = androidx.compose.runtime.rememberCoroutineScope()
 
-    val songs by songsViewModel.songs.collectAsState()
+    val songs by einkContentViewModel.librarySongs.collectAsState()
     val artist by songsViewModel.artist.collectAsState()
-    val albums by albumsViewModel.albums.collectAsState()
+    val albums by einkContentViewModel.libraryAlbums.collectAsState()
     val mediaMetadata by playerConnection.mediaMetadata.collectAsState()
 
     val artistName = artist?.artist?.name.orEmpty()

@@ -112,7 +112,7 @@ private const val TAB_DETAILS = 2
 fun EinkYouTubeArtistScreen(
     navController: NavController,
     artistId: String,
-    viewModel: ArtistViewModel = hiltViewModel(),
+    viewModel: ArtistViewModel = hiltViewModel(), einkContentViewModel: moe.rukamori.archivetune.eink.viewmodels.EinkArtistContentViewModel = hiltViewModel(),
 ) {
     val haptic = LocalHapticFeedback.current
     val playerConnection = LocalPlayerConnection.current ?: return
@@ -121,8 +121,8 @@ fun EinkYouTubeArtistScreen(
 
     val artistPage = viewModel.artistPage
     val libraryArtist by viewModel.libraryArtist.collectAsStateWithLifecycle()
-    val librarySongs by viewModel.librarySongs.collectAsStateWithLifecycle()
-    val libraryAlbums by viewModel.libraryAlbums.collectAsStateWithLifecycle()
+    val librarySongs by einkContentViewModel.librarySongs.collectAsStateWithLifecycle()
+    val libraryAlbums by einkContentViewModel.libraryAlbums.collectAsStateWithLifecycle()
     val mediaMetadata by playerConnection.mediaMetadata.collectAsState()
 
     val hasLibraryContent = librarySongs.isNotEmpty() || libraryAlbums.isNotEmpty()
