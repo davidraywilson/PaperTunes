@@ -1,20 +1,18 @@
 package moe.rukamori.archivetune.eink.screens
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Cancel
 import androidx.compose.material.icons.outlined.Error
@@ -24,65 +22,34 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.media3.exoplayer.offline.Download
-import androidx.media3.exoplayer.offline.DownloadService
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.paperapps.paperui.components.PaperLazyColumn
 import com.mudita.mmd.components.progress_indicator.CircularProgressIndicatorMMD
-import kotlinx.coroutines.delay
-import moe.rukamori.archivetune.LocalDownloadUtil
 import moe.rukamori.archivetune.R
 import moe.rukamori.archivetune.eink.components.EinkEmptyState
-import moe.rukamori.archivetune.playback.ExoDownloadService
+import moe.rukamori.archivetune.viewmodels.DownloadLibraryViewModel
+import moe.rukamori.archivetune.viewmodels.DownloadLibraryScreenState
 
 @Composable
-fun EinkDownloadsScreen(navController: NavController) {
-    val context = LocalContext.current
-    val downloadUtil = LocalDownloadUtil.current
-    val downloadsMap by downloadUtil.downloads.collectAsState()
-    var tick by remember { mutableIntStateOf(0) }
+fun EinkDownloadsScreen(
+    navController: NavController,
+    viewModel: DownloadLibraryViewModel = hiltViewModel(),
+) {
+    val screenState by viewModel.screenState.collectAsStateWithLifecycle(null)
     
-    val hasActiveDownloads = remember(downloadsMap) {
-        downloadsMap.values.any { it.state == Download.STATE_DOWNLOADING }
-    }
-    
-    LaunchedEffect(hasActiveDownloads) {
-        if (hasActiveDownloads) {
-            while (true) {
-                delay(3000)
-                tick++
-            }
-        }
-    }
-    
-    val queuedDownloads = remember(downloadsMap, tick) {
-        val freshActiveDownloads = downloadUtil.downloadManager.currentDownloads.associateBy { it.request.id }
-        
-        downloadsMap.values.map { download ->
-            freshActiveDownloads[download.request.id] ?: download
-        }.filter { 
-            it.state == Download.STATE_QUEUED || 
-            it.state == Download.STATE_DOWNLOADING ||
-            it.state == Download.STATE_FAILED ||
-            it.state == Download.STATE_RESTARTING ||
-            it.state == Download.STATE_STOPPED
-        }.sortedByDescending { it.updateTimeMs }
-    }
+    val state = screenState as? DownloadLibraryScreenState.Success
+    val progressEntries = state?.library?.progressSections?.flatMap { it.entries }.orEmpty()
 
-    if (queuedDownloads.isEmpty()) {
+    if (progressEntries.isEmpty()) {
         EinkEmptyState(
             title = "Downloads",
             body = "No active downloads"
@@ -100,14 +67,13 @@ fun EinkDownloadsScreen(navController: NavController) {
                 start = 16.dp,
                 end = 16.dp,
             ),
-        refreshKey = queuedDownloads,
+        refreshKey = progressEntries,
     ) {
         items(
-            count = queuedDownloads.size,
-            key = { index -> queuedDownloads[index].request.id }
+            count = progressEntries.size,
+            key = { index -> progressEntries[index].id }
         ) { index ->
-            val download = queuedDownloads[index]
-            val title = String(download.request.data)
+            val entry = progressEntries[index]
             
             Row(
                 modifier = Modifier
@@ -120,20 +86,20 @@ fun EinkDownloadsScreen(navController: NavController) {
                     modifier = Modifier.weight(1f),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    if (download.state == Download.STATE_DOWNLOADING) {
-                        CircularProgressIndicatorMMD(
-                            modifier = Modifier.size(24.dp)
-                        )
-                    } else if (download.state == Download.STATE_FAILED) {
+                    if (entry.failed) {
                         Icon(
                             imageVector = Icons.Outlined.Error,
                             contentDescription = "Failed", tint = androidx.compose.ui.graphics.Color.Black,
                             modifier = Modifier.size(24.dp)
                         )
-                    } else {
+                    } else if (entry.paused) {
                         Icon(
                             painter = androidx.compose.ui.res.painterResource(R.drawable.download),
                             contentDescription = "Queued", tint = androidx.compose.ui.graphics.Color.Black,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    } else {
+                        CircularProgressIndicatorMMD(
                             modifier = Modifier.size(24.dp)
                         )
                     }
@@ -142,23 +108,20 @@ fun EinkDownloadsScreen(navController: NavController) {
                     
                     Column {
                         Text(
-                            text = title.ifBlank { "Unknown Song" },
+                            text = entry.title.ifBlank { "Unknown Song" },
                             fontSize = 20.sp,
                             fontWeight = FontWeight.SemiBold,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
                         
-                        val stateText = when (download.state) {
-                            Download.STATE_QUEUED -> "Queued"
-                            Download.STATE_DOWNLOADING -> {
-                                val percent = download.percentDownloaded
-                                if (percent >= 0f) "Downloading (${percent.toInt()}%)" else "Downloading..."
+                        val stateText = when {
+                            entry.failed -> "Failed"
+                            entry.paused -> "Paused / Queued"
+                            else -> {
+                                val percent = entry.percent
+                                if (percent >= 0) "Downloading ($percent%)" else "Downloading..."
                             }
-                            Download.STATE_FAILED -> "Failed"
-                            Download.STATE_STOPPED -> "Paused"
-                            Download.STATE_RESTARTING -> "Restarting"
-                            else -> "Processing"
                         }
                         
                         Text(
@@ -170,38 +133,17 @@ fun EinkDownloadsScreen(navController: NavController) {
                     }
                 }
                 
-                if (download.state == Download.STATE_FAILED || download.state == Download.STATE_STOPPED) {
-                    IconButton(onClick = {
-                        DownloadService.sendSetStopReason(
-                            context,
-                            ExoDownloadService::class.java,
-                            download.request.id,
-                            androidx.media3.exoplayer.offline.Download.STOP_REASON_NONE,
-                            false
-                        )
-                        DownloadService.sendAddDownload(
-                            context,
-                            ExoDownloadService::class.java,
-                            download.request,
-                            false
-                        )
-                    }) {
+                if (entry.failed || entry.paused) {
+                    IconButton(onClick = { viewModel.resume(entry) }) {
                         Icon(
                             imageVector = Icons.Outlined.Refresh,
-                            contentDescription = "Retry download", tint = androidx.compose.ui.graphics.Color.Black,
+                            contentDescription = "Resume download", tint = androidx.compose.ui.graphics.Color.Black,
                             modifier = Modifier.size(28.dp)
                         )
                     }
                 }
                 
-                IconButton(onClick = {
-                    DownloadService.sendRemoveDownload(
-                        context,
-                        ExoDownloadService::class.java,
-                        download.request.id,
-                        false
-                    )
-                }) {
+                IconButton(onClick = { viewModel.remove(entry) }) {
                     Icon(
                         imageVector = Icons.Outlined.Cancel,
                         contentDescription = "Cancel download", tint = androidx.compose.ui.graphics.Color.Black,
