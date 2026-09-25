@@ -107,8 +107,8 @@ fun EinkArtistsScreen(
                         title = artist.artist.name,
                         subtitle = subtitle,
                         onClick = {
-                            if (artist.artist.channelId != null) {
-                                navController.navigate(einkYouTubeArtistDetailsRoute(artist.artist.channelId!!))
+                            if (artist.artist.isYouTubeArtist) {
+                                navController.navigate(einkYouTubeArtistDetailsRoute(artist.artist.channelId ?: artist.id))
                             } else {
                                 navController.navigate(einkArtistDetailsRoute(artist.id))
                             }
@@ -497,8 +497,8 @@ fun EinkAlbumDetailsScreen(
                             icon = Icons.Outlined.Person,
                             label = "Artist",
                             onClick = {
-                                if (artist.channelId != null) {
-                                    navController.navigate(moe.rukamori.archivetune.eink.einkYouTubeArtistDetailsRoute(artist.channelId))
+                                if (artist.isYouTubeArtist) {
+                                    navController.navigate(moe.rukamori.archivetune.eink.einkYouTubeArtistDetailsRoute(artist.channelId ?: artist.id))
                                 } else {
                                     navController.navigate(moe.rukamori.archivetune.eink.einkArtistDetailsRoute(artist.id))
                                 }
