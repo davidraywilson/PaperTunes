@@ -1,10 +1,3 @@
-/*
- * PaperTunes (2026)
- * © Rukamori — github.com/rukamori
- * GPL-3.0 License | Contributors: see git history
- * Do not remove or alter this notice. - Per GPL-3.0 Section 4 & Section 5
- */
-
 package moe.rukamori.archivetune.eink.viewmodels
 
 import android.content.Context
@@ -18,6 +11,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import moe.rukamori.archivetune.constants.SongSortType
 import moe.rukamori.archivetune.db.MusicDatabase
@@ -40,11 +34,22 @@ class EinkLibrarySongsViewModel
         val sortDescending = _sortDescending.asStateFlow()
 
         // Unified song list: liked OR isLocal=1 OR dateDownload IS NOT NULL
-        // All three source types merged and deduplicated by title, local wins over YTM
+        // importSongCandidates() already returns `WHERE inLibrary IS NOT NULL OR isLocal`
+        // which perfectly captures all 3 categories (liked and downloaded songs both set inLibrary)
         val allSongs =
             combine(_sortType, _sortDescending) { sort, desc -> sort to desc }
                 .flatMapLatest { (sort, desc) ->
-                    database.likedSongs(sort, desc)
+                    database.importSongCandidates().map { songs ->
+                        // Manual in-memory sort to fulfill the sort types
+                        val sorted = when (sort) {
+                            SongSortType.NAME -> songs.sortedBy { it.title.lowercase() }
+                            SongSortType.CREATE_DATE -> songs.sortedBy { it.song.inLibrary ?: it.song.dateModified ?: it.song.date }
+                            SongSortType.PLAY_TIME -> songs.sortedBy { it.song.totalPlayTime }
+                            SongSortType.ARTIST -> songs.sortedBy { it.artists.firstOrNull()?.name?.lowercase() ?: "" }
+                        }
+                        
+                        if (desc) sorted.reversed() else sorted
+                    }
                 }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
         fun setSortType(type: SongSortType) {
