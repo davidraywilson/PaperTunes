@@ -213,17 +213,7 @@ fun EinkSongMenu(
                     }
                 }
 
-                val req = DownloadRequest
-                    .Builder(originalSong.id, originalSong.id.toUri())
-                    .setCustomCacheKey(originalSong.id)
-                    .setData(originalSong.song.title.toByteArray())
-                    .build()
-                DownloadService.sendAddDownload(
-                    context,
-                    moe.rukamori.archivetune.playback.ExoDownloadService::class.java,
-                    req,
-                    false
-                )
+                moe.rukamori.archivetune.ui.utils.sendAddMissingDownloads(context, listOf(moe.rukamori.archivetune.ui.utils.HeaderDownloadItem(originalSong.id, originalSong.song.title)), downloadsMap)
             }
         )
     }
