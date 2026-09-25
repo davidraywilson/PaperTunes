@@ -373,7 +373,7 @@ fun EinkAlbumDetailsScreen(
                         if (page == 0) {
                             Column(modifier = Modifier.fillMaxSize()) {
                                 
-                                if (uiState is AlbumUiState.Empty || (uiState is AlbumUiState.Content && songs.isEmpty())) {
+                                if (uiState is AlbumUiState.Empty || (uiState is AlbumUiState.Success && songs.isEmpty())) {
                                     EinkEmptyState(
                                         title = albumTitle.ifBlank { "Album" },
                                         body = "No songs in this album yet.",

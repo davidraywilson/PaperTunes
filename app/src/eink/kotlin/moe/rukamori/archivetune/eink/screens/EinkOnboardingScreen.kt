@@ -276,7 +276,7 @@ fun EinkOnboardingScreen(
                                     color = androidx.compose.ui.graphics.Color.DarkGray
                                 )
                             }
-                            localSyncStarted && scanState.errorMessage != null -> {
+                            localSyncStarted && scanState.errorMessageRes != null -> {
                                 // Scan failed
                                 Icon(
                                     imageVector = Icons.Outlined.Sync,
@@ -294,7 +294,7 @@ fun EinkOnboardingScreen(
                                 )
                                 Spacer(modifier = Modifier.height(16.dp))
                                 Text(
-                                    text = "Scan failed: ${scanState.errorMessage}",
+                                    text = "Scan failed: ${androidx.compose.ui.res.stringResource(scanState.errorMessageRes!!)}",
                                     fontSize = 16.sp,
                                     textAlign = TextAlign.Center,
                                     color = androidx.compose.ui.graphics.Color.DarkGray
@@ -504,12 +504,12 @@ fun EinkOnboardingScreen(
                 } else {
                     // Show "Sync Now" only if not already started (or on error for retry)
                     val showSyncAction = !localSyncStarted ||
-                        scanState.errorMessage != null
+                        scanState.errorMessageRes != null
                     if (showSyncAction && isPermissionGranted) {
                         actions.add(
                             AppbarAction(
                                 icon = Icons.Outlined.Sync,
-                                label = if (scanState.errorMessage != null) "Retry" else "Sync Now",
+                                label = if (scanState.errorMessageRes != null) "Retry" else "Sync Now",
                                 onClick = {
                                     localSyncStarted = true
                                     localSongsViewModel.scanDevice()

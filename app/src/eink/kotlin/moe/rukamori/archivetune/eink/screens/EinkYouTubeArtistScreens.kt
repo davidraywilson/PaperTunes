@@ -119,7 +119,7 @@ fun EinkYouTubeArtistScreen(
     val database = LocalDatabase.current
     val coroutineScope = androidx.compose.runtime.rememberCoroutineScope()
 
-    val artistPage = viewModel.artistPage
+    val artistPage by viewModel.artistPage.collectAsStateWithLifecycle()
     val libraryArtist by viewModel.libraryArtist.collectAsStateWithLifecycle()
     val librarySongs by einkContentViewModel.librarySongs.collectAsStateWithLifecycle()
     val libraryAlbums by einkContentViewModel.libraryAlbums.collectAsStateWithLifecycle()

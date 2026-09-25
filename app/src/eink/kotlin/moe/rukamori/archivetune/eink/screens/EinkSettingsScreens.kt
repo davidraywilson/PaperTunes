@@ -153,7 +153,7 @@ fun EinkSettingsScreen(
         item {
             val scanSubtitle = when {
                 scanState.isScanning -> "Scanning device for audio files..."
-                scanState.errorMessage != null -> "Scan failed: ${scanState.errorMessage}"
+                scanState.errorMessageRes != null -> "Scan failed: ${androidx.compose.ui.res.stringResource(scanState.errorMessageRes!!)}"
                 scanState.lastSummary != null -> {
                     val summary = scanState.lastSummary!!
                     "Last scan: Found ${summary.scannedSongs} new songs."
