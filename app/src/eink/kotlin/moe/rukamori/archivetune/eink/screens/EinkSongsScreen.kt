@@ -37,6 +37,12 @@ import moe.rukamori.archivetune.eink.components.EinkSongSortSheet
 import moe.rukamori.archivetune.eink.menus.EinkSongMenu
 import moe.rukamori.archivetune.eink.viewmodels.EinkLibrarySongsViewModel
 import moe.rukamori.archivetune.extensions.toMediaItem
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
+import moe.rukamori.archivetune.viewmodels.LocalSongsViewModel
 import moe.rukamori.archivetune.extensions.togglePlayPause
 import moe.rukamori.archivetune.eink.components.playShuffled
 import moe.rukamori.archivetune.playback.queues.ListQueue
@@ -47,8 +53,25 @@ fun EinkSongsScreen(
     onShuffleReady: ((() -> Unit)?) -> Unit = {},
     onSortActionReady: ((() -> Unit)?) -> Unit = {},
     viewModel: EinkLibrarySongsViewModel = hiltViewModel(),
+    localSongsViewModel: LocalSongsViewModel = hiltViewModel(),
 ) {
     val haptic = LocalHapticFeedback.current
+    val context = LocalContext.current
+
+    // Refresh local songs on entry (mirrors upstream LocalSongScreen) when audio permission is granted
+    val hasStoragePermission = remember {
+        val permission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            Manifest.permission.READ_MEDIA_AUDIO
+        } else {
+            Manifest.permission.READ_EXTERNAL_STORAGE
+        }
+        ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
+    }
+    LaunchedEffect(localSongsViewModel, hasStoragePermission) {
+        if (hasStoragePermission) {
+            localSongsViewModel.scanDevice()
+        }
+    }
     val playerConnection = LocalPlayerConnection.current ?: return
 
     val librarySongs by viewModel.allSongs.collectAsState()
