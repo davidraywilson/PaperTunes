@@ -14,8 +14,25 @@ import moe.rukamori.archivetune.db.MusicDatabase
 import moe.rukamori.archivetune.db.entities.Album
 import moe.rukamori.archivetune.db.entities.AlbumEntity
 import moe.rukamori.archivetune.db.entities.Artist
+import moe.rukamori.archivetune.playback.DownloadUtil
+import androidx.media3.exoplayer.offline.Download
+import moe.rukamori.archivetune.db.LocalMusicIdentity
 import moe.rukamori.archivetune.db.entities.ArtistEntity
 import javax.inject.Inject
+
+data class EinkArtistUiModel(
+    val artist: Artist,
+    val hasLocal: Boolean,
+    val hasOnline: Boolean,
+    val hasDownloaded: Boolean
+)
+
+data class EinkAlbumUiModel(
+    val album: Album,
+    val hasLocal: Boolean,
+    val hasOnline: Boolean,
+    val hasDownloaded: Boolean
+)
 
 @HiltViewModel
 class EinkLibraryArtistsViewModel
@@ -23,13 +40,15 @@ class EinkLibraryArtistsViewModel
     constructor(
         @ApplicationContext private val context: Context,
         private val database: MusicDatabase,
+        private val downloadUtil: DownloadUtil,
     ) : ViewModel() {
 
         val allArtists =
             combine(
                 database.artistsBookmarked(ArtistSortType.NAME, false),
-                database.importSongCandidates()
-            ) { bookmarked, librarySongs ->
+                database.importSongCandidates(),
+                downloadUtil.downloads
+            ) { bookmarked, librarySongs, downloads ->
                 val allEntities = mutableMapOf<String, ArtistEntity>()
                 val artistSongCount = mutableMapOf<String, Int>()
 
@@ -46,41 +65,48 @@ class EinkLibraryArtistsViewModel
                     }
                 }
 
-                // Recompute accurate library song count for artists
-                val computedSongCount = mutableMapOf<String, Int>()
-                librarySongs.forEach { song ->
-                    song.artists.forEach { artist ->
-                        computedSongCount[artist.id] = (computedSongCount[artist.id] ?: 0) + 1
-                    }
-                }
-
                 // First create the raw unmerged list
                 val rawArtists = allEntities.values.map { entity ->
-                    Artist(
-                        artist = entity,
-                        songCount = computedSongCount[entity.id] ?: artistSongCount[entity.id] ?: 0,
-                        timeListened = 0
+                    val songsForArtist = librarySongs.filter { song -> song.artists.any { it.id == entity.id } }
+                    
+                    val hasLocal = entity.isLocal || songsForArtist.any { it.song.isLocal }
+                    val hasDownloaded = songsForArtist.any { !it.song.isLocal && downloads[it.id]?.state == Download.STATE_COMPLETED }
+                    val hasOnline = (entity.isYouTubeArtist && songsForArtist.isEmpty()) || 
+                                    songsForArtist.any { !it.song.isLocal && downloads[it.id]?.state != Download.STATE_COMPLETED }
+                    
+                    EinkArtistUiModel(
+                        artist = Artist(
+                            artist = entity,
+                            songCount = songsForArtist.size.takeIf { it > 0 } ?: artistSongCount[entity.id] ?: 0,
+                            timeListened = 0
+                        ),
+                        hasLocal = hasLocal,
+                        hasOnline = hasOnline,
+                        hasDownloaded = hasDownloaded
                     )
                 }
 
-                // Now MERGE by case-insensitive name
+                // Now MERGE by industry standard normalized name
                 rawArtists
-                    .groupBy { it.title.lowercase() }
+                    .groupBy { LocalMusicIdentity.normalize(it.artist.title) }
                     .map { (name, group) ->
-                        // Prioritize YouTube artists (isLocal == false) over Local ones
-                        val bestRepresentative = group.minByOrNull { if (it.artist.isLocal) 1 else 0 } ?: group.first()
+                        // Prioritize Local artists over YouTube ones
+                        val bestRepresentative = group.maxByOrNull { if (it.artist.artist.isLocal) 1 else 0 } ?: group.first()
                         
-                        // Sum up the song counts of all merged entities
-                        // Note: If an artist has no songs (just bookmarked), this safely carries over 0
-                        val totalSongs = group.sumOf { it.songCount }
+                        val totalSongs = group.sumOf { it.artist.songCount }
                         
-                        Artist(
-                            artist = bestRepresentative.artist,
-                            songCount = totalSongs,
-                            timeListened = group.sumOf { it.timeListened ?: 0 }
+                        EinkArtistUiModel(
+                            artist = Artist(
+                                artist = bestRepresentative.artist.artist,
+                                songCount = totalSongs,
+                                timeListened = group.sumOf { it.artist.timeListened ?: 0 }
+                            ),
+                            hasLocal = group.any { it.hasLocal },
+                            hasOnline = group.any { it.hasOnline },
+                            hasDownloaded = group.any { it.hasDownloaded }
                         )
                     }
-                    .sortedBy { it.title.lowercase() }
+                    .sortedBy { it.artist.title.lowercase() }
             }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
     }
 
@@ -90,13 +116,15 @@ class EinkLibraryAlbumsViewModel
     constructor(
         @ApplicationContext private val context: Context,
         private val database: MusicDatabase,
+        private val downloadUtil: DownloadUtil,
     ) : ViewModel() {
 
         val allAlbums =
             combine(
                 database.albumsLiked(AlbumSortType.NAME, false),
-                database.importSongCandidates()
-            ) { liked, librarySongs ->
+                database.importSongCandidates(),
+                downloadUtil.downloads
+            ) { liked, librarySongs, downloads ->
                 val allEntities = mutableMapOf<String, AlbumEntity>()
                 val albumArtistsMap = mutableMapOf<String, List<ArtistEntity>>()
 
@@ -115,29 +143,45 @@ class EinkLibraryAlbumsViewModel
                 }
 
                 val rawAlbums = allEntities.values.map { entity ->
-                    Album(
-                        album = entity,
-                        artists = albumArtistsMap[entity.id] ?: emptyList(),
-                        songCountListened = 0
+                    val songsForAlbum = librarySongs.filter { it.album?.id == entity.id }
+                    
+                    val hasLocal = entity.isLocal || songsForAlbum.any { it.song.isLocal }
+                    val hasDownloaded = songsForAlbum.any { !it.song.isLocal && downloads[it.id]?.state == Download.STATE_COMPLETED }
+                    val hasOnline = (!entity.isLocal && songsForAlbum.isEmpty()) || 
+                                    songsForAlbum.any { !it.song.isLocal && downloads[it.id]?.state != Download.STATE_COMPLETED }
+
+                    EinkAlbumUiModel(
+                        album = Album(
+                            album = entity,
+                            artists = albumArtistsMap[entity.id] ?: emptyList(),
+                            songCountListened = 0
+                        ),
+                        hasLocal = hasLocal,
+                        hasOnline = hasOnline,
+                        hasDownloaded = hasDownloaded
                     )
                 }
 
-                // Merge by case-insensitive title
+                // Merge by normalized title
                 rawAlbums
-                    .groupBy { it.title.lowercase() }
+                    .groupBy { LocalMusicIdentity.normalize(it.album.title) }
                     .map { (title, group) ->
-                        // Prefer online/YouTube albums over local ones if duplicates exist
-                        val bestRepresentative = group.minByOrNull { if (it.album.isLocal) 1 else 0 } ?: group.first()
+                        // Prefer local albums over online ones
+                        val bestRepresentative = group.maxByOrNull { if (it.album.album.isLocal) 1 else 0 } ?: group.first()
                         
-                        // Pick the artists from the representative
-                        val representativeArtists = albumArtistsMap[bestRepresentative.id] ?: emptyList()
+                        val representativeArtists = albumArtistsMap[bestRepresentative.album.id] ?: emptyList()
                         
-                        Album(
-                            album = bestRepresentative.album,
-                            artists = representativeArtists,
-                            songCountListened = group.sumOf { it.songCountListened ?: 0 }
+                        EinkAlbumUiModel(
+                            album = Album(
+                                album = bestRepresentative.album.album,
+                                artists = representativeArtists,
+                                songCountListened = group.sumOf { it.album.songCountListened ?: 0 }
+                            ),
+                            hasLocal = group.any { it.hasLocal },
+                            hasOnline = group.any { it.hasOnline },
+                            hasDownloaded = group.any { it.hasDownloaded }
                         )
                     }
-                    .sortedBy { it.title.lowercase() }
+                    .sortedBy { it.album.title.lowercase() }
             }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
     }

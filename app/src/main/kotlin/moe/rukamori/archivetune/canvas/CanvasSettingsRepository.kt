@@ -44,7 +44,7 @@ class CanvasSettingsRepository @Inject constructor(
 
     val configuration: Flow<CanvasConfiguration> = context.dataStore.data.map { preferences ->
         CanvasConfiguration(
-            enabled = preferences[ArchiveTuneCanvasKey] ?: false,
+            enabled = preferences[ArchiveTuneCanvasKey] ?: true,
             source = CanvasSource.fromPreference(preferences[CanvasSourceKey]),
             wifiOnly = preferences[CanvasWifiOnlyKey] ?: false,
             cacheLimitMb = (preferences[MaxCanvasCacheSizeKey] ?: 256).coerceAtLeast(-1),

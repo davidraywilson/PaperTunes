@@ -102,6 +102,7 @@ import moe.rukamori.archivetune.eink.components.songSubtitle
 import moe.rukamori.archivetune.extensions.toMediaItem
 import moe.rukamori.archivetune.extensions.togglePlayPause
 import moe.rukamori.archivetune.innertube.YouTube
+import moe.rukamori.archivetune.eink.components.playShuffled
 import moe.rukamori.archivetune.playback.queues.ListQueue
 import moe.rukamori.archivetune.eink.components.EinkCreatePlaylistDialog
 import moe.rukamori.archivetune.eink.components.EinkEditPlaylistDialog
@@ -547,11 +548,9 @@ fun EinkPlaylistDetailsScreen(
                     icon = Icons.Outlined.Shuffle,
                     label = "Shuffle",
                     onClick = {
-                        playerConnection.playQueue(
-                            ListQueue(
-                                title = playlistName,
-                                items = songs.shuffled().map { it.song.toMediaItem() },
-                            ),
+                        playerConnection.playShuffled(
+                            items = songs.map { it.song.toMediaItem() },
+                            title = playlistName,
                         )
                         navController.navigate(moe.rukamori.archivetune.eink.EinkScreen.NowPlaying.route)
                     }

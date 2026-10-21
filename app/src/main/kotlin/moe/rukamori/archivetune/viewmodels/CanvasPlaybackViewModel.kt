@@ -44,7 +44,7 @@ class CanvasPlaybackViewModel @Inject constructor(
         viewModelScope.launch {
             combine(request, useCase.policy, useCase.revision, useCase.spotifyConnected) { request, policy, _, _ -> request to policy }
                 .collectLatest { (request, policy) ->
-                    if (request == null || !policy.ready || !policy.configuration.enabled) {
+                    if (request == null || (policy.ready && !policy.configuration.enabled)) {
                         mutableState.value = CanvasPlaybackState.Empty
                         return@collectLatest
                     }

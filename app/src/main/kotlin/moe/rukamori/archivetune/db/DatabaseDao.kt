@@ -745,6 +745,12 @@ interface DatabaseDao {
     @Query("SELECT * FROM song WHERE id = :songId LIMIT 1")
     fun getSongByIdBlocking(songId: String): Song?
 
+    @Query("SELECT offlineCanvasUrl FROM song WHERE id = :songId LIMIT 1")
+    fun getOfflineCanvasUrlBlocking(songId: String): String?
+
+    @Query("UPDATE song SET offlineCanvasUrl = :offlineCanvasUrl WHERE id = :songId")
+    fun updateOfflineCanvasUrl(songId: String, offlineCanvasUrl: String?)
+
     @Transaction
     @Query("SELECT * FROM song WHERE id IN (:songIds)")
     suspend fun getSongsByIds(songIds: List<String>): List<Song>

@@ -51,6 +51,7 @@ data class SongEntity(
     val isPodcast: Boolean = false,
     @ColumnInfo(name = "isLocal", defaultValue = "0")
     val isLocal: Boolean = false,
+    val offlineCanvasUrl: String? = null,
 ) {
     fun localToggleLike() =
         copy(

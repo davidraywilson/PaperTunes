@@ -12,6 +12,8 @@ import android.media.MediaCodecList
 import android.media.MediaExtractor
 import android.media.MediaFormat
 import android.net.Uri
+import kotlinx.coroutines.flow.asSharedFlow
+
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -55,11 +57,15 @@ object CanvasArtworkPlaybackCache {
     private const val DOWNLOAD_MAX_ATTEMPTS = 4
     private const val DOWNLOAD_RETRY_DELAY_MS = 750L
     private const val CACHE_SIZE_BYTES_PER_MEGABYTE = 1024L * 1024L
+    private const val OFFLINE_MAX_SIZE_BYTES = 64L * CACHE_SIZE_BYTES_PER_MEGABYTE
 
     private val map = LinkedHashMap<String, CanvasCacheEntry>(DEFAULT_MAX_SIZE_MEGABYTES, 0.75f, true)
     private val cacheJobs = LinkedHashMap<String, Job>()
     private val activeCalls = LinkedHashMap<Call, Job>()
     private val pendingFiles = LinkedHashMap<String, Job>()
+
+    private val _artworkCachedEvent = kotlinx.coroutines.flow.MutableSharedFlow<Pair<String, String>>(extraBufferCapacity = 10)
+    val artworkCachedEvent = _artworkCachedEvent.asSharedFlow()
 
     @Volatile private var maxSizeBytes = DEFAULT_MAX_SIZE_MEGABYTES.toLong() * CACHE_SIZE_BYTES_PER_MEGABYTE
 
@@ -96,7 +102,8 @@ object CanvasArtworkPlaybackCache {
             .addInterceptor { chain ->
                 val source = chain.request().tag(CanvasSource::class.java)
                     ?: throw IOException("Canvas download has no provider identity")
-                CanvasNetworkAccess.intercept(chain, source)
+                val bypassWifi = chain.request().tag(Boolean::class.javaObjectType) == true
+                CanvasNetworkAccess.intercept(chain, source, bypassWifi)
             }
             .addInterceptor { chain ->
                 val request = chain.request()
@@ -150,6 +157,10 @@ object CanvasArtworkPlaybackCache {
         schedulePersist()
         return playable
     }
+
+    /** The provider artwork (remote URLs) the cache entry for [mediaId] was created from, if any. */
+    @Synchronized
+    fun originalArtwork(mediaId: String): CanvasArtwork? = map[mediaId]?.artwork
 
     suspend fun put(
         mediaId: String,
@@ -213,6 +224,42 @@ object CanvasArtworkPlaybackCache {
             artwork
         }
 
+    /** True when the playback cache is allowed to store canvas videos (limit is not 0 MB). */
+    val isEnabled: Boolean
+        get() = maxSizeBytes > 0L && cacheDirectory != null
+
+    @Synchronized
+    fun getActiveCacheJob(mediaId: String): Job? = cacheJobs[mediaId]?.takeIf { it.isActive }
+
+    /**
+     * Downloads a canvas video straight into [target] for an offline (downloaded-song) copy.
+     * Used when the playback cache is disabled and therefore can't be copied from. Honors the
+     * current [CanvasNetworkAccess] policy (including Wi-Fi only), so it never runs on mobile
+     * data when the user has restricted canvas to Wi-Fi.
+     */
+    suspend fun downloadForOffline(
+        artwork: CanvasArtwork,
+        target: File,
+    ): Boolean =
+        withContext(Dispatchers.IO) {
+            val source = artwork.source ?: return@withContext false
+            val rawUrl = artwork.videoUrl ?: artwork.animated ?: artwork.videoUrlVertical ?: artwork.animatedVertical
+            val url = resolveDownloadUrl(rawUrl) ?: return@withContext false
+            val partial = File(target.parentFile, "${target.name}.${java.util.UUID.randomUUID()}.part")
+            try {
+                downloadToFile(url = url, target = partial, source = source, bypassWifi = false, maxBytes = OFFLINE_MAX_SIZE_BYTES)
+                if (partial.length() <= 0L) throw IOException("Downloaded empty canvas video")
+                if (target.exists() && !target.delete()) throw IOException("Failed to replace offline canvas video")
+                if (!partial.renameTo(target)) throw IOException("Failed to commit offline canvas video")
+                true
+            } catch (error: Exception) {
+                if (!partial.delete() && partial.exists()) Timber.w("Failed to remove partial offline canvas download")
+                if (error is CancellationException) throw error
+                Timber.w(error, "Failed to download offline canvas video")
+                false
+            }
+        }
+
     private fun cacheArtworkInBackground(
         directory: File,
         mediaId: String,
@@ -262,8 +309,10 @@ object CanvasArtworkPlaybackCache {
         val source = artwork.source ?: throw IOException("Canvas artwork has no provider identity")
         CanvasNetworkAccess.check(source)
         val current = synchronized(this@CanvasArtworkPlaybackCache) { map[mediaId] }
-        val regularUrl = artwork.downloadableRegularUrl()
-        val verticalUrl = artwork.downloadableVerticalUrl()
+        val rawRegular = artwork.videoUrl ?: artwork.animated
+        val rawVertical = artwork.videoUrlVertical ?: artwork.animatedVertical
+        val regularUrl = resolveDownloadUrl(rawRegular)
+        val verticalUrl = if (rawRegular != null && rawRegular == rawVertical) regularUrl else resolveDownloadUrl(rawVertical)
         val sharedVideo = regularUrl != null && regularUrl == verticalUrl
         val regularFileName =
             cacheCanvasVideo(
@@ -455,6 +504,10 @@ object CanvasArtworkPlaybackCache {
             entry.verticalFileName?.let { pendingFiles.remove(it) }
             trimLocked(directory)
             schedulePersist()
+            val fileName = entry.regularFileName ?: entry.verticalFileName
+            if (fileName != null) {
+                _artworkCachedEvent.tryEmit(entry.mediaId to directory.resolve(fileName).absolutePath)
+            }
         }
     }
 
@@ -488,22 +541,19 @@ object CanvasArtworkPlaybackCache {
             ?.takeIf { fileName ->
                 directory
                     .resolve(fileName)
-                    .takeIf(File::isUsableFile)
-                    ?.takeIf(File::isValidCanvasVideo) != null
+                    .isUsableFile()
             }?.let { return it }
         if (url.isNullOrBlank()) return null
         val fileName = canvasFileName(mediaId, variant, url)
         val target = directory.resolve(fileName)
         if (target.isUsableFile()) {
-            if (target.isValidCanvasVideo()) return fileName
-            runCatching { target.delete() }
+            return fileName
         }
 
         val partial = directory.resolve("$fileName.${java.util.UUID.randomUUID()}.part")
         return try {
-            downloadToFile(url = url, target = partial, source = source)
+            downloadToFile(url = url, target = partial, source = source, bypassWifi = false)
             if (partial.length() <= 0L) throw IOException("Downloaded empty canvas video")
-            if (!partial.isValidCanvasVideo()) throw IOException("Downloaded canvas is not a valid video")
             val job = currentCoroutineContext()[Job]
             synchronized(this@CanvasArtworkPlaybackCache) {
                 if (job?.isActive != true || cacheJobs[mediaId] !== job) throw CancellationException("Canvas download superseded")
@@ -522,8 +572,7 @@ object CanvasArtworkPlaybackCache {
                 ?.takeIf { fileName ->
                     directory
                         .resolve(fileName)
-                        .takeIf(File::isUsableFile)
-                        ?.takeIf(File::isValidCanvasVideo) != null
+                        .isUsableFile()
                 }
         }
     }
@@ -532,6 +581,8 @@ object CanvasArtworkPlaybackCache {
         url: String,
         target: File,
         source: CanvasSource,
+        bypassWifi: Boolean = false,
+        maxBytes: Long = maxSizeBytes,
     ) {
         kotlinx.coroutines.currentCoroutineContext().ensureActive()
         target.parentFile?.mkdirs()
@@ -545,6 +596,8 @@ object CanvasArtworkPlaybackCache {
                     target = target,
                     source = source,
                     existingBytes = target.takeIf { file -> file.isFile }?.length()?.coerceAtLeast(0L) ?: 0L,
+                    bypassWifi = bypassWifi,
+                    maxBytes = maxBytes,
                 )
                 return
             } catch (error: Throwable) {
@@ -564,13 +617,16 @@ object CanvasArtworkPlaybackCache {
         target: File,
         source: CanvasSource,
         existingBytes: Long,
+        bypassWifi: Boolean = false,
+        maxBytes: Long = maxSizeBytes,
     ) {
-        CanvasNetworkAccess.check(source)
+        CanvasNetworkAccess.check(source, bypassWifi)
         val requestBuilder =
             Request
                 .Builder()
                 .url(url)
                 .tag(CanvasSource::class.java, source)
+                .tag(Boolean::class.javaObjectType, bypassWifi)
                 .header("Accept", "video/mp4,video/*;q=0.9,*/*;q=0.8")
         if (existingBytes > 0L) {
             requestBuilder.header("Range", "bytes=$existingBytes-")
@@ -615,7 +671,7 @@ object CanvasArtworkPlaybackCache {
                             CanvasNetworkAccess.checkTransfer(source)
                             val read = input.read(buffer)
                             if (read < 0) break
-                            if (target.length() + read > maxSizeBytes) throw IOException("Canvas exceeds the cache limit")
+                            if (target.length() + read > maxBytes) throw IOException("Canvas exceeds the cache limit")
                             output.write(buffer, 0, read)
                         }
                     }
@@ -704,6 +760,86 @@ object CanvasArtworkPlaybackCache {
                     (normalized.startsWith("http://") || normalized.startsWith("https://"))
             }
 
+    private suspend fun resolveDownloadUrl(raw: String?): String? = withContext(Dispatchers.IO) {
+        val value = raw?.trim()?.takeIf { it.isNotBlank() } ?: return@withContext null
+        val lower = value.lowercase(Locale.ROOT)
+        if (!lower.startsWith("http://") && !lower.startsWith("https://")) return@withContext null
+        if (!lower.contains(".m3u8") && !lower.contains("application/x-mpegurl")) {
+            return@withContext value
+        }
+        try {
+            resolveM3u8ToMp4(value)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Timber.w(e, "Failed to resolve m3u8 playlist to mp4: %s", value)
+            null
+        }
+    }
+
+    private fun resolveM3u8ToMp4(url: String): String? {
+        val request = Request.Builder()
+            .url(url)
+            .header("User-Agent", "Mozilla/5.0")
+            .build()
+        val client = if (request.url.isYouTubeMediaHost()) streamClient else directClient
+        val content = client.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) return null
+            response.body?.string() ?: return null
+        }
+
+        if (content.contains("#EXT-X-STREAM-INF")) {
+            val lines = content.lines()
+            var bestVariantUrl: String? = null
+            var bestScore = Int.MAX_VALUE
+            for (i in lines.indices) {
+                val line = lines[i].trim()
+                if (line.startsWith("#EXT-X-STREAM-INF")) {
+                    val resMatch = Regex("RESOLUTION=(\\d+)x(\\d+)").find(line)
+                    val width = resMatch?.groupValues?.get(1)?.toIntOrNull() ?: 0
+                    val score = Math.abs(width - 720)
+                    for (j in (i + 1) until lines.size) {
+                        val nextLine = lines[j].trim()
+                        if (nextLine.isNotBlank() && !nextLine.startsWith("#")) {
+                            if (score < bestScore) {
+                                bestScore = score
+                                bestVariantUrl = resolveRelativeUrl(url, nextLine)
+                            }
+                            break
+                        }
+                    }
+                }
+            }
+            if (bestVariantUrl != null) {
+                return resolveM3u8ToMp4(bestVariantUrl)
+            }
+        }
+
+        val mapMatch = Regex("#EXT-X-MAP:URI=\"([^\"]+)\"").find(content)
+        if (mapMatch != null) {
+            val segmentPath = mapMatch.groupValues[1]
+            return resolveRelativeUrl(url, segmentPath)
+        }
+
+        for (line in content.lines()) {
+            val trimmed = line.trim()
+            if (trimmed.isNotBlank() && !trimmed.startsWith("#") && trimmed.contains(".mp4")) {
+                return resolveRelativeUrl(url, trimmed)
+            }
+        }
+
+        return null
+    }
+
+    private fun resolveRelativeUrl(baseUrl: String, path: String): String {
+        return try {
+            val baseUri = java.net.URI(baseUrl)
+            baseUri.resolve(path).toString()
+        } catch (_: Exception) {
+            if (path.startsWith("http://") || path.startsWith("https://")) path else baseUrl
+        }
+    }
+
     @Serializable
     private data class CanvasCacheEntry(
         val mediaId: String,
@@ -731,12 +867,12 @@ object CanvasArtworkPlaybackCache {
             val regularUri =
                 regularFileName
                     ?.let(directory::resolve)
-                    ?.takeIf { file -> file.isUsableFile() && file.isValidCanvasVideo() }
+                    ?.takeIf { file -> file.isUsableFile() }
                     ?.let { file -> Uri.fromFile(file).toString() }
             val verticalUri =
                 verticalFileName
                     ?.let(directory::resolve)
-                    ?.takeIf { file -> file.isUsableFile() && file.isValidCanvasVideo() }
+                    ?.takeIf { file -> file.isUsableFile() }
                     ?.let { file -> Uri.fromFile(file).toString() }
             if (regularUri == null && verticalUri == null) return null
             return artwork.copy(
@@ -773,23 +909,6 @@ private fun okhttp3.HttpUrl.isYouTubeMediaHost(): Boolean {
 
 private fun File.isUsableFile(): Boolean = isFile && length() > 0L
 
-private fun File.isValidCanvasVideo(): Boolean {
-    val extractor = MediaExtractor()
-    val codecList = MediaCodecList(MediaCodecList.REGULAR_CODECS)
-    return try {
-        extractor.setDataSource(absolutePath)
-        (0 until extractor.trackCount).any { index ->
-            val format = extractor.getTrackFormat(index)
-            val mime = format.getString(MediaFormat.KEY_MIME).orEmpty()
-            mime.startsWith("video/") && codecList.findDecoderForFormat(format) != null
-        }
-    } catch (error: Throwable) {
-        Timber.tag(CanvasCacheLogTag).w(error, "Failed to inspect cached canvas video")
-        false
-    } finally {
-        extractor.release()
-    }
-}
 
 private fun String?.takeIfNotBlank(): String? = this?.takeIf { it.isNotBlank() }
 

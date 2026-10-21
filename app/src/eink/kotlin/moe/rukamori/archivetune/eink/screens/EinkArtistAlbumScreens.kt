@@ -62,6 +62,7 @@ import moe.rukamori.archivetune.eink.einkAlbumDetailsRoute
 import moe.rukamori.archivetune.eink.einkArtistDetailsRoute
 import moe.rukamori.archivetune.extensions.toMediaItem
 import moe.rukamori.archivetune.extensions.togglePlayPause
+import moe.rukamori.archivetune.eink.components.playShuffled
 import moe.rukamori.archivetune.playback.queues.ListQueue
 import moe.rukamori.archivetune.eink.components.LocalEinkMenuState
 import moe.rukamori.archivetune.eink.menus.EinkSongMenu
@@ -91,30 +92,27 @@ fun EinkArtistsScreen(
             PaperLazyColumn(modifier = Modifier.fillMaxSize(), refreshKey = artists) {
                 itemsIndexed(
                     items = artists,
-                    key = { _, artist -> artist.id },
-                ) { index, artist ->
-                    // CUSTOM: E-Ink Library — show source hint for local artists so users know
-                    // whether an artist came from local files and whether it has been matched to YTM.
-                    val subtitle = when {
-                        artist.artist.isLocal && artist.artist.channelId != null ->
-                            artistSubtitle(artist) + " · Local + YTM"
-                        artist.artist.isLocal ->
-                            artistSubtitle(artist) + " · Local"
-                        else ->
-                            artistSubtitle(artist)
-                    }
+                    key = { _, model -> model.artist.id },
+                ) { index, model ->
                     EinkTwoLineRow(
-                        title = artist.artist.name,
-                        subtitle = subtitle,
+                        title = model.artist.artist.name,
+                        subtitle = artistSubtitle(model.artist),
+                        subtitleLeadingContent = {
+                            moe.rukamori.archivetune.eink.components.EinkSourceIcons(
+                                hasLocal = model.hasLocal,
+                                hasDownloaded = model.hasDownloaded,
+                                hasOnline = model.hasOnline
+                            )
+                        },
                         onClick = {
-                            if (artist.artist.isYouTubeArtist) {
-                                navController.navigate(einkYouTubeArtistDetailsRoute(artist.artist.channelId ?: artist.id))
+                            if (model.artist.artist.isYouTubeArtist) {
+                                navController.navigate(einkYouTubeArtistDetailsRoute(model.artist.artist.channelId ?: model.artist.id))
                             } else {
-                                navController.navigate(einkArtistDetailsRoute(artist.id))
+                                navController.navigate(einkArtistDetailsRoute(model.artist.id))
                             }
                         },
                         showDivider = index != artists.lastIndex,
-                        subtitleTrailingIcon = if (artist.artist.channelId != null) Icons.Outlined.CheckCircle else null,
+                        subtitleTrailingIcon = if (model.artist.artist.channelId != null) Icons.Outlined.CheckCircle else null,
                     )
                 }
             }
@@ -140,12 +138,19 @@ fun EinkAlbumsScreen(
             PaperLazyColumn(modifier = Modifier.fillMaxSize(), refreshKey = albums) {
                 itemsIndexed(
                     items = albums,
-                    key = { _, album -> album.id },
-                ) { index, album ->
+                    key = { _, model -> model.album.id },
+                ) { index, model ->
                     EinkTwoLineRow(
-                        title = album.album.title,
-                        subtitle = albumSubtitle(album),
-                        onClick = { navController.navigate(einkAlbumDetailsRoute(album.id)) },
+                        title = model.album.album.title,
+                        subtitle = albumSubtitle(model.album),
+                        subtitleLeadingContent = {
+                            moe.rukamori.archivetune.eink.components.EinkSourceIcons(
+                                hasLocal = model.hasLocal,
+                                hasDownloaded = model.hasDownloaded,
+                                hasOnline = model.hasOnline
+                            )
+                        },
+                        onClick = { navController.navigate(einkAlbumDetailsRoute(model.album.id)) },
                         showDivider = index != albums.lastIndex,
                     )
                 }
@@ -247,12 +252,19 @@ fun EinkArtistDetailsScreen(
                     PaperLazyColumn(modifier = Modifier.fillMaxSize(), refreshKey = albums) {
                         itemsIndexed(
                             items = albums,
-                            key = { _, album -> album.id },
-                        ) { index, album ->
+                            key = { _, model -> model.album.id },
+                        ) { index, model ->
                             EinkTwoLineRow(
-                                title = album.album.title,
-                                subtitle = albumSubtitle(album),
-                                onClick = { navController.navigate(einkAlbumDetailsRoute(album.id)) },
+                                title = model.album.album.title,
+                                subtitle = albumSubtitle(model.album),
+                                subtitleLeadingContent = {
+                                    moe.rukamori.archivetune.eink.components.EinkSourceIcons(
+                                        hasLocal = model.hasLocal,
+                                        hasDownloaded = model.hasDownloaded,
+                                        hasOnline = model.hasOnline
+                                    )
+                                },
+                                onClick = { navController.navigate(einkAlbumDetailsRoute(model.album.id)) },
                                 showDivider = index != albums.lastIndex,
                             )
                         }
@@ -273,11 +285,9 @@ fun EinkArtistDetailsScreen(
                     label = "Shuffle",
                     onClick = { 
                         if (songs.isNotEmpty()) {
-                            playerConnection.playQueue(
-                                ListQueue(
-                                    title = artistName.ifBlank { "Artist" },
-                                    items = songs.shuffled().map { it.toMediaItem() },
-                                ),
+                            playerConnection.playShuffled(
+                                items = songs.map { it.toMediaItem() },
+                                title = artistName.ifBlank { "Artist" },
                             )
                             navController.navigate(moe.rukamori.archivetune.eink.EinkScreen.NowPlaying.route)
                         }
@@ -512,13 +522,9 @@ fun EinkAlbumDetailsScreen(
                         icon = Icons.Outlined.Shuffle,
                         label = "Shuffle",
                         onClick = {
-                            if (songs.isNotEmpty()) {
-                                playerConnection.playQueue(
-                                    ListQueue(
-                                        title = albumTitle.ifBlank { "Album" },
-                                        items = songs.shuffled().map { it.toMediaItem() },
-                                    ),
-                                )
+                            val currentAlbum = album
+                            if (currentAlbum != null && songs.isNotEmpty()) {
+                                playerConnection.playShuffled(currentAlbum)
                                 navController.navigate(moe.rukamori.archivetune.eink.EinkScreen.NowPlaying.route)
                             }
                         }

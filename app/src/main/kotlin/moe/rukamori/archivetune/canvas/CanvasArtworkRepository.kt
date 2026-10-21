@@ -11,6 +11,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
@@ -33,17 +34,22 @@ class CanvasArtworkRepository @Inject constructor(
         request: CanvasPlaybackRequest,
         policy: CanvasPolicy,
         forceRefresh: Boolean = false,
+        streamLatest: Boolean = false,
     ): CanvasArtwork? = withContext(Dispatchers.IO) {
         if (request.mediaId.isBlank()) return@withContext null
         val source = policy.configuration.source
-        if (!forceRefresh) {
+        if (!forceRefresh && !streamLatest) {
             val cached = CanvasArtworkPlaybackCache.get(request.mediaId, preferCachedOnly = true)
+            val shouldPreferSpotify = spotifyCanvas.connected.first() && source.accepts(CanvasSource.SPOTIFY)
             if (cached != null && source.accepts(cached.source) && cached.matches(request)) {
-                return@withContext cached.copy(static = if (policy.networkAllowed) cached.static else null)
+                if (!shouldPreferSpotify || cached.source == CanvasSource.SPOTIFY || !policy.networkAllowed) {
+                    return@withContext cached.copy(static = if (policy.networkAllowed) cached.static else null)
+                }
             }
         }
+        val bypassWifi = !policy.configuration.wifiOnly
         if (!policy.networkAllowed) return@withContext null
-        CanvasNetworkAccess.check()
+        CanvasNetworkAccess.check(bypassWifi = bypassWifi)
         val songTitle = normalizeCanvasSongTitle(request.title)
         val artistName = normalizeCanvasArtistName(request.artist)
         val candidates = linkedSetOf(
@@ -59,7 +65,7 @@ class CanvasArtworkRepository @Inject constructor(
             try {
                 withTimeoutOrNull(if (provider == CanvasSource.SPOTIFY) 45_000L else 20_000L) {
                     candidates.firstNotNullOfOrNull { (song, artist) ->
-                        CanvasNetworkAccess.check(provider)
+                        CanvasNetworkAccess.check(provider, bypassWifi = bypassWifi)
                         when (provider) {
                             CanvasSource.BETTER_LYRICS, CanvasSource.APPLE_MUSIC -> ArchiveTuneCanvas.getBySongArtist(
                                 song = song,
@@ -82,18 +88,22 @@ class CanvasArtworkRepository @Inject constructor(
                 null
             }
         } ?: return@withContext null
-        CanvasNetworkAccess.check(fetched.source)
-        val artwork = if (forceRefresh) {
-            CanvasArtworkPlaybackCache.replace(request.mediaId, fetched)
-        } else {
-            CanvasArtworkPlaybackCache.put(request.mediaId, fetched)
+        CanvasNetworkAccess.check(fetched.source, bypassWifi = bypassWifi)
+        val artwork = when {
+            forceRefresh -> CanvasArtworkPlaybackCache.replace(request.mediaId, fetched)
+            streamLatest -> {
+                // Cache for offline/no-wifi use, but play the freshly fetched remote artwork.
+                CanvasArtworkPlaybackCache.put(request.mediaId, fetched)
+                fetched
+            }
+            else -> CanvasArtworkPlaybackCache.put(request.mediaId, fetched)
         }
         if (forceRefresh) mutableRevision.update { it + 1 }
         artwork
     }
 
     private companion object {
-        val providers = listOf(CanvasSource.BETTER_LYRICS, CanvasSource.APPLE_MUSIC, CanvasSource.TIDAL, CanvasSource.SPOTIFY)
+        val providers = listOf(CanvasSource.SPOTIFY, CanvasSource.BETTER_LYRICS, CanvasSource.APPLE_MUSIC, CanvasSource.TIDAL)
     }
 }
 

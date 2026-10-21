@@ -938,3 +938,4 @@ enum class UpdateChannel {
             }
     }
 }
+val EinkCanvasLayoutKey = stringPreferencesKey("einkCanvasLayout")

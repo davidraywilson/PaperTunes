@@ -86,6 +86,8 @@ class DownloadUtil
         @PlayerCache val playerCache: Cache,
         private val downloadedArtworkRepository: DownloadedArtworkRepository,
         private val resolveAudioStream: ResolveAudioStreamUseCase,
+        private val canvasArtworkRepository: moe.rukamori.archivetune.canvas.CanvasArtworkRepository,
+        private val offlineCanvasStore: moe.rukamori.archivetune.canvas.OfflineCanvasStore,
     ) {
         private val audioQuality by enumPreference(context, AudioQualityKey, AudioQuality.AUTO)
         private val downloadScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -252,6 +254,7 @@ class DownloadUtil
                             persistedMetadata.remove(download.request.id)
                             downloadScope.launch {
                                 downloadedArtworkRepository.remove(download.request.id)
+                                offlineCanvasStore.remove(download.request.id)
                             }
                             updateNextDownloadPreload(downloadManager)
                         }
@@ -273,7 +276,7 @@ class DownloadUtil
                 downloadedArtworkRepository.retainForDownloads(result.keys)
                 for (download in result.values) {
                     if (download.state == Download.STATE_COMPLETED) {
-                        scheduleDownloadedArtwork(download.request.id).join()
+                        scheduleDownloadedArtwork(download.request.id, resolveCanvasOnline = false).join()
                     }
                 }
             }
@@ -281,6 +284,46 @@ class DownloadUtil
                 while (isActive) {
                     delay(DOWNLOAD_PROGRESS_REFRESH_INTERVAL_MS)
                     refreshActiveDownloadSnapshots()
+                }
+            }
+            downloadScope.launch {
+                moe.rukamori.archivetune.ui.player.CanvasArtworkPlaybackCache.artworkCachedEvent.collect { (mediaId, filePath) ->
+                    try {
+                        if (isDownloadCompleted(mediaId)) {
+                            offlineCanvasStore.saveFromFile(mediaId, java.io.File(filePath), overwrite = true)
+                        }
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        Timber.w(e, "Failed to copy cached canvas to downloads")
+                    }
+                }
+            }
+        }
+
+        fun isDownloadCompleted(mediaId: String): Boolean {
+            if (mediaId.isBlank()) return false
+            if (downloads.value[mediaId]?.state == Download.STATE_COMPLETED) return true
+            if (downloadCache.getCachedSpans(mediaId).isNotEmpty()) return true
+            return runCatching { downloadManager.downloadIndex.getDownload(mediaId)?.state == Download.STATE_COMPLETED }.getOrDefault(false)
+        }
+
+        /**
+         * Called whenever canvas artwork is resolved for playback. If the song is downloaded but has no
+         * offline canvas yet, saves one (copying from the playback cache when possible).
+         */
+        fun ensureOfflineCanvas(
+            mediaId: String,
+            artwork: moe.rukamori.archivetune.canvas.models.CanvasArtwork?,
+        ) {
+            if (mediaId.isBlank()) return
+            downloadScope.launch {
+                try {
+                    if (isDownloadCompleted(mediaId)) offlineCanvasStore.persist(mediaId, artwork)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Timber.w(e, "Failed to save offline canvas for %s", mediaId)
                 }
             }
         }
@@ -546,6 +589,7 @@ class DownloadUtil
         private fun scheduleDownloadedArtwork(
             mediaId: String,
             knownSourceUrls: Collection<String?> = emptyList(),
+            resolveCanvasOnline: Boolean = true,
         ): Job =
             synchronized(artworkJobs) {
                 val currentJob = artworkJobs[mediaId]
@@ -555,18 +599,25 @@ class DownloadUtil
                 val job =
                     downloadScope.launch(start = CoroutineStart.LAZY) {
                         try {
-                            val databaseThumbnailUrl =
-                                database.withTransaction {
-                                    getSongByIdBlocking(mediaId)?.song?.thumbnailUrl
-                                }
-                            downloadedArtworkRepository.cache(
-                                mediaId = mediaId,
-                                sourceUrls = knownSourceUrls + databaseThumbnailUrl,
-                            )
+                            try {
+                                val databaseThumbnailUrl =
+                                    database.withTransaction {
+                                        getSongByIdBlocking(mediaId)?.song?.thumbnailUrl
+                                    }
+                                downloadedArtworkRepository.cache(
+                                    mediaId = mediaId,
+                                    sourceUrls = knownSourceUrls + databaseThumbnailUrl,
+                                )
+                            } catch (exception: CancellationException) {
+                                throw exception
+                            } catch (exception: Exception) {
+                                Timber.w(exception, "Failed to cache downloaded artwork")
+                            }
+                            persistOfflineCanvasForDownload(mediaId, resolveCanvasOnline)
                         } catch (exception: CancellationException) {
                             throw exception
                         } catch (exception: Exception) {
-                            Timber.w(exception, "Failed to cache downloaded artwork")
+                            Timber.w(exception, "Failed to save offline canvas for downloaded song")
                         } finally {
                             val runningJob = currentCoroutineContext()[Job]
                             synchronized(artworkJobs) {
@@ -580,6 +631,75 @@ class DownloadUtil
                 job.start()
                 job
             }
+
+        /**
+         * Saves an offline canvas for a freshly completed (or previously completed) download.
+         * Uses the live canvas policy, so with "Wi-Fi only" enabled and no Wi-Fi this never touches the
+         * network; it only copies a canvas already present in the playback cache. When
+         * [resolveCanvasOnline] is false (startup backfill), only the local cache is consulted.
+         */
+        private suspend fun persistOfflineCanvasForDownload(
+            mediaId: String,
+            resolveCanvasOnline: Boolean,
+        ) {
+            Timber.tag("Canvas").d("persistOfflineCanvasForDownload(%s) online=%s", mediaId, resolveCanvasOnline)
+            if (offlineCanvasStore.find(mediaId) != null) return
+
+            // 1. If the canvas is already in the playback cache, save it immediately!
+            val cached = moe.rukamori.archivetune.ui.player.CanvasArtworkPlaybackCache.get(mediaId, preferCachedOnly = true)
+            if (cached != null) {
+                offlineCanvasStore.persist(mediaId, cached)
+                return
+            }
+
+            // 2. If the canvas is currently being downloaded into the playback cache, await it
+            val cacheJob = moe.rukamori.archivetune.ui.player.CanvasArtworkPlaybackCache.getActiveCacheJob(mediaId)
+            if (cacheJob != null) {
+                runCatching { cacheJob.join() }
+                val cachedAfterJob = moe.rukamori.archivetune.ui.player.CanvasArtworkPlaybackCache.get(mediaId, preferCachedOnly = true)
+                if (cachedAfterJob != null) {
+                    offlineCanvasStore.persist(mediaId, cachedAfterJob)
+                    return
+                }
+            }
+
+            // 3. Otherwise, if online resolution is requested and network allowed, fetch and save
+            val policy = moe.rukamori.archivetune.canvas.CanvasNetworkAccess.policy.value
+            val artwork =
+                if (resolveCanvasOnline && policy.ready && policy.configuration.enabled && policy.networkAllowed) {
+                    val songMap = database.getSongByIdBlocking(mediaId)
+                    val title = songMap?.song?.title.orEmpty()
+                    val artist = songMap?.artists?.firstOrNull()?.name.orEmpty()
+                        .ifBlank { songMap?.song?.albumArtist.orEmpty() }
+                    if (title.isNotBlank() && artist.isNotBlank()) {
+                        try {
+                            canvasArtworkRepository.resolve(
+                                request =
+                                    moe.rukamori.archivetune.canvas.CanvasPlaybackRequest(
+                                        mediaId = mediaId,
+                                        title = title,
+                                        artist = artist,
+                                        storefront = java.util.Locale.getDefault().country
+                                            .takeIf { it.length == 2 }
+                                            ?.lowercase(java.util.Locale.ROOT) ?: "us",
+                                        requireVertical = false,
+                                    ),
+                                policy = policy,
+                            )
+                        } catch (exception: CancellationException) {
+                            throw exception
+                        } catch (exception: Exception) {
+                            Timber.w(exception, "Canvas lookup for downloaded song failed")
+                            null
+                        }
+                    } else {
+                        null
+                    }
+                } else {
+                    null
+                }
+            offlineCanvasStore.persist(mediaId, artwork)
+        }
 
         private fun cancelDownloadedArtworkJob(mediaId: String) {
             synchronized(artworkJobs) {

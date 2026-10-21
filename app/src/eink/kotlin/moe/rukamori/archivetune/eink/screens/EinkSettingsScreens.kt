@@ -43,8 +43,12 @@ import moe.rukamori.archivetune.innertube.utils.hasYouTubeLoginCookie
 import moe.rukamori.archivetune.ui.screens.buildLoginRoute
 import moe.rukamori.archivetune.utils.rememberPreference
 
+import moe.rukamori.archivetune.canvas.CanvasSource
+import moe.rukamori.archivetune.constants.CanvasSourceKey
 import moe.rukamori.archivetune.eink.components.EinkEmptyState
 import moe.rukamori.archivetune.eink.components.EinkTwoLineRow
+import moe.rukamori.archivetune.eink.components.EinkToggleRow
+import moe.rukamori.archivetune.spotify.SpotifyAccountViewModel
 import moe.rukamori.archivetune.viewmodels.LocalSongsViewModel
 
 /*
@@ -87,11 +91,13 @@ fun EinkMoreScreen(navController: NavController) {
 @Composable
 fun EinkSettingsScreen(
     navController: NavController,
-    localViewModel: LocalSongsViewModel = hiltViewModel()
+    localViewModel: LocalSongsViewModel = hiltViewModel(),
+    spotifyAccountViewModel: SpotifyAccountViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
     val (innerTubeCookie, onInnerTubeCookieChange) = rememberPreference(InnerTubeCookieKey, "")
     val isLoggedIn = hasYouTubeLoginCookie(innerTubeCookie)
+    val spotifyState by spotifyAccountViewModel.uiState.collectAsState()
     val syncUtils = LocalSyncUtils.current
     val coroutineScope = rememberCoroutineScope()
     var isSyncing by remember { mutableStateOf(false) }
@@ -150,6 +156,27 @@ fun EinkSettingsScreen(
             )
         }
 
+        item(key = "spotify_login") {
+            val spotifySubtitle = when {
+                spotifyState.isLoading -> "Connecting..."
+                spotifyState.isAuthenticated -> "Logged in as ${spotifyState.accountName.ifBlank { "Spotify User" }} (Tap to logout)"
+                else -> "Not logged in (Tap to login for Spotify Canvas)"
+            }
+            EinkTwoLineRow(
+                title = "Spotify Account",
+                subtitle = spotifySubtitle,
+                onClick = {
+                    if (spotifyState.isAuthenticated) {
+                        spotifyAccountViewModel.logout()
+                        android.widget.Toast.makeText(context, "Logged out of Spotify", android.widget.Toast.LENGTH_SHORT).show()
+                    } else {
+                        navController.navigate(EinkScreen.SpotifyLogin.route)
+                    }
+                },
+                showDivider = true
+            )
+        }
+
         item {
             val scanSubtitle = when {
                 scanState.isScanning -> "Scanning device for audio files..."
@@ -172,6 +199,63 @@ fun EinkSettingsScreen(
                         localViewModel.scanDevice()
                     }
                 },
+                showDivider = true
+            )
+        }
+
+        item(key = "canvas") {
+            val (canvasEnabled, onCanvasEnabledChange) = moe.rukamori.archivetune.utils.rememberPreference(moe.rukamori.archivetune.constants.ArchiveTuneCanvasKey, true)
+            val canvasSubtitle = if (spotifyState.isAuthenticated) {
+                "Display canvas looping videos (Spotify priority active)"
+            } else {
+                "Display short looping videos (BetterLyrics / Apple Music)"
+            }
+            EinkToggleRow(
+                title = "Canvas Artwork",
+                subtitle = canvasSubtitle,
+                checked = canvasEnabled,
+                onCheckedChange = { onCanvasEnabledChange(it) },
+                showDivider = true
+            )
+        }
+
+        item(key = "canvasSource") {
+            val (canvasSourceStr, onCanvasSourceChange) = moe.rukamori.archivetune.utils.rememberPreference(
+                CanvasSourceKey,
+                "ALL"
+            )
+            val currentSource = CanvasSource.fromPreference(canvasSourceStr)
+            val sourceSubtitle = when (currentSource) {
+                CanvasSource.ALL -> if (spotifyState.isAuthenticated) "All (Spotify first, fallback to others)" else "All (BetterLyrics, Apple Music, Tidal)"
+                CanvasSource.SPOTIFY -> if (spotifyState.isAuthenticated) "Spotify only" else "Spotify only (requires login)"
+                CanvasSource.BETTER_LYRICS -> "BetterLyrics only"
+                CanvasSource.APPLE_MUSIC -> "Apple Music only"
+                CanvasSource.TIDAL -> "Tidal only"
+            }
+            EinkTwoLineRow(
+                title = "Canvas Source",
+                subtitle = sourceSubtitle,
+                onClick = {
+                    val nextSource = when (currentSource) {
+                        CanvasSource.ALL -> CanvasSource.SPOTIFY
+                        CanvasSource.SPOTIFY -> CanvasSource.BETTER_LYRICS
+                        CanvasSource.BETTER_LYRICS -> CanvasSource.APPLE_MUSIC
+                        CanvasSource.APPLE_MUSIC -> CanvasSource.TIDAL
+                        CanvasSource.TIDAL -> CanvasSource.ALL
+                    }
+                    onCanvasSourceChange(nextSource.name)
+                },
+                showDivider = true
+            )
+        }
+
+        item(key = "canvasWifi") {
+            val (wifiOnly, onWifiOnlyChange) = moe.rukamori.archivetune.utils.rememberPreference(moe.rukamori.archivetune.constants.CanvasWifiOnlyKey, false)
+            EinkToggleRow(
+                title = "Canvas WiFi Only",
+                subtitle = "Only download canvas on Wi-Fi",
+                checked = wifiOnly,
+                onCheckedChange = { onWifiOnlyChange(it) },
                 showDivider = isLoggedIn
             )
         }

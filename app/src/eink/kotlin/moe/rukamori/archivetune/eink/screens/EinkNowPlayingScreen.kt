@@ -5,6 +5,7 @@ import kotlinx.coroutines.launch
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -18,6 +19,18 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.alpha
+import androidx.hilt.navigation.compose.hiltViewModel
+import moe.rukamori.archivetune.canvas.CanvasPlaybackRequest
+import moe.rukamori.archivetune.canvas.CanvasSource
+import moe.rukamori.archivetune.viewmodels.CanvasPlaybackState
+import moe.rukamori.archivetune.viewmodels.CanvasPlaybackViewModel
+import moe.rukamori.archivetune.ui.player.CanvasArtworkPlayer
+import java.util.Locale
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.WindowInsets
@@ -29,7 +42,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.LibraryAdd
 import androidx.compose.material.icons.outlined.LibraryAddCheck
+import androidx.compose.material.icons.outlined.MusicNote
 import androidx.compose.material.icons.outlined.PlayArrow
+import androidx.compose.material.icons.outlined.PlayCircleOutline
 import androidx.compose.material.icons.outlined.PlaylistAdd
 import androidx.compose.material.icons.outlined.Repeat
 import androidx.compose.material.icons.outlined.RepeatOne
@@ -74,6 +89,7 @@ import com.mudita.mmd.components.text.TextMMD
 import com.paperapps.paperui.components.DashedDivider
 import moe.rukamori.archivetune.LocalPlayerConnection
 import moe.rukamori.archivetune.extensions.togglePlayPause
+import moe.rukamori.archivetune.extensions.toggleRepeatMode
 import moe.rukamori.archivetune.utils.makeTimeString
 import moe.rukamori.archivetune.eink.components.EinkAddToPlaylistDialog
 import moe.rukamori.archivetune.eink.components.OutlinedPause
@@ -98,7 +114,7 @@ import moe.rukamori.archivetune.eink.EinkScreen
 import moe.rukamori.archivetune.playback.queues.YouTubeQueue
 
 @Composable
-fun EinkNowPlayingScreen(navController: NavController) {
+fun EinkNowPlayingScreen(navController: NavController, canvasViewModel: CanvasPlaybackViewModel = hiltViewModel()) {
     val playerConnection = LocalPlayerConnection.current ?: return
     val player = playerConnection.player
     val context = LocalContext.current
@@ -110,10 +126,20 @@ fun EinkNowPlayingScreen(navController: NavController) {
     val isLibrarySong = librarySong?.song?.inLibrary != null
     val isPlaying by playerConnection.isPlaying.collectAsState()
     val playbackState by playerConnection.playbackState.collectAsState()
-    val isBuffering = playbackState == androidx.media3.common.Player.STATE_BUFFERING
     val shuffleEnabled by playerConnection.shuffleModeEnabled.collectAsState()
     val repeatMode by playerConnection.repeatMode.collectAsState()
     val download by LocalDownloadUtil.current.getDownload(mediaMetadata?.id ?: "").collectAsState(initial = null)
+    val isDownloaded = download?.state == Download.STATE_COMPLETED
+    val isPlayerBuffering = playbackState == androidx.media3.common.Player.STATE_BUFFERING
+    var isBuffering by remember { mutableStateOf(false) }
+    LaunchedEffect(isPlayerBuffering, isDownloaded) {
+        if (isPlayerBuffering && !isDownloaded) {
+            delay(400)
+            isBuffering = true
+        } else {
+            isBuffering = false
+        }
+    }
     
     val queueWindows by playerConnection.queueWindows.collectAsState()
     val currentWindowIndex by playerConnection.currentWindowIndex.collectAsState()
@@ -126,6 +152,61 @@ fun EinkNowPlayingScreen(navController: NavController) {
     val titles = listOf("Now Playing", "Coming Up")
     val pagerState = rememberPagerState(pageCount = { titles.size })
 
+    val canvasRequest by remember(mediaMetadata) {
+        androidx.compose.runtime.derivedStateOf {
+            val metadata = mediaMetadata ?: return@derivedStateOf null
+            val country = Locale.getDefault().country
+            CanvasPlaybackRequest(
+                mediaId = metadata.id,
+                title = metadata.title,
+                artist = metadata.artists.firstOrNull()?.name.orEmpty(),
+                storefront = if (country.length == 2) country.lowercase(Locale.ROOT) else "us",
+                requireVertical = false,
+            )
+        }
+    }
+    LaunchedEffect(canvasViewModel, canvasRequest) {
+        canvasViewModel.setRequest(canvasRequest)
+    }
+    androidx.compose.runtime.DisposableEffect(canvasViewModel) {
+        onDispose { canvasViewModel.setRequest(null) }
+    }
+    val canvasState by canvasViewModel.state.collectAsState()
+    val canvasVideo = (canvasState as? CanvasPlaybackState.Success)?.video
+    var isCanvasReady by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+
+    LaunchedEffect(canvasVideo) {
+        if (canvasVideo == null) isCanvasReady = false
+    }
+
+
+    val grayscaleColorFilter = androidx.compose.runtime.remember {
+        androidx.compose.ui.graphics.ColorFilter.colorMatrix(
+            androidx.compose.ui.graphics.ColorMatrix(
+                floatArrayOf(
+                    0.333f, 0.333f, 0.333f, 0f, 0f,
+                    0.333f, 0.333f, 0.333f, 0f, 0f,
+                    0.333f, 0.333f, 0.333f, 0f, 0f,
+                    0f, 0f, 0f, 1f, 0f
+                )
+            ).apply {
+                val c = 1.2f // Enhanced contrast for e-ink
+                val t = (1f - c) / 2f * 255f
+                timesAssign(
+                    androidx.compose.ui.graphics.ColorMatrix(
+                        floatArrayOf(
+                            c, 0f, 0f, 0f, t,
+                            0f, c, 0f, 0f, t,
+                            0f, 0f, c, 0f, t,
+                            0f, 0f, 0f, 1f, 0f
+                        )
+                    )
+                )
+            }
+        )
+    }
+
+
     LaunchedEffect(playerConnection, isPlaying) {
         while (true) {
             position = player.currentPosition.coerceAtLeast(0L)
@@ -136,160 +217,218 @@ fun EinkNowPlayingScreen(navController: NavController) {
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(androidx.compose.ui.graphics.Color.White)
-    ) {
-        PanoramaHeader(
-            pagerState = pagerState,
-            titles = titles,
-            coroutineScope = coroutineScope,
-            modifier = Modifier.fillMaxWidth()
-        )
+    val isSpotifyThumbnailActive = canvasVideo != null && canvasVideo.source == CanvasSource.SPOTIFY && isCanvasReady
 
-        PanoramaPager(
-            state = pagerState,
-            modifier = Modifier.weight(1f)
-        ) { page ->
-            if (page == 0) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize(),
-                    verticalArrangement = Arrangement.SpaceBetween,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    EinkVisualizer(
-                        isPlaying = isPlaying,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(32.dp)
-                            .padding(vertical = 4.dp)
-                    )
+    Box(modifier = Modifier.fillMaxSize()) {
+        androidx.compose.runtime.CompositionLocalProvider(
+            androidx.compose.material3.LocalContentColor provides androidx.compose.ui.graphics.Color.Black
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(androidx.compose.ui.graphics.Color.White)
+            ) {
+                PanoramaHeader(
+                    pagerState = pagerState,
+                    titles = titles,
+                    coroutineScope = coroutineScope,
+                    modifier = Modifier.fillMaxWidth()
+                )
 
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f)
-                            .padding(horizontal = 4.dp),
-                        verticalArrangement = Arrangement.Bottom,
-                    ) {
-                        Text(
-                            text = mediaMetadata?.title.orEmpty(),
-                            fontSize = 42.sp,
-                            fontWeight = FontWeight.Bold,
-                            lineHeight = 48.sp,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis
-                        )
+                PanoramaPager(
+                    state = pagerState,
+                    modifier = Modifier.weight(1f)
+                ) { page ->
+                    if (page == 0) {
+                        val artworkUrl = mediaMetadata?.thumbnailUrl
+                        val contentGap = 6.dp
 
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(bottom = 6.dp),
+                            verticalArrangement = Arrangement.Bottom,
+                            horizontalAlignment = Alignment.Start
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.Bottom,
+                                horizontalArrangement = Arrangement.Start
+                            ) {
+                                Box(
+                                    modifier = if (isSpotifyThumbnailActive) {
+                                        Modifier
+                                            .width(140.dp)
+                                            .aspectRatio(9f / 16f)
+                                            .clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp))
+                                    } else {
+                                        Modifier
+                                            .size(140.dp)
+                                            .clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp))
+                                    }
+                                ) {
+                                    // Placeholder when artwork and canvas don't exist
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .background(androidx.compose.ui.graphics.Color.White)
+                                            .border(
+                                                width = 1.5.dp,
+                                                color = androidx.compose.ui.graphics.Color.Black,
+                                                shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
+                                            ),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Outlined.MusicNote,
+                                            contentDescription = null,
+                                            tint = androidx.compose.ui.graphics.Color.Black,
+                                            modifier = Modifier.size(56.dp)
+                                        )
+                                    }
 
-                        Text(
-                            text = mediaMetadata?.artists?.joinToString(", ") { it.name }.orEmpty(),
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
+                                    if (!artworkUrl.isNullOrBlank()) {
+                                        coil3.compose.AsyncImage(
+                                            model = artworkUrl,
+                                            contentDescription = null,
+                                            contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                                            colorFilter = grayscaleColorFilter,
+                                            modifier = Modifier.fillMaxSize()
+                                        )
+                                    }
+                                    if (canvasVideo != null) {
+                                        CanvasArtworkPlayer(
+                                            source = canvasVideo.source,
+                                            primaryUrl = canvasVideo.animated ?: canvasVideo.animatedVertical ?: canvasVideo.videoUrl,
+                                            fallbackUrl = canvasVideo.videoUrl ?: canvasVideo.videoUrlVertical,
+                                            isPlaying = isPlaying,
+                                            resizeMode = androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_ZOOM,
+                                            modifier = Modifier
+                                                .fillMaxSize()
+                                                .alpha(if (isCanvasReady) 1f else 0f),
+                                            onReady = { isCanvasReady = it }
+                                        )
+                                    }
+                                }
 
-                        val albumName = mediaMetadata?.album?.title
-                        if (!albumName.isNullOrBlank()) {
-                            Spacer(modifier = Modifier.height(4.dp))
+                                Row(
+                                    modifier = Modifier
+                                        .weight(1f),
+                                    horizontalArrangement = Arrangement.SpaceEvenly,
+                                    verticalAlignment = Alignment.Bottom
+                                ) {
+                                    IconButton(
+                                        onClick = { playerConnection.seekToPrevious() },
+                                        modifier = Modifier.size(44.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Outlined.SkipPrevious,
+                                            contentDescription = "Previous Song",
+                                            tint = androidx.compose.ui.graphics.Color.Black,
+                                            modifier = Modifier.size(32.dp),
+                                        )
+                                    }
 
-                            Text(
-                                text = albumName,
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.Medium,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                        }
-                    }
+                                    IconButton(
+                                        onClick = { player.togglePlayPause() },
+                                        modifier = Modifier.size(44.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = if (isPlaying) OutlinedPause else Icons.Outlined.PlayArrow,
+                                            contentDescription = if (isPlaying) "Pause" else "Play",
+                                            tint = androidx.compose.ui.graphics.Color.Black,
+                                            modifier = Modifier.size(32.dp),
+                                        )
+                                    }
 
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        PaperProgressBar(
-                            progress = sliderPosition.coerceIn(0f, 1f),
-                            modifier = Modifier.fillMaxWidth(),
-                            isIndeterminate = isBuffering,
-                            onProgressChange = { value ->
-                                sliderPosition = value
-                                if (duration > 0) {
-                                    val newPosition = (value * duration).toLong().coerceIn(0L, duration)
-                                    player.seekTo(newPosition)
+                                    IconButton(
+                                        onClick = { playerConnection.seekToNext() },
+                                        modifier = Modifier.size(44.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Outlined.SkipNext,
+                                            contentDescription = "Next Song",
+                                            tint = androidx.compose.ui.graphics.Color.Black,
+                                            modifier = Modifier.size(32.dp),
+                                        )
+                                    }
                                 }
                             }
-                        )
 
-                        Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(contentGap * 2))
 
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 12.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text(
-                                text = makeTimeString(position),
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.SemiBold,
-                            )
-                            Text(
-                                text = makeTimeString(duration),
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.SemiBold,
-                            )
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 4.dp),
+                            ) {
+                                Text(
+                                    text = mediaMetadata?.title.orEmpty().uppercase(),
+                                    fontFamily = androidx.compose.ui.text.font.FontFamily(
+                                        androidx.compose.ui.text.font.Font(
+                                            moe.rukamori.archivetune.R.font.clarity_city_black,
+                                            FontWeight.Black
+                                        )
+                                    ),
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Black,
+                                    lineHeight = 18.sp,
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+
+                                Text(
+                                    text = mediaMetadata?.artists?.joinToString(", ") { it.name }.orEmpty(),
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(contentGap))
+
+                            Column(
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                PaperProgressBar(
+                                    progress = sliderPosition.coerceIn(0f, 1f),
+                                    modifier = Modifier.fillMaxWidth(),
+                                    height = 16.dp,
+                                    isIndeterminate = isBuffering,
+                                    onProgressChange = { value ->
+                                        sliderPosition = value
+                                        if (duration > 0) {
+                                            val newPosition = (value * duration).toLong().coerceIn(0L, duration)
+                                            player.seekTo(newPosition)
+                                        }
+                                    }
+                                )
+
+                                Spacer(modifier = Modifier.height(2.dp))
+
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 12.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(
+                                        text = makeTimeString(position),
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = androidx.compose.ui.graphics.Color.Black,
+                                    )
+                                    Text(
+                                        text = makeTimeString(duration),
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = androidx.compose.ui.graphics.Color.Black,
+                                    )
+                                }
+                            }
                         }
-                    }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 32.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        IconButton(
-                            onClick = { playerConnection.seekToPrevious() },
-                            modifier = Modifier.size(72.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.SkipPrevious,
-                                contentDescription = "Previous Song", tint = androidx.compose.ui.graphics.Color.Black,
-                                modifier = Modifier.size(46.dp),
-                            )
-                        }
-
-                        IconButton(
-                            onClick = { player.togglePlayPause() },
-                            modifier = Modifier.size(72.dp)
-                        ) {
-                            Icon(
-                                imageVector = if (isPlaying) OutlinedPause else Icons.Outlined.PlayArrow,
-                                contentDescription = if (isPlaying) "Pause" else "Play", tint = androidx.compose.ui.graphics.Color.Black,
-                                modifier = Modifier.size(46.dp),
-                            )
-                        }
-
-                        IconButton(
-                            onClick = { playerConnection.seekToNext() },
-                            modifier = Modifier.size(72.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.SkipNext,
-                                contentDescription = "Next Song", tint = androidx.compose.ui.graphics.Color.Black,
-                                modifier = Modifier.size(46.dp),
-                            )
-                        }
-                    }
-                }
-            } else {
+                    } else {
                 PaperLazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     refreshKey = queueWindows,
@@ -301,8 +440,12 @@ fun EinkNowPlayingScreen(navController: NavController) {
                                 metadata = metadata,
                                 isCurrentlyPlaying = index == currentWindowIndex,
                                 onClick = {
-                                    player.seekToDefaultPosition(index)
-                                    player.play()
+                                    if (index == currentWindowIndex) {
+                                        player.togglePlayPause()
+                                    } else {
+                                        player.seekToDefaultPosition(window.firstPeriodIndex)
+                                        player.playWhenReady = true
+                                    }
                                 },
                                 showDivider = index != queueWindows.lastIndex,
                             )
@@ -312,90 +455,83 @@ fun EinkNowPlayingScreen(navController: NavController) {
             }
         }
         
-        val downloadIcon = when (download?.state) {
-            Download.STATE_COMPLETED -> Icons.Outlined.DownloadDone
-            Download.STATE_QUEUED, Download.STATE_DOWNLOADING -> Icons.Outlined.Downloading
-            else -> Icons.Outlined.Download
-        }
-        
-        val downloadLabel = when (download?.state) {
-            Download.STATE_COMPLETED -> "Downloaded"
-            Download.STATE_QUEUED, Download.STATE_DOWNLOADING -> "Downloading"
-            else -> "Download"
-        }
-
         ApplicationBar(
-            actions = listOf(
-                AppbarAction(
-                    icon = Icons.Outlined.Shuffle,
-                    label = "Shuffle",
-                    isActive = shuffleEnabled,
-                    onClick = { player.shuffleModeEnabled = !player.shuffleModeEnabled }
-                ),
-                AppbarAction(
-                    icon = when (repeatMode) {
-                        Player.REPEAT_MODE_ALL -> Icons.Outlined.Repeat
-                        Player.REPEAT_MODE_ONE -> Icons.Outlined.RepeatOne
-                        else -> Icons.Outlined.Repeat
-                    },
-                    label = "Repeat",
-                    isActive = repeatMode != Player.REPEAT_MODE_OFF,
-                    onClick = {
-                        player.repeatMode = when (player.repeatMode) {
-                            Player.REPEAT_MODE_OFF -> Player.REPEAT_MODE_ALL
-                            Player.REPEAT_MODE_ALL -> Player.REPEAT_MODE_ONE
-                            else -> Player.REPEAT_MODE_OFF
-                        }
-                    }
-                ),
-                AppbarAction(
-                    icon = downloadIcon,
-                    label = downloadLabel,
-                    onClick = {
-                        val state = download?.state
-                        if (state == Download.STATE_COMPLETED || state == Download.STATE_QUEUED || state == Download.STATE_DOWNLOADING) {
-                            mediaMetadata?.let { metadata ->
-                                DownloadService.sendRemoveDownload(
-                                    context,
-                                    ExoDownloadService::class.java,
-                                    metadata.id,
-                                    false,
-                                )
-                            }
-                        } else {
-                            mediaMetadata?.let { metadata ->
-                                if (!isLibrarySong) {
-                                    kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
-                                        val remoteResult = moe.rukamori.archivetune.innertube.YouTube.likeVideo(metadata.id, true)
-                                        if (remoteResult.isSuccess) {
-                                            val now = java.time.LocalDateTime.now()
-                                            database.withTransaction {
-                                                val base = librarySong?.song ?: metadata.toSongEntity()
-                                                if (librarySong == null) {
-                                                    insert(metadata, { it.toggleLibrary() })
-                                                } else {
-                                                    update(base.copy(inLibrary = now))
+            actions = buildList {
+                add(
+                    AppbarAction(
+                        icon = Icons.Outlined.Shuffle,
+                        label = if (shuffleEnabled) "Shuffle on" else "Shuffle off",
+                        isActive = shuffleEnabled,
+                        onClick = { player.shuffleModeEnabled = !shuffleEnabled }
+                    )
+                )
+                add(
+                    AppbarAction(
+                        icon = when (repeatMode) {
+                            Player.REPEAT_MODE_ONE -> Icons.Outlined.RepeatOne
+                            else -> Icons.Outlined.Repeat
+                        },
+                        label = when (repeatMode) {
+                            Player.REPEAT_MODE_ALL -> "Repeat all"
+                            Player.REPEAT_MODE_ONE -> "Repeat one"
+                            else -> "Repeat off"
+                        },
+                        isActive = repeatMode != Player.REPEAT_MODE_OFF,
+                        onClick = { player.toggleRepeatMode() }
+                    )
+                )
+                if (!isDownloaded) {
+                    val isDownloading = download?.state == Download.STATE_QUEUED || download?.state == Download.STATE_DOWNLOADING
+                    add(
+                        AppbarAction(
+                            icon = if (isDownloading) Icons.Outlined.Downloading else Icons.Outlined.Download,
+                            label = if (isDownloading) "Downloading" else "Download",
+                            onClick = {
+                                if (isDownloading) {
+                                    mediaMetadata?.let { metadata ->
+                                        DownloadService.sendRemoveDownload(
+                                            context,
+                                            ExoDownloadService::class.java,
+                                            metadata.id,
+                                            false,
+                                        )
+                                    }
+                                } else {
+                                    mediaMetadata?.let { metadata ->
+                                        if (!isLibrarySong) {
+                                            kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+                                                val remoteResult = moe.rukamori.archivetune.innertube.YouTube.likeVideo(metadata.id, true)
+                                                if (remoteResult.isSuccess) {
+                                                    val now = java.time.LocalDateTime.now()
+                                                    database.withTransaction {
+                                                        val base = librarySong?.song ?: metadata.toSongEntity()
+                                                        if (librarySong == null) {
+                                                            insert(metadata, { it.toggleLibrary() })
+                                                        } else {
+                                                            update(base.copy(inLibrary = now))
+                                                        }
+                                                    }
                                                 }
                                             }
                                         }
+                                        val downloadRequest = DownloadRequest
+                                            .Builder(metadata.id, metadata.id.toUri())
+                                            .setCustomCacheKey(metadata.id)
+                                            .setData((metadata.title ?: "").toByteArray())
+                                            .build()
+                                        DownloadService.sendAddDownload(
+                                            context,
+                                            ExoDownloadService::class.java,
+                                            downloadRequest,
+                                            false,
+                                        )
                                     }
                                 }
-                                val downloadRequest = DownloadRequest
-                                    .Builder(metadata.id, metadata.id.toUri())
-                                    .setCustomCacheKey(metadata.id)
-                                    .setData((metadata.title ?: "").toByteArray())
-                                    .build()
-                                DownloadService.sendAddDownload(
-                                    context,
-                                    ExoDownloadService::class.java,
-                                    downloadRequest,
-                                    false,
-                                )
                             }
-                        }
-                    }
-                )
-            ),
+                        )
+                    )
+                }
+            },
             menuItems = buildList {
                 add(
                     AppbarMenuItem(
@@ -439,11 +575,32 @@ fun EinkNowPlayingScreen(navController: NavController) {
                         )
                     )
                 }
+                if (isDownloaded) {
+                    add(
+                        AppbarMenuItem(
+                            label = "Remove download",
+                            onClick = {
+                                mediaMetadata?.let { metadata ->
+                                    DownloadService.sendRemoveDownload(
+                                        context,
+                                        ExoDownloadService::class.java,
+                                        metadata.id,
+                                        false,
+                                    )
+                                }
+                            }
+                        )
+                    )
+                }
             },
             pagerState = pagerState,
             onBack = { navController.navigateUp() }
         )
     }
+    }
+    }
+
+
 
     if (showAddToPlaylistDialog && mediaMetadata != null) {
         EinkAddToPlaylistDialog(
@@ -474,7 +631,7 @@ private fun EinkQueueRow(
             if (isCurrentlyPlaying) {
                 Icon(
                     imageVector = Icons.Outlined.Headphones,
-                    contentDescription = "Now playing", tint = androidx.compose.ui.graphics.Color.Black,
+                    contentDescription = "Now playing", tint = androidx.compose.material3.LocalContentColor.current,
                     modifier = Modifier
                         .size(24.dp)
                         .padding(start = 4.dp),
@@ -517,74 +674,3 @@ private fun EinkQueueRow(
     }
 }
 
-@Composable
-fun EinkVisualizer(
-    isPlaying: Boolean,
-    modifier: Modifier = Modifier,
-    barCount: Int = 32,
-    maxBlocksPerBar: Int = 8
-) {
-    val targetAmplitudes = remember { FloatArray(barCount) { 0.1f } }
-    val currentAmplitudes = remember { FloatArray(barCount) { 0.1f } }
-    
-    var tick by remember { mutableLongStateOf(0L) }
-    
-    LaunchedEffect(isPlaying) {
-        if (isPlaying) {
-            while (true) {
-                for (i in 0 until barCount) {
-                    if (Random.nextFloat() < 0.5f || targetAmplitudes[i] <= 0.1f) {
-                        targetAmplitudes[i] = Random.nextFloat()
-                    }
-                    currentAmplitudes[i] += (targetAmplitudes[i] - currentAmplitudes[i]) * 0.6f
-                }
-                tick = System.currentTimeMillis()
-                delay(200)
-            }
-        } else {
-            while (currentAmplitudes.any { it > 0.15f }) {
-                for (i in 0 until barCount) {
-                    currentAmplitudes[i] = (currentAmplitudes[i] * 0.5f).coerceAtLeast(0.1f)
-                }
-                tick = System.currentTimeMillis()
-                delay(200)
-            }
-            for (i in 0 until barCount) {
-                currentAmplitudes[i] = 0.1f
-            }
-            tick = System.currentTimeMillis()
-        }
-    }
-    
-    val color = MaterialTheme.colorScheme.onSurface
-    Canvas(modifier = modifier) {
-        val t = tick 
-        val width = size.width
-        val height = size.height
-        
-        val barSpacing = 2.dp.toPx()
-        val blockSpacing = 1.dp.toPx()
-        
-        val totalBarWidth = (width - barSpacing * (barCount - 1)) / barCount
-        val barWidth = totalBarWidth.coerceAtLeast(1f)
-        
-        val totalBlockHeight = (height - blockSpacing * (maxBlocksPerBar - 1)) / maxBlocksPerBar
-        val blockHeight = totalBlockHeight.coerceAtLeast(1f)
-        
-        for (i in 0 until barCount) {
-            val amplitude = currentAmplitudes[i]
-            val blocksToShow = (amplitude * maxBlocksPerBar).roundToInt().coerceIn(1, maxBlocksPerBar)
-            
-            val x = i * (barWidth + barSpacing)
-            
-            for (b in 0 until blocksToShow) {
-                val y = b * (blockHeight + blockSpacing)
-                drawRect(
-                    color = color,
-                    topLeft = Offset(x, y),
-                    size = androidx.compose.ui.geometry.Size(barWidth, blockHeight)
-                )
-            }
-        }
-    }
-}

@@ -221,6 +221,7 @@ fun EinkTwoLineRow(
     modifier: Modifier = Modifier,
     showDivider: Boolean = true,
     subtitleTrailingIcon: ImageVector? = null,
+    subtitleLeadingContent: (@Composable () -> Unit)? = null,
 ) {
     Column(
         modifier = modifier
@@ -235,16 +236,21 @@ fun EinkTwoLineRow(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
-        if (!subtitle.isNullOrBlank()) {
+        if (!subtitle.isNullOrBlank() || subtitleLeadingContent != null) {
             Spacer(modifier = Modifier.height(4.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                TextMMD(
-                    text = subtitle,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Normal,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                if (subtitleLeadingContent != null) {
+                    subtitleLeadingContent()
+                }
+                if (!subtitle.isNullOrBlank()) {
+                    TextMMD(
+                        text = subtitle,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Normal,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
                 if (subtitleTrailingIcon != null) {
                     Spacer(modifier = Modifier.width(6.dp))
                     Icon(
@@ -428,5 +434,99 @@ fun EinkSegmentedControl(
                 )
             }
         }
+    }
+}
+
+@Composable
+fun EinkSourceIcons(
+    hasLocal: Boolean,
+    hasDownloaded: Boolean,
+    hasOnline: Boolean,
+    modifier: Modifier = Modifier
+) {
+    if (!hasLocal && !hasDownloaded && !hasOnline) return
+
+    Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
+        if (hasLocal) {
+            Icon(
+                painter = painterResource(id = R.drawable.snippet_folder),
+                contentDescription = "Local",
+                tint = androidx.compose.ui.graphics.Color.Black,
+                modifier = Modifier.size(16.dp)
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+        }
+        if (hasDownloaded) {
+            Icon(
+                painter = painterResource(id = R.drawable.offline),
+                contentDescription = "Downloaded",
+                tint = androidx.compose.ui.graphics.Color.Black,
+                modifier = Modifier.size(16.dp)
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+        }
+        if (hasOnline) {
+            Icon(
+                painter = painterResource(id = R.drawable.ic_stream_source),
+                contentDescription = "Online",
+                tint = androidx.compose.ui.graphics.Color.Black,
+                modifier = Modifier.size(16.dp)
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+        }
+    }
+}
+
+/** Toggle row used for settings screens */
+@Composable
+fun EinkToggleRow(
+    title: String,
+    subtitle: String?,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+    showDivider: Boolean = true,
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable { onCheckedChange(!checked) }
+            .padding(bottom = 8.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(end = 12.dp)
+            ) {
+                TextMMD(
+                    text = title,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                if (!subtitle.isNullOrBlank()) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    TextMMD(
+                        text = subtitle,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Normal,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+            com.mudita.mmd.components.switcher.SwitchMMD(
+                checked = checked,
+                onCheckedChange = onCheckedChange,
+                modifier = Modifier.padding(0.dp),
+            )
+        }
+        Spacer(modifier = Modifier.height(12.dp))
+        if (showDivider) DashedDivider(thickness = 1.dp)
     }
 }

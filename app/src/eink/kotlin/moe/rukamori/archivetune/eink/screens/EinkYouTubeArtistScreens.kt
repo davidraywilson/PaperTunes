@@ -88,6 +88,7 @@ import moe.rukamori.archivetune.innertube.models.WatchEndpoint
 import moe.rukamori.archivetune.innertube.pages.ArtistPage
 import moe.rukamori.archivetune.innertube.pages.ArtistSectionLayout
 import moe.rukamori.archivetune.models.toMediaMetadata
+import moe.rukamori.archivetune.eink.components.playShuffled
 import moe.rukamori.archivetune.playback.queues.ListQueue
 import moe.rukamori.archivetune.playback.queues.YouTubeQueue
 import moe.rukamori.archivetune.viewmodels.ArtistViewModel
@@ -234,12 +235,19 @@ fun EinkYouTubeArtistScreen(
                         }
                         itemsIndexed(
                             items = libraryAlbums,
-                            key = { _, album -> "local_album_${album.id}" },
-                        ) { index, album ->
+                            key = { _, model -> "local_album_${model.album.id}" },
+                        ) { index, model ->
                             EinkTwoLineRow(
-                                title = album.album.title,
-                                subtitle = albumSubtitle(album),
-                                onClick = { navController.navigate(einkAlbumDetailsRoute(album.id)) },
+                                title = model.album.album.title,
+                                subtitle = albumSubtitle(model.album),
+                                subtitleLeadingContent = {
+                                    moe.rukamori.archivetune.eink.components.EinkSourceIcons(
+                                        hasLocal = model.hasLocal,
+                                        hasDownloaded = model.hasDownloaded,
+                                        hasOnline = model.hasOnline
+                                    )
+                                },
+                                onClick = { navController.navigate(einkAlbumDetailsRoute(model.album.id)) },
                                 showDivider = index != libraryAlbums.lastIndex,
                             )
                         }
@@ -469,11 +477,9 @@ fun EinkYouTubeArtistScreen(
                     onClick = { 
                         if (pagerState.currentPage == TAB_LOCAL) {
                             if (librarySongs.isNotEmpty()) {
-                                playerConnection.playQueue(
-                                    ListQueue(
-                                        title = artistName,
-                                        items = librarySongs.shuffled().map { it.toMediaItem() },
-                                    )
+                                playerConnection.playShuffled(
+                                    items = librarySongs.map { it.toMediaItem() },
+                                    title = artistName,
                                 )
                                 navController.navigate(moe.rukamori.archivetune.eink.EinkScreen.NowPlaying.route)
                             }

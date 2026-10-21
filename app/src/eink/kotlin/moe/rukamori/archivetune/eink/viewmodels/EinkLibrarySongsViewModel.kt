@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import moe.rukamori.archivetune.db.LocalMusicIdentity
 import moe.rukamori.archivetune.constants.SongSortType
 import moe.rukamori.archivetune.db.MusicDatabase
 import javax.inject.Inject
@@ -39,10 +40,14 @@ class EinkLibrarySongsViewModel
             combine(_sortType, _sortDescending) { sort, desc -> sort to desc }
                 .flatMapLatest { (sort, desc) ->
                     database.importSongCandidates().map { songs ->
-                        // Deduplicate by title (case-insensitive). Local wins over YTM.
+                        // Deduplicate by normalized title AND artist to prevent false merges
                         val deduplicated = songs
-                            .groupBy { it.title.lowercase() }
-                            .map { (title, group) ->
+                            .groupBy { song -> 
+                                val title = LocalMusicIdentity.normalize(song.title)
+                                val artist = song.artists.firstOrNull()?.name?.let { LocalMusicIdentity.normalize(it) } ?: ""
+                                "$title|$artist"
+                            }
+                            .map { (_, group) ->
                                 // local wins over YTM
                                 group.maxByOrNull { if (it.song.isLocal) 1 else 0 } ?: group.first()
                             }

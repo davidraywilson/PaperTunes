@@ -520,7 +520,7 @@ object AppleMusicProvider {
         val square = ev["motionDetailSquare"]?.jsonObject?.videoUrl()
         val tall = ev["motionDetailTall"]?.jsonObject?.videoUrl()
         val static = ev["motionDetailStatic"]?.jsonObject?.videoUrl()
-        val animated = raw ?: square ?: static ?: tall
+        val animated = square ?: tall ?: static ?: raw
 
         if (animated.isNullOrBlank() && tall.isNullOrBlank()) {
             Log.d("editorialVideo found but no video link in assets: ${ev.keys}")

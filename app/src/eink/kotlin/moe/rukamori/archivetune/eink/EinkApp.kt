@@ -40,6 +40,7 @@ import moe.rukamori.archivetune.eink.screens.EinkYouTubeArtistScreen
 import moe.rukamori.archivetune.ui.screens.LOGIN_ROUTE
 import moe.rukamori.archivetune.ui.screens.LOGIN_URL_ARGUMENT
 import moe.rukamori.archivetune.ui.screens.LoginScreen
+import moe.rukamori.archivetune.ui.screens.SpotifyLoginScreen
 
 /** Route helpers for destinations that take an id argument. */
 private fun detailRoute(base: String, argName: String) = "$base/{$argName}"
@@ -99,6 +100,10 @@ fun EinkApp() {
                             navController = navController,
                             startUrl = backStackEntry.arguments?.getString(LOGIN_URL_ARGUMENT),
                         )
+                    }
+
+                    composable(EinkScreen.SpotifyLogin.route) {
+                        SpotifyLoginScreen(navController = navController)
                     }
 
                     composable(

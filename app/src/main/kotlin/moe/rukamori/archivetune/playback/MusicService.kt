@@ -304,6 +304,9 @@ class MusicService :
     lateinit var mediaLibrarySessionCallback: MediaLibrarySessionCallback
 
     @Inject
+    lateinit var downloadUtil: moe.rukamori.archivetune.playback.DownloadUtil
+
+    @Inject
     lateinit var androidAutoSettings: AndroidAutoSettingsUseCases
 
     @Inject
@@ -4296,6 +4299,8 @@ class MusicService :
     fun onInfiniteQueueEnabled() {
         val currentMeta = player.currentMetadata ?: return
         if (currentMeta.isPodcast) return
+        // Repeat modes loop the existing queue; never extend it with radio/automix tracks.
+        if (player.repeatMode != REPEAT_MODE_OFF) return
         if (isCurrentPlaybackItemLocal(currentMeta)) return
         if (infiniteQueueJob?.isActive == true) return
 
@@ -7529,7 +7534,7 @@ class MusicService :
                             }
                             scope.launch(Dispatchers.IO) { recoverSong(mediaId) }
                         }
-                        if (mediaId != null && downloadCache.isFullyCached(mediaId)) {
+                        if (mediaId != null && (downloadCache.isFullyCached(mediaId) || moe.rukamori.archivetune.adaptors.PlaybackAdaptorRegistry.current.shouldPreferDownload(mediaId, downloadUtil))) {
                             downloadedFactory
                         } else {
                             streamingFactory

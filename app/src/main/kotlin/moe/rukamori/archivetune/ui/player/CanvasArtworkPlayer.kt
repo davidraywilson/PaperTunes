@@ -68,8 +68,10 @@ internal fun CanvasArtworkPlayer(
     modifier: Modifier = Modifier,
     resizeMode: Int = AspectRatioFrameLayout.RESIZE_MODE_FIT,
     onFrameCaptured: ((Bitmap?) -> Unit)? = null,
+    onReady: ((Boolean) -> Unit)? = null,
 ) {
     val frameCallback by rememberUpdatedState(onFrameCaptured)
+    val readyCallback by rememberUpdatedState(onReady)
     val provider = source ?: return
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -82,6 +84,10 @@ internal fun CanvasArtworkPlayer(
     val initial = primary ?: fallback ?: return
     var currentUrl by remember(initial) { mutableStateOf(initial) }
     var isVideoReady by remember(initial) { mutableStateOf(false) }
+    
+    LaunchedEffect(isVideoReady) {
+        readyCallback?.invoke(isVideoReady)
+    }
     var hasPlaybackFailed by remember(initial) { mutableStateOf(false) }
     val shouldPlay by rememberUpdatedState(isPlaying)
     val isStarted = remember(lifecycleOwner) {
@@ -130,7 +136,14 @@ internal fun CanvasArtworkPlayer(
         }
     val renderersFactory =
         remember(context) {
-            DefaultRenderersFactory(context).setEnableDecoderFallback(true)
+            object : DefaultRenderersFactory(context) {
+                override fun getCodecAdapterFactory(): androidx.media3.exoplayer.mediacodec.MediaCodecAdapter.Factory {
+                    return androidx.media3.exoplayer.mediacodec.DefaultMediaCodecAdapterFactory(context)
+                        .forceDisableAsynchronous()
+                }
+            }.apply {
+                setEnableDecoderFallback(true)
+            }
         }
     val exoPlayer =
         remember(initial, mediaSourceFactory, renderersFactory) {
@@ -144,6 +157,9 @@ internal fun CanvasArtworkPlayer(
                         trackSelectionParameters
                             .buildUpon()
                             .setTrackTypeDisabled(C.TRACK_TYPE_AUDIO, true)
+                            .setMaxVideoSize(720, 1280)
+                            .setMaxVideoFrameRate(30)
+                            .setPreferredVideoMimeType(MimeTypes.VIDEO_MP4)
                             .build()
                     volume = 0f
                     repeatMode = Player.REPEAT_MODE_ONE
@@ -277,8 +293,12 @@ internal fun CanvasArtworkPlayer(
         val lowercaseUrl = normalized.lowercase(Locale.ROOT)
         val mimeType =
             when {
+                lowercaseUrl.startsWith("file:") && (lowercaseUrl.contains(".webm") || lowercaseUrl.endsWith("webm")) -> MimeTypes.VIDEO_WEBM
+                lowercaseUrl.startsWith("file:") -> MimeTypes.VIDEO_MP4
+                lowercaseUrl.contains(".mp4") || lowercaseUrl.endsWith("mp4") -> MimeTypes.VIDEO_MP4
+                lowercaseUrl.contains(".webm") || lowercaseUrl.endsWith("webm") -> MimeTypes.VIDEO_WEBM
                 lowercaseUrl.contains("m3u8") -> MimeTypes.APPLICATION_M3U8
-                lowercaseUrl.contains("mp4") -> MimeTypes.VIDEO_MP4
+                provider == CanvasSource.SPOTIFY -> MimeTypes.VIDEO_MP4
                 primary != null && currentUrl == primary -> MimeTypes.APPLICATION_M3U8
                 fallback != null && currentUrl == fallback -> MimeTypes.VIDEO_MP4
                 else -> MimeTypes.APPLICATION_M3U8

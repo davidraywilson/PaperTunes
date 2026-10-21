@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="81dp"
     android:height="81dp"
@@ -11,25 +12,39 @@
         android:strokeWidth="2.5"
         android:pathData="M 19 1.25 L 62 1.25 C 71.8 1.25 79.75 9.2 79.75 19 L 79.75 62 C 79.75 71.8 71.8 79.75 62 79.75 L 19 79.75 C 9.2 79.75 1.25 71.8 1.25 62 L 1.25 19 C 1.25 9.2 9.2 1.25 19 1.25 Z" />
     
-    <!-- Stem -->
+    <!-- Left Note Head (Circle cx=27, cy=54, r=6.5) -->
     <path
         android:strokeColor="#000000"
         android:strokeWidth="2.5"
         android:strokeLineCap="round"
         android:strokeLineJoin="round"
-        android:pathData="M 50.5 24.5 L 50.5 50.5" />
-        
-    <!-- Note head -->
-    <path
-        android:strokeColor="#000000"
-        android:strokeWidth="2.5"
-        android:pathData="M 42.5 44.5 C 46.918 44.5 50.5 47.186 50.5 50.5 C 50.5 53.814 46.918 56.5 42.5 56.5 C 38.082 56.5 34.5 53.814 34.5 50.5 C 34.5 47.186 38.082 44.5 42.5 44.5 Z" />
+        android:fillColor="#00000000"
+        android:pathData="M 33.5,54 A 6.5,6.5 0 1,1 20.5,54 A 6.5,6.5 0 1,1 33.5,54 Z" />
 
-    <!-- Flag -->
+    <!-- Right Note Head (Circle cx=54, cy=54, r=6.5) -->
     <path
         android:strokeColor="#000000"
         android:strokeWidth="2.5"
         android:strokeLineCap="round"
         android:strokeLineJoin="round"
-        android:pathData="M 50.5 24.5 C 56.5 28.5 60.5 34.5 58.5 42.5" />
+        android:fillColor="#00000000"
+        android:pathData="M 60.5,54 A 6.5,6.5 0 1,1 47.5,54 A 6.5,6.5 0 1,1 60.5,54 Z" />
+
+    <!-- Stems and Top Beam Edge -->
+    <path
+        android:strokeColor="#000000"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:fillColor="#00000000"
+        android:pathData="M 33.5,54 L 33.5,23.5 L 60.5,20.5 L 60.5,54" />
+
+    <!-- Bottom Beam Edge -->
+    <path
+        android:strokeColor="#000000"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:fillColor="#00000000"
+        android:pathData="M 33.5,29.5 L 60.5,26.5" />
 </vector>

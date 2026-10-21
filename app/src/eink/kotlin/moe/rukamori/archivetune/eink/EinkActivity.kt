@@ -40,6 +40,9 @@ import moe.rukamori.archivetune.utils.SyncUtils
 import moe.rukamori.archivetune.utils.reportException
 import javax.inject.Inject
 
+import moe.rukamori.archivetune.eink.adaptors.EinkPlaybackAdaptor
+import moe.rukamori.archivetune.adaptors.PlaybackAdaptorRegistry
+
 /**
  * Launcher Activity for the new e-ink (MMD) UI. Reuses PaperTunes's backend: it binds the
  * shared [MusicService], builds a [PlayerConnection], and provides the same composition
@@ -100,6 +103,9 @@ class EinkActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        PlaybackAdaptorRegistry.current = EinkPlaybackAdaptor()
+        
         androidx.core.view.WindowCompat.setDecorFitsSystemWindows(window, false)
         androidx.core.view.WindowInsetsControllerCompat(window, window.decorView).apply {
             isAppearanceLightStatusBars = true

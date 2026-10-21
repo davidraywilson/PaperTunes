@@ -38,6 +38,7 @@ import moe.rukamori.archivetune.eink.menus.EinkSongMenu
 import moe.rukamori.archivetune.eink.viewmodels.EinkLibrarySongsViewModel
 import moe.rukamori.archivetune.extensions.toMediaItem
 import moe.rukamori.archivetune.extensions.togglePlayPause
+import moe.rukamori.archivetune.eink.components.playShuffled
 import moe.rukamori.archivetune.playback.queues.ListQueue
 
 @Composable
@@ -70,11 +71,9 @@ fun EinkSongsScreen(
     LaunchedEffect(displaySongs) {
         if (displaySongs.isNotEmpty()) {
             onShuffleReady {
-                playerConnection.playQueue(
-                    ListQueue(
-                        title = "Songs",
-                        items = displaySongs.shuffled().map { it.toMediaItem() },
-                    ),
+                playerConnection.playShuffled(
+                    items = displaySongs.map { it.toMediaItem() },
+                    title = "Songs",
                 )
             }
         } else {

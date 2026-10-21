@@ -34,24 +34,27 @@ object CanvasNetworkAccess {
             .keys.toList().forEach(Call::cancel)
     }
 
-    fun check(source: CanvasSource? = null) {
-        requireAllowed(policy.value.copy(connectivity = connectivity()), source)
+    fun check(source: CanvasSource? = null, bypassWifi: Boolean = false) {
+        requireAllowed(policy.value.copy(connectivity = connectivity()), source, bypassWifi)
     }
 
-    fun checkTransfer(source: CanvasSource) {
-        requireAllowed(policy.value, source)
+    fun checkTransfer(source: CanvasSource, bypassWifi: Boolean = false) {
+        requireAllowed(policy.value, source, bypassWifi)
     }
 
-    private fun requireAllowed(current: CanvasPolicy, source: CanvasSource?) {
-        if (!current.networkAllowed || (source != null && !current.configuration.source.accepts(source))) {
+    private fun requireAllowed(current: CanvasPolicy, source: CanvasSource?, bypassWifi: Boolean = false) {
+        val allowed = current.ready && current.configuration.enabled && current.connectivity.online &&
+            (!current.configuration.wifiOnly || bypassWifi || current.connectivity.wifi) &&
+            (!current.configuration.lowDataMode || !current.connectivity.metered)
+        if (!allowed || (source != null && !current.configuration.source.accepts(source))) {
             throw IOException("Canvas network access is disabled by the current policy")
         }
     }
 
-    fun intercept(chain: Interceptor.Chain, source: CanvasSource): Response {
+    fun intercept(chain: Interceptor.Chain, source: CanvasSource, bypassWifi: Boolean = false): Response {
         val call = chain.call()
         synchronized(this) {
-            check(source)
+            check(source, bypassWifi)
             calls[call] = source
         }
         try {
@@ -64,9 +67,9 @@ object CanvasNetworkAccess {
             val guardedSource = object : ForwardingSource(body.source()) {
                 override fun read(sink: Buffer, byteCount: Long): Long {
                     return try {
-                        checkTransfer(source)
+                        checkTransfer(source, bypassWifi)
                         val count = super.read(sink, byteCount)
-                        checkTransfer(source)
+                        checkTransfer(source, bypassWifi)
                         if (count == -1L) remove(call)
                         count
                     } catch (error: Exception) {

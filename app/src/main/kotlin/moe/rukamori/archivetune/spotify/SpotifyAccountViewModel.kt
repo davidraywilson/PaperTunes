@@ -78,6 +78,7 @@ class SpotifyAccountViewModel
                                 isLoading = false,
                             )
                         }
+                        moe.rukamori.archivetune.ui.player.CanvasArtworkPlaybackCache.clear()
                         reloadPlaylists()
                     }.onFailure { error ->
                         if (error is CancellationException) throw error
@@ -114,6 +115,7 @@ class SpotifyAccountViewModel
                 runCatching { repository.logout() }
                     .onSuccess {
                         _uiState.value = SpotifyAccountUiState()
+                        moe.rukamori.archivetune.ui.player.CanvasArtworkPlaybackCache.clear()
                     }.onFailure { error ->
                         if (error is CancellationException) throw error
                         reportException(error)
