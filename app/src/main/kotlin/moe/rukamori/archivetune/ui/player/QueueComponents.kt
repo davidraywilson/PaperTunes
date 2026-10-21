@@ -297,17 +297,17 @@ fun CurrentSongHeader(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             val uncheckedColors =
-                ToggleButtonDefaults.toggleButtonColors(
+                ToggleButtonDefaults.colors(
                     containerColor = onBackgroundColor.copy(alpha = 0.12f),
                     contentColor = onBackgroundColor,
                 )
             val checkedColors =
-                ToggleButtonDefaults.toggleButtonColors(
+                ToggleButtonDefaults.colors(
                     checkedContainerColor = onBackgroundColor.copy(alpha = 0.22f),
                     checkedContentColor = onBackgroundColor,
                 )
             val infiniteCheckedColors =
-                ToggleButtonDefaults.toggleButtonColors(
+                ToggleButtonDefaults.colors(
                     checkedContainerColor = MaterialTheme.colorScheme.primary,
                     checkedContentColor = MaterialTheme.colorScheme.onPrimary,
                     containerColor = onBackgroundColor.copy(alpha = 0.12f),
@@ -1490,12 +1490,12 @@ fun QueueCollapsedContentV9(
     val buttonContainerColor = textBackgroundColor.copy(alpha = 0.08f)
     val selectedButtonContainerColor = textBackgroundColor.copy(alpha = 0.18f)
     val uncheckedColors =
-        ToggleButtonDefaults.toggleButtonColors(
+        ToggleButtonDefaults.colors(
             containerColor = buttonContainerColor,
             contentColor = textBackgroundColor.copy(alpha = 0.76f),
         )
     val checkedColors =
-        ToggleButtonDefaults.toggleButtonColors(
+        ToggleButtonDefaults.colors(
             checkedContainerColor = selectedButtonContainerColor,
             checkedContentColor = textBackgroundColor,
             containerColor = buttonContainerColor,

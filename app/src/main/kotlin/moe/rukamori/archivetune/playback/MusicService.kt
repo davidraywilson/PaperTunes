@@ -369,8 +369,12 @@ class MusicService :
     private var scope = CoroutineScope(Dispatchers.Main + scopeJob)
     private var ioScope = CoroutineScope(Dispatchers.IO + scopeJob)
     private val binder = MusicBinder(this)
-    private var hasBoundClients = false
+    private var boundClientCount = 0
+    private val hasBoundClients: Boolean
+        get() = boundClientCount > 0
+    private var isPlaybackServiceStarted = false
     private var idleStopJob: Job? = null
+    private lateinit var mediaNotificationProvider: ArchiveTuneMediaNotificationProvider
 
     private lateinit var connectivityManager: ConnectivityManager
     lateinit var connectivityObserver: NetworkConnectivityObserver
@@ -419,6 +423,25 @@ class MusicService :
                 chain.proceed(
                     requestBuilder.build(),
                 )
+            }.addNetworkInterceptor { chain ->
+                val request = chain.request()
+                val response = chain.proceed(request)
+                if (response.code == 403 &&
+                    (request.url.host == "googlevideo.com" || request.url.host.endsWith(".googlevideo.com"))
+                ) {
+                    Timber.tag("YoutubeiResolver").w(
+                        "Media HTTP 403 tokenPresent=%s nPresent=%s nError=%s userAgentPresent=%s " +
+                            "rangePresent=%s redirected=%s routeProxy=%s",
+                        !request.url.queryParameter("pot").isNullOrBlank(),
+                        !request.url.queryParameter("n").isNullOrBlank(),
+                        request.url.queryParameter("n")?.startsWith("enhanced_except_") == true,
+                        !request.header("User-Agent").isNullOrBlank(),
+                        request.header("Range") != null,
+                        request.url.host != chain.call().request().url.host,
+                        chain.connection()?.route()?.proxy?.type()?.name ?: "UNKNOWN",
+                    )
+                }
+                response
             }.build()
     }
 
@@ -715,6 +738,7 @@ class MusicService :
         private set
     lateinit var player: Player
         private set
+    private var pendingQueueRemoval: QueueRemoval? = null
     private lateinit var castPlaybackRepository: CastPlaybackRepository
     private lateinit var mediaSession: MediaLibrarySession
 
@@ -770,9 +794,6 @@ class MusicService :
     private var consecutivePlaybackErr = 0
 
     val maxSafeGainFactor = MAX_AUDIO_NORMALIZATION_FACTOR
-
-    @Volatile
-    private var hasCalledStartForeground = false
 
     val togetherSessionState =
         MutableStateFlow<moe.rukamori.archivetune.together.TogetherSessionState>(
@@ -995,54 +1016,65 @@ class MusicService :
         return generated
     }
 
-    private fun ensureStartedAsForeground() {
-        if (hasCalledStartForeground) return
+    private fun buildStartupNotification(): Notification {
+        val contentIntent =
+            PendingIntent.getActivity(
+                this,
+                0,
+                Intent(this, MainActivity::class.java),
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            )
 
+        return NotificationCompat
+            .Builder(this, CHANNEL_ID)
+            .setSmallIcon(R.drawable.small_icon)
+            .setContentTitle(getString(R.string.music_player))
+            .setContentText(getString(R.string.app_name))
+            .setContentIntent(contentIntent)
+            .setCategory(Notification.CATEGORY_SERVICE)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setOngoing(true)
+            .setOnlyAlertOnce(true)
+            .build()
+    }
+
+    private fun enterForegroundForStartCommand() {
+        val mediaNotification =
+            if (hasResumablePlaybackNotification()) mediaNotificationProvider.latestNotification else null
+        val notificationId = mediaNotification?.notificationId ?: NOTIFICATION_ID
         val notification =
-            try {
-                val contentIntent =
-                    PendingIntent.getActivity(
-                        this,
-                        0,
-                        Intent(this, MainActivity::class.java),
-                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-                    )
-
-                NotificationCompat
-                    .Builder(this, CHANNEL_ID)
-                    .setSmallIcon(R.drawable.small_icon)
-                    .setContentTitle(getString(R.string.music_player))
-                    .setContentText(getString(R.string.app_name))
-                    .setContentIntent(contentIntent)
-                    .setCategory(Notification.CATEGORY_SERVICE)
-                    .setPriority(NotificationCompat.PRIORITY_LOW)
-                    .setOngoing(true)
-                    .setOnlyAlertOnce(true)
-                    .build()
-            } catch (e: Exception) {
-                reportException(e)
-                return
-            }
+            mediaNotification?.notification
+                ?: runCatching { buildStartupNotification() }
+                    .onFailure { reportException(it) }
+                    .getOrNull()
+                ?: return
 
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 startForeground(
-                    NOTIFICATION_ID,
+                    notificationId,
                     notification,
                     ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK,
                 )
             } else {
-                startForeground(NOTIFICATION_ID, notification)
+                startForeground(notificationId, notification)
             }
-            hasCalledStartForeground = true
         } catch (e: Exception) {
             reportException(e)
         }
     }
 
-    private fun promoteToStartedService() {
-        runCatching { startService(Intent(this, MusicService::class.java)) }
-            .onFailure { reportException(it) }
+    private fun ensureForegroundPlaybackService() {
+        if (!isPlaybackServiceStarted) {
+            try {
+                isPlaybackServiceStarted =
+                    startService(Intent(this, MusicService::class.java)) != null
+            } catch (exception: Exception) {
+                reportException(exception)
+                return
+            }
+        }
+        enterForegroundForStartCommand()
     }
 
     private fun cancelIdleStop() {
@@ -1060,6 +1092,7 @@ class MusicService :
 
     private fun stopForegroundAndSelf() {
         cancelIdleStop()
+        isPlaybackServiceStarted = false
         runCatching {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                 stopForeground(STOP_FOREGROUND_REMOVE)
@@ -1067,7 +1100,7 @@ class MusicService :
                 stopForeground(true)
             }
         }
-        hasCalledStartForeground = false
+        mediaNotificationProvider.clearLatestNotification()
         stopSelf()
     }
 
@@ -1075,8 +1108,6 @@ class MusicService :
         if (hasBoundClients) return
         if (hasResumablePlaybackNotification()) {
             cancelIdleStop()
-            promoteToStartedService()
-            ensureStartedAsForeground()
             return
         }
         val togetherIdle = togetherSessionState.value is moe.rukamori.archivetune.together.TogetherSessionState.Idle
@@ -1160,7 +1191,10 @@ class MusicService :
                     mediaItemResolver =
                         object : CastMediaItemResolver {
                             override fun resolveForCast(mediaItem: MediaItem): MediaItem =
-                                resolveMediaItemForCast(mediaItem)
+                                resolveMediaItemForCast(mediaItem, blocking = false)
+
+                            override fun resolveForCastBlocking(mediaItem: MediaItem): MediaItem =
+                                resolveMediaItemForCast(mediaItem, blocking = true)
 
                             override fun mimeTypeForCast(mediaItem: MediaItem): String? =
                                 mediaItem.localConfiguration?.mimeType
@@ -1242,12 +1276,12 @@ class MusicService :
                 )
         }
         mediaSession = mediaSessionBuilder.build()
-        setMediaNotificationProvider(
+        mediaNotificationProvider =
             ArchiveTuneMediaNotificationProvider(
                 context = this,
                 smallIconResId = R.drawable.small_icon,
-            ),
-        )
+            )
+        setMediaNotificationProvider(mediaNotificationProvider)
         addSession(mediaSession)
 
         updateNotification()
@@ -3928,11 +3962,6 @@ class MusicService :
                 }
             }
 
-    fun refreshPlaybackNotification() {
-        updateNotification()
-        onUpdateNotification(mediaSession, hasResumablePlaybackNotification())
-    }
-
     private suspend fun recoverSong(
         mediaId: String,
         playbackData: YTPlayerUtils.PlaybackData? = null,
@@ -4053,8 +4082,7 @@ class MusicService :
         }
         if (playWhenReady) {
             cancelIdleStop()
-            promoteToStartedService()
-            ensureStartedAsForeground()
+            ensureForegroundPlaybackService()
         }
         cancelRestoredQueueHydration()
         ensureScopesActive()
@@ -4440,6 +4468,28 @@ class MusicService :
         playNextShuffleOrder?.let(localPlayer::setShuffleOrder)
         player.prepare()
     }
+
+    internal fun removeQueueItems(windows: List<Timeline.Window>): QueueRemoval? {
+        if (isTogetherGuestSession()) return null
+        return QueueRemoval.remove(queueEditPlayer(), windows).also { pendingQueueRemoval = it }
+    }
+
+    internal fun restoreQueueItems(removal: QueueRemoval): Boolean {
+        if (pendingQueueRemoval !== removal || isTogetherGuestSession()) return false
+        pendingQueueRemoval = null
+        return removal.restore(queueEditPlayer())
+    }
+
+    internal fun discardQueueRemoval(removal: QueueRemoval) {
+        if (pendingQueueRemoval === removal) pendingQueueRemoval = null
+    }
+
+    private fun queueEditPlayer(): Player =
+        if (player.deviceInfo.playbackType == androidx.media3.common.DeviceInfo.PLAYBACK_TYPE_LOCAL) {
+            localPlayer
+        } else {
+            player
+        }
 
     fun moveQueueItemToNext(mediaItemIndex: Int) {
         val currentIndex = player.currentMediaItemIndex
@@ -4933,7 +4983,7 @@ class MusicService :
                                         if (joined?.role is moe.rukamori.archivetune.together.TogetherRole.Guest) {
                                             togetherPendingGuestControl = null
                                             togetherLastSentControlAction = null
-                                            scope.launch(SilentHandler) { applyRemoteRoomState(joined.roomState, force = true) }
+                                            restoreTogetherGuestPlayback()
                                         }
                                     }
 
@@ -5190,7 +5240,7 @@ class MusicService :
                                         if (joined?.role is moe.rukamori.archivetune.together.TogetherRole.Guest) {
                                             togetherPendingGuestControl = null
                                             togetherLastSentControlAction = null
-                                            scope.launch(SilentHandler) { applyRemoteRoomState(joined.roomState, force = true) }
+                                            restoreTogetherGuestPlayback()
                                         }
                                     }
 
@@ -5764,11 +5814,20 @@ class MusicService :
             }
     }
 
+    private fun restoreTogetherGuestPlayback() {
+        scope.launch(SilentHandler) {
+            val joined = togetherSessionState.value as? moe.rukamori.archivetune.together.TogetherSessionState.Joined
+            if (joined?.role is moe.rukamori.archivetune.together.TogetherRole.Guest && !isTogetherApplyingRemote()) {
+                applyRemoteRoomState(joined.roomState, force = true)
+            }
+        }
+    }
+
     private suspend fun applyRemoteRoomState(
         state: moe.rukamori.archivetune.together.TogetherRoomState,
         force: Boolean = false,
-    ) {
-        val pid = togetherSelfParticipantId ?: return
+    ) = withContext(Dispatchers.Main) {
+        val pid = togetherSelfParticipantId ?: return@withContext
         val now = android.os.SystemClock.elapsedRealtime()
 
         val pending = togetherPendingGuestControl
@@ -5789,7 +5848,7 @@ class MusicService :
                 }
                 togetherPendingGuestControl = null
             } else {
-                if (mismatch) return
+                if (mismatch) return@withContext
                 togetherPendingGuestControl = null
             }
         }
@@ -5801,7 +5860,7 @@ class MusicService :
                 force = force,
             )
         ) {
-            return
+            return@withContext
         }
 
         val targetPos =
@@ -5812,97 +5871,95 @@ class MusicService :
                 nowElapsedRealtimeMs = now,
             )
 
-        withContext(Dispatchers.Main) {
-            togetherApplyingRemote = true
-            togetherSuppressEchoUntilElapsedMs =
-                TogetherPlaybackSync.echoSuppressionUntil(
-                    android.os.SystemClock.elapsedRealtime(),
-                )
-            try {
-                val desiredItems = state.queue.map { it.toMediaMetadata().toMediaItem() }
-                val desiredIds = state.queue.map { it.id }
-                val desiredHash = state.queueHash
-                val localIds = player.mediaItems.mapNotNull { it.metadata?.id ?: it.mediaId }.filter { it.isNotBlank() }
-                val localHash =
-                    if (localIds.isEmpty()) {
-                        ""
-                    } else {
-                        moe.rukamori.archivetune.utils
-                            .md5(localIds.joinToString(separator = "|"))
-                    }
-                val needsRebuild =
-                    TogetherPlaybackSync.needsQueueRebuild(
-                        desiredHash = desiredHash,
-                        desiredIds = desiredIds,
-                        localHash = localHash,
-                        localIds = localIds,
-                    )
-
-                if (desiredItems.isNotEmpty() && needsRebuild) {
-                    togetherLastAppliedQueueHash = desiredHash.ifBlank { localHash }
-                    val startIndex = state.currentIndex.coerceIn(0, desiredItems.lastIndex)
-                    suppressAutoPlayback = false
-                    currentQueue =
-                        moe.rukamori.archivetune.playback.queues.ListQueue(
-                            title = getString(R.string.music_player),
-                            items = desiredItems,
-                            startIndex = startIndex,
-                            position = targetPos,
-                        )
-                    queueTitle = null
-                    player.setMediaItems(desiredItems, startIndex, targetPos)
-                    player.prepare()
-                    player.repeatMode = state.repeatMode
-                    player.shuffleModeEnabled = state.shuffleEnabled
-                    player.playWhenReady = state.isPlaying
-                    togetherLastRemoteAppliedIndex = startIndex
+        togetherApplyingRemote = true
+        togetherSuppressEchoUntilElapsedMs =
+            TogetherPlaybackSync.echoSuppressionUntil(
+                android.os.SystemClock.elapsedRealtime(),
+            )
+        try {
+            val desiredItems = state.queue.map { it.toMediaMetadata().toMediaItem() }
+            val desiredIds = state.queue.map { it.id }
+            val desiredHash = state.queueHash
+            val localIds = player.mediaItems.mapNotNull { it.metadata?.id ?: it.mediaId }.filter { it.isNotBlank() }
+            val localHash =
+                if (localIds.isEmpty()) {
+                    ""
                 } else {
-                    val index =
-                        if (player.mediaItemCount > 0) {
-                            state.currentIndex.coerceIn(0, player.mediaItemCount - 1)
-                        } else {
-                            0
-                        }
-                    val indexChanged = player.mediaItemCount > 0 && index != player.currentMediaItemIndex
-
-                    if (indexChanged) {
-                        if (player.repeatMode != state.repeatMode) player.repeatMode = state.repeatMode
-                        if (player.shuffleModeEnabled != state.shuffleEnabled) player.shuffleModeEnabled = state.shuffleEnabled
-                        player.seekTo(index, targetPos)
-                        player.prepare()
-                        player.playWhenReady = state.isPlaying
-                    } else {
-                        val playbackStateChanged = player.playWhenReady != state.isPlaying
-                        if (player.repeatMode != state.repeatMode) player.repeatMode = state.repeatMode
-                        if (player.shuffleModeEnabled != state.shuffleEnabled) player.shuffleModeEnabled = state.shuffleEnabled
-                        if (playbackStateChanged) player.playWhenReady = state.isPlaying
-                        val shouldSeekForDrift =
-                            TogetherPlaybackSync.shouldSeekForDrift(
-                                currentPositionMs = player.currentPosition,
-                                targetPositionMs = targetPos,
-                                isPlaying = state.isPlaying,
-                                isOnlineSession = togetherIsOnlineSession,
-                            )
-                        if (shouldSeekForDrift || (playbackStateChanged && !state.isPlaying)) {
-                            player.seekTo(targetPos)
-                            player.prepare()
-                        }
-                    }
-                    togetherLastRemoteAppliedIndex = index
+                    moe.rukamori.archivetune.utils
+                        .md5(localIds.joinToString(separator = "|"))
                 }
-                togetherLastRemoteAppliedPlayWhenReady = state.isPlaying
-                togetherLastAppliedRoomStateSentAtElapsedMs = sentAt
+            val needsRebuild =
+                TogetherPlaybackSync.needsQueueRebuild(
+                    desiredHash = desiredHash,
+                    desiredIds = desiredIds,
+                    localHash = localHash,
+                    localIds = localIds,
+                )
 
-                togetherSessionState.value =
-                    moe.rukamori.archivetune.together.TogetherSessionState.Joined(
-                        role = moe.rukamori.archivetune.together.TogetherRole.Guest,
-                        sessionId = state.sessionId,
-                        selfParticipantId = pid,
-                        roomState = state,
+            if (desiredItems.isNotEmpty() && needsRebuild) {
+                togetherLastAppliedQueueHash = desiredHash.ifBlank { localHash }
+                val startIndex = state.currentIndex.coerceIn(0, desiredItems.lastIndex)
+                suppressAutoPlayback = false
+                currentQueue =
+                    moe.rukamori.archivetune.playback.queues.ListQueue(
+                        title = getString(R.string.music_player),
+                        items = desiredItems,
+                        startIndex = startIndex,
+                        position = targetPos,
                     )
-            } finally {
-                togetherApplyingRemote = false
+                queueTitle = null
+                player.setMediaItems(desiredItems, startIndex, targetPos)
+                player.prepare()
+                player.repeatMode = state.repeatMode
+                player.shuffleModeEnabled = state.shuffleEnabled
+                player.playWhenReady = state.isPlaying
+                togetherLastRemoteAppliedIndex = startIndex
+            } else {
+                val index =
+                    if (player.mediaItemCount > 0) {
+                        state.currentIndex.coerceIn(0, player.mediaItemCount - 1)
+                    } else {
+                        0
+                    }
+                val indexChanged = player.mediaItemCount > 0 && index != player.currentMediaItemIndex
+
+                if (indexChanged) {
+                    if (player.repeatMode != state.repeatMode) player.repeatMode = state.repeatMode
+                    if (player.shuffleModeEnabled != state.shuffleEnabled) player.shuffleModeEnabled = state.shuffleEnabled
+                    player.seekTo(index, targetPos)
+                    player.prepare()
+                    player.playWhenReady = state.isPlaying
+                } else {
+                    val playbackStateChanged = player.playWhenReady != state.isPlaying
+                    if (player.repeatMode != state.repeatMode) player.repeatMode = state.repeatMode
+                    if (player.shuffleModeEnabled != state.shuffleEnabled) player.shuffleModeEnabled = state.shuffleEnabled
+                    if (playbackStateChanged) player.playWhenReady = state.isPlaying
+                    val shouldSeekForDrift =
+                        TogetherPlaybackSync.shouldSeekForDrift(
+                            currentPositionMs = player.currentPosition,
+                            targetPositionMs = targetPos,
+                            isPlaying = state.isPlaying,
+                            isOnlineSession = togetherIsOnlineSession,
+                        )
+                    if (shouldSeekForDrift || (playbackStateChanged && !state.isPlaying)) {
+                        player.seekTo(targetPos)
+                        player.prepare()
+                    }
+                }
+                togetherLastRemoteAppliedIndex = index
             }
+            togetherLastRemoteAppliedPlayWhenReady = state.isPlaying
+            togetherLastAppliedRoomStateSentAtElapsedMs = sentAt
+
+            togetherSessionState.value =
+                moe.rukamori.archivetune.together.TogetherSessionState.Joined(
+                    role = moe.rukamori.archivetune.together.TogetherRole.Guest,
+                    sessionId = state.sessionId,
+                    selfParticipantId = pid,
+                    roomState = state,
+                )
+        } finally {
+            togetherApplyingRemote = false
         }
     }
 
@@ -6717,10 +6774,11 @@ class MusicService :
 
         val joined = togetherSessionState.value as? moe.rukamori.archivetune.together.TogetherSessionState.Joined
         if (joined?.role is moe.rukamori.archivetune.together.TogetherRole.Guest &&
-            reason == Player.MEDIA_ITEM_TRANSITION_REASON_SEEK
+            reason == Player.MEDIA_ITEM_TRANSITION_REASON_SEEK &&
+            !isTogetherApplyingRemote()
         ) {
             if (!joined.roomState.settings.allowGuestsToControlPlayback) {
-                scope.launch(SilentHandler) { applyRemoteRoomState(joined.roomState, force = true) }
+                restoreTogetherGuestPlayback()
                 return
             }
             val now = android.os.SystemClock.elapsedRealtime()
@@ -7038,10 +7096,11 @@ class MusicService :
         }
         val joined = togetherSessionState.value as? moe.rukamori.archivetune.together.TogetherSessionState.Joined
         if (joined?.role is moe.rukamori.archivetune.together.TogetherRole.Guest &&
-            events.contains(Player.EVENT_PLAY_WHEN_READY_CHANGED)
+            events.contains(Player.EVENT_PLAY_WHEN_READY_CHANGED) &&
+            !isTogetherApplyingRemote()
         ) {
             if (!joined.roomState.settings.allowGuestsToControlPlayback) {
-                scope.launch(SilentHandler) { applyRemoteRoomState(joined.roomState, force = true) }
+                restoreTogetherGuestPlayback()
             } else {
                 val now = android.os.SystemClock.elapsedRealtime()
                 val playWhenReady = this.player.playWhenReady
@@ -7091,10 +7150,11 @@ class MusicService :
                 ensureAudioFocusForActivePlayback()
             }
             updateWakeLock()
+            if (player.playWhenReady) {
+                ensureForegroundPlaybackService()
+            }
             if (hasResumablePlaybackNotification()) {
                 cancelIdleStop()
-                promoteToStartedService()
-                ensureStartedAsForeground()
             } else {
                 scheduleStopIfIdle()
             }
@@ -7257,7 +7317,7 @@ class MusicService :
         if (joined?.role is moe.rukamori.archivetune.together.TogetherRole.Guest) {
             if (!isTogetherApplyingRemote()) {
                 if (!joined.roomState.settings.allowGuestsToControlPlayback) {
-                    scope.launch(SilentHandler) { applyRemoteRoomState(joined.roomState, force = true) }
+                    restoreTogetherGuestPlayback()
                     return
                 }
                 requestTogetherControl(
@@ -7289,7 +7349,7 @@ class MusicService :
         if (joined?.role is moe.rukamori.archivetune.together.TogetherRole.Guest) {
             if (!isTogetherApplyingRemote()) {
                 if (!joined.roomState.settings.allowGuestsToControlPlayback) {
-                    scope.launch(SilentHandler) { applyRemoteRoomState(joined.roomState, force = true) }
+                    restoreTogetherGuestPlayback()
                     return
                 }
                 requestTogetherControl(
@@ -7401,14 +7461,8 @@ class MusicService :
         }
 
         if (!isLocalMedia && !isFullyDownloadedMedia && YTPlayerUtils.isBotDetectionException(error)) {
-            val recoverySnapshot = capturePlaybackRecoverySnapshot()
             resolveAudioStream.invalidate(currentMediaId)
             YTPlayerUtils.invalidateCachedStreamUrls(currentMediaId)
-            YTPlayerUtils.clearPlaybackAuthCaches()
-            if (playbackStreamRecoveryTracker.registerRetryAttempt(currentMediaId)) {
-                Timber.tag("MusicService").i("Retrying playback for %s after bot-detection source error", currentMediaId)
-                if (preparePlaybackFromSnapshot(recoverySnapshot)) return
-            }
         }
 
         if (!isLocalMedia && !isFullyDownloadedMedia && YTPlayerUtils.isBadStreamPlayerResponseException(error)) {
@@ -7577,31 +7631,42 @@ class MusicService :
         }
     }
 
-    private fun resolveMediaItemForCast(mediaItem: MediaItem): MediaItem {
+    private fun resolveMediaItemForCast(
+        mediaItem: MediaItem,
+        blocking: Boolean,
+    ): MediaItem {
         val localConfiguration = mediaItem.localConfiguration ?: return mediaItem
         val uri = localConfiguration.uri
         if (uri.shouldBypassYouTubeResolver()) return mediaItem
         val mediaId = localConfiguration.customCacheKey ?: mediaItem.mediaId
         val lowDataModeActive = isLowDataModeActive()
+        val request =
+            AudioStreamRequest(
+                mediaId = mediaId,
+                quality = if (lowDataModeActive) AudioQuality.LOW else audioQuality,
+                networkMetered = lowDataModeActive,
+                purpose = StreamPurpose.PLAYBACK,
+                authState = YouTube.currentPlaybackAuthState(),
+            )
         val resolved =
-            resolveAudioStream.peek(
-                AudioStreamRequest(
-                    mediaId = mediaId,
-                    quality = if (lowDataModeActive) AudioQuality.LOW else audioQuality,
-                    networkMetered = lowDataModeActive,
-                    purpose = StreamPurpose.PLAYBACK,
-                    authState = YouTube.currentPlaybackAuthState(),
-                ),
-            ) ?: return mediaItem
+            if (blocking) {
+                resolveAudioStream.resolveBlocking(request)
+            } else {
+                resolveAudioStream.peek(request) ?: return mediaItem
+            }
         val resolvedMimeType =
             localConfiguration.mimeType.toCastMimeType()
                 ?: castMimeTypeCache.get(mediaId)
+                ?: resolved.castMimeType()
         return mediaItem
             .buildUpon()
             .setUri(resolved.url)
             .apply { resolvedMimeType?.let(::setMimeType) }
             .build()
     }
+
+    private fun ResolvedAudioStream.castMimeType(): String? =
+        if (codecs.isBlank()) mimeType.toCastMimeType() else "$mimeType; codecs=\"$codecs\"".toCastMimeType()
 
     private fun resolvePlaybackDataSpec(dataSpec: DataSpec): DataSpec {
         if (dataSpec.uri.shouldBypassYouTubeResolver()) {
@@ -8412,7 +8477,7 @@ class MusicService :
     }
 
     override fun onBind(intent: Intent?): android.os.IBinder? {
-        hasBoundClients = true
+        boundClientCount++
         cancelIdleStop()
         val result = super.onBind(intent) ?: binder
         if (player.mediaItemCount > 0 && player.currentMediaItem != null) {
@@ -8426,13 +8491,13 @@ class MusicService :
     }
 
     override fun onUnbind(intent: Intent?): Boolean {
-        hasBoundClients = false
+        boundClientCount = (boundClientCount - 1).coerceAtLeast(0)
         scheduleStopIfIdle()
         return super.onUnbind(intent)
     }
 
     override fun onRebind(intent: Intent?) {
-        hasBoundClients = true
+        boundClientCount++
         cancelIdleStop()
         super.onRebind(intent)
     }
@@ -8524,12 +8589,16 @@ class MusicService :
         flags: Int,
         startId: Int,
     ): Int {
+        isPlaybackServiceStarted = true
         if (intent?.action == ACTION_MEDIA_NOTIFICATION_DISMISSED) {
             handleMediaNotificationDismissed(intent)
             return START_NOT_STICKY
         }
 
-        ensureStartedAsForeground()
+        enterForegroundForStartCommand()
+        if (!hasResumablePlaybackNotification()) {
+            scheduleStopIfIdle()
+        }
         when (intent?.action) {
             "moe.rukamori.archivetune.WIDGET_PLAY_PAUSE" -> {
                 if (player.isPlaying) player.pause() else player.play()
@@ -8553,22 +8622,6 @@ class MusicService :
         }
         super.onStartCommand(intent, flags, startId)
         return START_NOT_STICKY
-    }
-
-    override fun onUpdateNotification(
-        session: MediaSession,
-        startInForegroundRequired: Boolean,
-    ) {
-        val shouldShowNotification =
-            shouldShowPlaybackNotification(
-                startInForegroundRequired = startInForegroundRequired,
-                hasResumablePlayback = hasResumablePlaybackNotification(),
-            )
-        if (!shouldShowNotification) return
-
-        ensureStartedAsForeground()
-        runCatching { super.onUpdateNotification(session, true) }
-            .onFailure { reportException(it) }
     }
 
     // ── Widget Support ────────────────────────────────────────────────────────────
@@ -8596,11 +8649,6 @@ class MusicService :
             isHostSessionActive: Boolean,
             isPlaybackInactive: Boolean,
         ): Boolean = (isHostSessionActive && isPlaybackInactive) || stopMusicOnTaskClearEnabled
-
-        internal fun shouldShowPlaybackNotification(
-            startInForegroundRequired: Boolean,
-            hasResumablePlayback: Boolean,
-        ): Boolean = startInForegroundRequired || hasResumablePlayback
 
         const val ROOT = "root"
         const val HOME = "home"

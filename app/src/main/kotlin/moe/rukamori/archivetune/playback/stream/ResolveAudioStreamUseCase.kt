@@ -316,14 +316,10 @@ class ResolveAudioStreamUseCase
             priority: StreamResolutionPriority,
         ): ResolvedAudioStream {
             val resolvedAuthState =
-                if (request.authState.hasLoginCookie) {
-                    YTPlayerUtils.ensureYoutubeiPoTokensForPlayback(
-                        videoId = request.mediaId,
-                        authState = request.authState,
-                    )
-                } else {
-                    request.authState
-                }
+                YTPlayerUtils.ensureYoutubeiPoTokensForPlayback(
+                    videoId = request.mediaId,
+                    authState = request.authState,
+                )
             return youtubeiRepository.resolve(
                 request = request.copy(authState = resolvedAuthState),
                 priority = priority,

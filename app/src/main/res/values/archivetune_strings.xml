@@ -327,6 +327,11 @@
     <string name="lyrics_background_style">Lyrics background style</string>
     <string name="lyrics_background_default">Default</string>
     <string name="mini_player_background_style">Mini player background style</string>
+    <string name="navigation_bar_background_style">Navigation bar background style</string>
+    <string name="navigation_bar_mode">Navigation bar mode</string>
+    <string name="navigation_bar_mode_connected">Connected</string>
+    <string name="navigation_bar_mode_standalone">Standalone</string>
+    <string name="acrylic">Acrylic</string>
     <string name="follow_theme">Follow theme</string>
     <string name="gradient">Gradient</string>
     <string name="player_design_style">Player design style</string>
@@ -676,6 +681,10 @@
     <string name="ai_provider_none">None (Disabled)</string>
     <string name="ai_provider_openrouter">OpenRouter</string>
     <string name="ai_custom_endpoint">Custom endpoint</string>
+    <string name="ai_custom_endpoint_invalid">Enter an HTTP or HTTPS endpoint without embedded credentials or a fragment.</string>
+    <string name="ai_request_parameters">Request parameters</string>
+    <string name="ai_request_parameters_desc">OpenAI-compatible JSON options, for example {\"reasoning_effort\":\"low\",\"max_completion_tokens\":8192,\"temperature\":null}. Use null to omit a parameter; leave blank for defaults.</string>
+    <string name="ai_request_parameters_invalid">Enter a JSON object with valid parameter values. Model, messages, stream, and n are managed by the app.</string>
     <string name="ai_api_key">API key</string>
     <string name="ai_api_key_missing">Required before AI features can run.</string>
     <string name="ai_api_key_configured">Configured</string>

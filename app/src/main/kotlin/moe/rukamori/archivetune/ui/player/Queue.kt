@@ -77,7 +77,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -302,71 +301,46 @@ fun Queue(
             queueWindows.getOrNull(currentWindowIndex)
         }
 
-    val onRemoveWithUndo: (Timeline.Window) -> Unit = { window ->
-        val index = window.firstPeriodIndex
-        playerConnection.player.removeMediaItem(index)
-        dismissJob?.cancel()
-        dismissJob =
-            coroutineScope.launch {
-                val snackbarResult =
-                    snackbarHostState.showSnackbar(
-                        message =
-                            context.getString(
-                                R.string.removed_song_from_queue,
-                                window.mediaItem.metadata?.title,
-                            ),
-                        actionLabel = context.getString(R.string.undo),
-                        duration = SnackbarDuration.Short,
-                    )
-                if (snackbarResult == SnackbarResult.ActionPerformed) {
-                    playerConnection.player.addMediaItem(window.mediaItem)
-                    playerConnection.player.moveMediaItem(
-                        playerConnection.player.mediaItemCount - 1,
-                        index,
-                    )
-                }
-            }
-    }
-
-    val onRemoveMultipleWithUndo: (List<Timeline.Window>) -> Unit = { windows ->
-        if (windows.isNotEmpty()) {
-            val sortedWindows = windows.sortedBy { it.firstPeriodIndex }
-            var i = 0
-            sortedWindows.forEach { window ->
-                playerConnection.player.removeMediaItem(window.firstPeriodIndex - i++)
-            }
-            dismissJob?.cancel()
-            dismissJob =
-                coroutineScope.launch {
-                    val snackbarResult =
-                        snackbarHostState.showSnackbar(
-                            message =
-                                if (windows.size == 1) {
-                                    context.getString(
-                                        R.string.removed_song_from_queue,
-                                        windows
-                                            .first()
-                                            .mediaItem.metadata
-                                            ?.title,
-                                    )
-                                } else {
-                                    context.getString(R.string.removed_n_songs_from_queue, windows.size)
-                                },
-                            actionLabel = context.getString(R.string.undo),
-                            duration = SnackbarDuration.Short,
-                        )
-                    if (snackbarResult == SnackbarResult.ActionPerformed) {
-                        sortedWindows.forEach { window ->
-                            playerConnection.player.addMediaItem(window.mediaItem)
-                            playerConnection.player.moveMediaItem(
-                                playerConnection.player.mediaItemCount - 1,
-                                window.firstPeriodIndex,
-                            )
+    val onRemoveMultipleWithUndo: (List<Timeline.Window>) -> Unit =
+        remember(playerConnection, context, coroutineScope, snackbarHostState) {
+            remove@{ windows ->
+                val removal = playerConnection.removeQueueItems(windows) ?: return@remove
+                val removedItems = removal.removedItems
+                dismissJob?.cancel()
+                dismissJob =
+                    coroutineScope.launch {
+                        try {
+                            val snackbarResult =
+                                snackbarHostState.showSnackbar(
+                                    message =
+                                        if (removedItems.size == 1) {
+                                            context.getString(
+                                                R.string.removed_song_from_queue,
+                                                removedItems.first().metadata?.title,
+                                            )
+                                        } else {
+                                            context.getString(R.string.removed_n_songs_from_queue, removedItems.size)
+                                        },
+                                    actionLabel = context.getString(R.string.undo),
+                                    duration = SnackbarDuration.Short,
+                                )
+                            if (
+                                snackbarResult == SnackbarResult.ActionPerformed &&
+                                !playerConnection.restoreQueueItems(removal)
+                            ) {
+                                snackbarHostState.showSnackbar(context.getString(R.string.queue_undo_unavailable))
+                            }
+                        } finally {
+                            playerConnection.discardQueueRemoval(removal)
                         }
                     }
-                }
+            }
         }
-    }
+
+    val onRemoveWithUndo: (Timeline.Window) -> Unit =
+        remember(onRemoveMultipleWithUndo) {
+            { window -> onRemoveMultipleWithUndo(listOf(window)) }
+        }
 
     var showSleepTimerDialog by remember { mutableStateOf(false) }
     var sleepTimerValue by remember { mutableStateOf(30f) }
@@ -444,6 +418,14 @@ fun Queue(
                                     mediaMetadata = mediaMetadata,
                                     navController = navController,
                                     playerBottomSheetState = playerBottomSheetState,
+                                    sleepTimerEnabled = sleepTimerEnabled,
+                                    onSleepTimerClick = {
+                                        if (sleepTimerEnabled) {
+                                            playerConnection.service.sleepTimer.clear()
+                                        } else {
+                                            showSleepTimerDialog = true
+                                        }
+                                    },
                                     onShowDetailsDialog = {
                                         mediaMetadata?.id?.let {
                                             bottomSheetPageState.show {
@@ -480,6 +462,14 @@ fun Queue(
                                     mediaMetadata = mediaMetadata,
                                     navController = navController,
                                     playerBottomSheetState = playerBottomSheetState,
+                                    sleepTimerEnabled = sleepTimerEnabled,
+                                    onSleepTimerClick = {
+                                        if (sleepTimerEnabled) {
+                                            playerConnection.service.sleepTimer.clear()
+                                        } else {
+                                            showSleepTimerDialog = true
+                                        }
+                                    },
                                     onShowDetailsDialog = {
                                         mediaMetadata?.id?.let {
                                             bottomSheetPageState.show {
@@ -516,6 +506,14 @@ fun Queue(
                                     mediaMetadata = mediaMetadata,
                                     navController = navController,
                                     playerBottomSheetState = playerBottomSheetState,
+                                    sleepTimerEnabled = sleepTimerEnabled,
+                                    onSleepTimerClick = {
+                                        if (sleepTimerEnabled) {
+                                            playerConnection.service.sleepTimer.clear()
+                                        } else {
+                                            showSleepTimerDialog = true
+                                        }
+                                    },
                                     onShowDetailsDialog = {
                                         mediaMetadata?.id?.let {
                                             bottomSheetPageState.show {
@@ -613,6 +611,14 @@ fun Queue(
                                     mediaMetadata = mediaMetadata,
                                     navController = navController,
                                     playerBottomSheetState = playerBottomSheetState,
+                                    sleepTimerEnabled = sleepTimerEnabled,
+                                    onSleepTimerClick = {
+                                        if (sleepTimerEnabled) {
+                                            playerConnection.service.sleepTimer.clear()
+                                        } else {
+                                            showSleepTimerDialog = true
+                                        }
+                                    },
                                     onShowDetailsDialog = {
                                         mediaMetadata?.id?.let {
                                             bottomSheetPageState.show {
@@ -891,6 +897,14 @@ fun Queue(
                                 navController = navController,
                                 playerBottomSheetState = playerBottomSheetState,
                                 isQueueTrigger = true,
+                                sleepTimerEnabled = sleepTimerEnabled,
+                                onSleepTimerClick = {
+                                    if (sleepTimerEnabled) {
+                                        playerConnection.service.sleepTimer.clear()
+                                    } else {
+                                        showSleepTimerDialog = true
+                                    }
+                                },
                                 onRemoveFromQueue = {
                                     currentWindow?.let { onRemoveWithUndo(it) }
                                 },
@@ -961,8 +975,7 @@ fun Queue(
                             ).asPaddingValues(),
                     modifier =
                         Modifier
-                            .weight(1f)
-                            .nestedScroll(state.preUpPostDownNestedScrollConnection),
+                            .weight(1f),
                 ) {
                     item(
                         key = "queue_selection_spacer",

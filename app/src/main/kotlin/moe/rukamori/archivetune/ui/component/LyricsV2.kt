@@ -211,7 +211,7 @@ fun LyricsV2(
     var shareDialogData by remember { mutableStateOf<Triple<String, String, String>?>(null) }
     var showShareImageDialog by remember { mutableStateOf(false) }
 
-    val showTranslations = preparedLyrics?.lines?.any { line -> line.translation != null } == true
+    val showTranslations = preparedLyrics?.hasTranslations == true && preferences?.showTranslations == true
     val isSynced = preparedLyrics?.syncType != null && preparedLyrics.syncType != LyricsSyncType.PLAIN
     val isWordSyncedFormat = preparedLyrics?.syncType == LyricsSyncType.WORD
 

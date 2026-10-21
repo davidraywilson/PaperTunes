@@ -36,7 +36,6 @@ import androidx.compose.material3.ShortNavigationBarItem
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -46,11 +45,14 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
+import dev.chrisbanes.haze.HazeState
 import moe.rukamori.archivetune.constants.FloatingBarJunctionCornerRadius
 import moe.rukamori.archivetune.constants.FloatingBarOuterCornerRadius
 import moe.rukamori.archivetune.constants.FloatingBarStandaloneCornerRadius
+import moe.rukamori.archivetune.constants.NavigationBarBackgroundStyle
 import moe.rukamori.archivetune.constants.NavigationBarHeight
 import moe.rukamori.archivetune.constants.NavigationBarMaxWidth
+import moe.rukamori.archivetune.constants.NavigationBarMode
 import moe.rukamori.archivetune.ui.screens.Screens
 
 private val NavigationItemsMaxWidth = 360.dp
@@ -60,22 +62,32 @@ private val NavigationItemVerticalPadding = 8.dp
 fun FloatingNavigationToolbar(
     items: List<Screens>,
     pureBlack: Boolean,
+    backgroundStyle: NavigationBarBackgroundStyle,
+    hazeState: HazeState,
     modifier: Modifier = Modifier,
     miniPlayerProximityProvider: () -> Float = { 0f },
+    navigationBarMode: NavigationBarMode = NavigationBarMode.CONNECTED,
     isSelected: (Screens) -> Boolean,
     onItemClick: (Screens, Boolean) -> Unit,
     onSearchItemDoubleClick: (() -> Unit)? = null,
 ) {
-    val miniPlayerProximity = miniPlayerProximityProvider()
+    val miniPlayerProximity =
+        if (navigationBarMode == NavigationBarMode.CONNECTED) miniPlayerProximityProvider() else 0f
     val navigationShape =
-        RoundedCornerShape(
-            topStart = lerp(FloatingBarStandaloneCornerRadius.value, FloatingBarJunctionCornerRadius.value, miniPlayerProximity).dp,
-            topEnd = lerp(FloatingBarStandaloneCornerRadius.value, FloatingBarJunctionCornerRadius.value, miniPlayerProximity).dp,
-            bottomStart = lerp(FloatingBarStandaloneCornerRadius.value, FloatingBarOuterCornerRadius.value, miniPlayerProximity).dp,
-            bottomEnd = lerp(FloatingBarStandaloneCornerRadius.value, FloatingBarOuterCornerRadius.value, miniPlayerProximity).dp,
-        )
+        remember(miniPlayerProximity) {
+            RoundedCornerShape(
+                topStart = lerp(FloatingBarStandaloneCornerRadius.value, FloatingBarJunctionCornerRadius.value, miniPlayerProximity).dp,
+                topEnd = lerp(FloatingBarStandaloneCornerRadius.value, FloatingBarJunctionCornerRadius.value, miniPlayerProximity).dp,
+                bottomStart = lerp(FloatingBarStandaloneCornerRadius.value, FloatingBarOuterCornerRadius.value, miniPlayerProximity).dp,
+                bottomEnd = lerp(FloatingBarStandaloneCornerRadius.value, FloatingBarOuterCornerRadius.value, miniPlayerProximity).dp,
+            )
+        }
     val navigationContainerColor =
-        if (pureBlack) Color.Black else MaterialTheme.colorScheme.surfaceContainer
+        if (backgroundStyle == NavigationBarBackgroundStyle.THEME) {
+            if (pureBlack) Color.Black else MaterialTheme.colorScheme.surfaceContainer
+        } else {
+            Color.Transparent
+        }
     val motionScheme = MaterialTheme.motionScheme
     Box(
         modifier =
@@ -106,6 +118,14 @@ fun FloatingNavigationToolbar(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center,
                 ) {
+                    if (backgroundStyle != NavigationBarBackgroundStyle.THEME) {
+                        FloatingBarBlurBackground(
+                            hazeState = hazeState,
+                            isAcrylic = backgroundStyle == NavigationBarBackgroundStyle.ACRYLIC,
+                            pureBlack = pureBlack,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                    }
                     Row(
                         modifier =
                             Modifier

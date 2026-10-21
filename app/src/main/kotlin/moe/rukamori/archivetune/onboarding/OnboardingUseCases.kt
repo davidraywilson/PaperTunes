@@ -248,7 +248,7 @@ class BuildOnboardingUiStateUseCase
                         titleResId = R.string.about_content_desc_donate,
                         descriptionResId = R.string.onboarding_community_donate_desc,
                         iconResId = R.drawable.coffee,
-                        url = "https://koiiverse.cloud/donate",
+                        url = "https://miuka.moe/donate",
                     ),
                 )
         }

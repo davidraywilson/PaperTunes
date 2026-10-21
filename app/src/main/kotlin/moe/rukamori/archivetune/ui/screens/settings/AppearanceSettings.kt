@@ -95,6 +95,10 @@ import moe.rukamori.archivetune.constants.LyricsBackgroundStyle
 import moe.rukamori.archivetune.constants.LyricsBackgroundStyleKey
 import moe.rukamori.archivetune.constants.MiniPlayerBackgroundStyle
 import moe.rukamori.archivetune.constants.MiniPlayerBackgroundStyleKey
+import moe.rukamori.archivetune.constants.NavigationBarBackgroundStyle
+import moe.rukamori.archivetune.constants.NavigationBarBackgroundStyleKey
+import moe.rukamori.archivetune.constants.NavigationBarMode
+import moe.rukamori.archivetune.constants.NavigationBarModeKey
 import moe.rukamori.archivetune.constants.PlayerBackgroundStyle
 import moe.rukamori.archivetune.constants.PlayerBackgroundStyleKey
 import moe.rukamori.archivetune.constants.PlayerButtonsStyle
@@ -210,6 +214,16 @@ fun AppearanceSettings(navController: NavController) {
             defaultValue = MiniPlayerBackgroundStyle.THEME,
         )
     val (pureBlack, onPureBlackChange) = rememberPreference(PureBlackKey, defaultValue = false)
+    val (navigationBarBackground, onNavigationBarBackgroundChange) =
+        rememberEnumPreference(
+            NavigationBarBackgroundStyleKey,
+            defaultValue = NavigationBarBackgroundStyle.THEME,
+        )
+    val (navigationBarMode, onNavigationBarModeChange) =
+        rememberEnumPreference(
+            NavigationBarModeKey,
+            defaultValue = NavigationBarMode.CONNECTED,
+        )
     val (disableBlur, onDisableBlurChange) = rememberPreference(DisableBlurKey, defaultValue = false)
     val (disableAnimations, onDisableAnimationsChange) =
         rememberPreference(
@@ -696,6 +710,37 @@ fun AppearanceSettings(navController: NavController) {
 
                 item {
                     EnumListPreference(
+                        title = { Text(stringResource(R.string.navigation_bar_background_style)) },
+                        icon = { Icon(painterResource(R.drawable.gradient), null) },
+                        selectedValue = navigationBarBackground,
+                        onValueSelected = onNavigationBarBackgroundChange,
+                        valueText = {
+                            when (it) {
+                                NavigationBarBackgroundStyle.THEME -> stringResource(R.string.follow_theme)
+                                NavigationBarBackgroundStyle.BLUR -> stringResource(R.string.blur)
+                                NavigationBarBackgroundStyle.ACRYLIC -> stringResource(R.string.acrylic)
+                            }
+                        },
+                    )
+                }
+
+                item {
+                    EnumListPreference(
+                        title = { Text(stringResource(R.string.navigation_bar_mode)) },
+                        icon = { Icon(painterResource(R.drawable.palette), null) },
+                        selectedValue = navigationBarMode,
+                        onValueSelected = onNavigationBarModeChange,
+                        valueText = {
+                            when (it) {
+                                NavigationBarMode.CONNECTED -> stringResource(R.string.navigation_bar_mode_connected)
+                                NavigationBarMode.STANDALONE -> stringResource(R.string.navigation_bar_mode_standalone)
+                            }
+                        },
+                    )
+                }
+
+                item {
+                    EnumListPreference(
                         title = { Text(stringResource(R.string.font_preference)) },
                         description = stringResource(R.string.font_preference_desc),
                         icon = { Icon(painterResource(R.drawable.text_fields), null) },
@@ -846,6 +891,8 @@ fun AppearanceSettings(navController: NavController) {
                                 MiniPlayerBackgroundStyle.THEME -> stringResource(R.string.follow_theme)
                                 MiniPlayerBackgroundStyle.GRADIENT -> stringResource(R.string.gradient)
                                 MiniPlayerBackgroundStyle.GLOW -> stringResource(R.string.glow)
+                                MiniPlayerBackgroundStyle.ACRYLIC -> stringResource(R.string.acrylic)
+                                MiniPlayerBackgroundStyle.BLUR -> stringResource(R.string.blur)
                             }
                         },
                     )
